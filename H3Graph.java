@@ -328,10 +328,7 @@ public class H3Graph
 
     public void setNodeDefaultColor(int color)
     {
-	for (int i = 0; i < m_numNodes; i++)
-	{
-	    m_nodes.color[i] = color;
-	}
+	Arrays.fill(m_nodes.color, color);
     }
 
     public void setNodeDefaultColor(byte r, byte g, byte b)
@@ -352,10 +349,7 @@ public class H3Graph
 
     public void setLinkDefaultColor(int color)
     {
-	for (int i = 0; i < m_numLinks; i++)
-	{
-	    m_links.color[i] = color;
-	}
+	Arrays.fill(m_links.color, color);
     }
 
     public void setLinkDefaultColor(byte r, byte g, byte b)
