@@ -682,6 +682,8 @@ public class H3Graph
 	m_nodes.isVisible.conjunction
 	    (m_nodes.isDisplayable, m_nodes.isSelected);
 
+	computeNontreeLinkDisplayability();
+
 	m_links.isVisible.conjunction
 	    (m_links.isDisplayable, m_links.isSelected);
     }
@@ -689,6 +691,44 @@ public class H3Graph
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
+
+    // Assumes m_nodes.isVisible has been computed from m_nodes.isDisplayable
+    // and m_nodes.isSelected.  This adjusts m_links.isDisplayable but neither
+    // m_links.isSelected nor m_links.isVisible.  Thus, m_links.isVisible
+    // must be computed sometime after calling this method.
+    private void computeNontreeLinkDisplayability()
+    {
+	int node = 0;
+	int numNontreeLinksSeen = 0;
+	while (numNontreeLinksSeen < m_numNontreeLinks)
+	{
+	    int nontreeStart = getNodeNontreeIndex(node);
+	    int end = getNodeLinksEndIndex(node);
+
+	    if (nontreeStart != end)
+	    {
+		numNontreeLinksSeen += end - nontreeStart;
+		if (checkNodeVisible(node))
+		{
+		    for (int i = nontreeStart; i < end; i++)
+		    {
+			int destination = getLinkDestination(i);
+			boolean isDisplayable = checkNodeVisible(destination);
+			setLinkDisplayability(i, isDisplayable);
+		    }
+		}
+		else
+		{
+		    for (int i = nontreeStart; i < end; i++)
+		    {
+			setLinkDisplayability(i, false);
+		    }
+		}
+	    }
+
+	    ++node;
+	}
+    }
 
     // The input node itself is assumed to have been taken care of.
     private void setSubtreeDisplayability(int node, boolean isDisplayable)
@@ -703,11 +743,6 @@ public class H3Graph
             setNodeDisplayability(child, isDisplayable);
             setLinkDisplayability(i, isDisplayable);
 	    setSubtreeDisplayability(child, isDisplayable);
-	}
-    
-	for (int i = nontreeStart; i < end; i++)
-	{
-            setLinkDisplayability(i, false);
 	}
     }
 
