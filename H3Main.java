@@ -978,22 +978,54 @@ public class H3Main
 		    checkGraphIDMappings(m_graph, m_backingGraph);
 		}
 
-		retval = layoutGraph(renderingConfiguration, false);
-		if (retval)
+		retval = false;
+
+		int numNodes = m_graph.getNumNodes();
+		int numReachable = m_graph.checkSpanningTree();
+		if (numReachable == numNodes)
 		{
-		    System.out.println("Finished graph layout.");
+		    if (layoutGraph(renderingConfiguration, false))
+		    {
+			retval = true;
 
-		    colorNodes(renderingConfiguration.nodeColor);
-		    colorTreeLinks(renderingConfiguration.treeLinkColor);
-		    colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+			colorNodes(renderingConfiguration.nodeColor);
+			colorTreeLinks(renderingConfiguration.treeLinkColor);
+			colorNontreeLinks
+			    (renderingConfiguration.nontreeLinkColor);
 
-		    selectNodes(renderingConfiguration.nodeColor);
-		    selectLinks(renderingConfiguration.treeLinkColor, true);
-		    selectLinks(renderingConfiguration.nontreeLinkColor,false);
+			selectNodes(renderingConfiguration.nodeColor);
+			selectLinks
+			    (renderingConfiguration.treeLinkColor, true);
+			selectLinks
+			    (renderingConfiguration.nontreeLinkColor, false);
 
-		    m_graph.setNodeDisplayability(true);
-		    m_graph.setLinkDisplayability(true);
-		    m_graph.computeVisibility();
+			m_graph.setNodeDisplayability(true);
+			m_graph.setLinkDisplayability(true);
+			m_graph.computeVisibility();
+		    }
+		}
+		else
+		{
+		    String msg;
+		    if (numReachable == -1)
+		    {
+			msg = "The selected spanning tree does not specify"
+			    + " a tree.  A node is reachable along at least"
+			    + " two paths, which could result from a cycle,"
+			    + " a parallel edge, or from the convergence of"
+			    + " two paths.";
+		    }
+		    else
+		    {
+			msg = "The selected spanning tree does not cover"
+			    + " all nodes.  Only " + numReachable + " of "
+			    + numNodes + " nodes are reachable through the"
+			    + " spanning tree.";
+		    }
+
+		    JOptionPane.showMessageDialog
+			(null, msg, "Malformed Spanning Tree",
+			 JOptionPane.ERROR_MESSAGE);
 		}
 	    }
 	    else
