@@ -59,12 +59,6 @@ public class H3ViewParameters
 	m_nodeRadius = NODE_RADIUS_PIXELS * m_pixelToMeterScale;
 
 	m_pickViewer = new H3PickViewer(m_pickRadius);
-
-	if (DEPTH_CUEING)
-	{
-	    m_axes.setAxisColor(0.3f, 0.6f, 0.3f);
-	    m_axes.setCircleColor(0.3f, 0.6f, 0.3f);
-	}
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -89,23 +83,45 @@ public class H3ViewParameters
 
     public void drawAxes(GraphicsContext3D gc)
     {
-	m_axes.draw(gc, m_objectTransform);
+	if (m_axesEnabled)
+	{
+	    m_axes.draw(gc, m_objectTransform);
+	}
+    }
+
+    public void setAxesEnabled(boolean enable)
+    {
+	m_axesEnabled = enable;
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-    public void enableDepthCueing()
+    public void installDepthCueing()
     {
-	if (DEPTH_CUEING && m_depthCueing == null)
+	if (m_depthCueingEnabled && m_depthCueing == null)
 	{
 	    m_depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
 	    m_depthCueing.setFrontDistance(DEPTH_CUEING_FRONT);
 	    m_depthCueing.setBackDistance(DEPTH_CUEING_BACK);
-	    m_depthCueing.setInfluencingBounds(new
-                   BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
+	    m_depthCueing.setInfluencingBounds
+		(new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
+	}
 
-	    GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
-	    gc.setFog(m_depthCueing);
+	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
+
+	// XXX: GraphicsContext3D.setFog(null) is throwing a
+	//      NullPointerException contrary to the documentation.
+	//      For the moment, therefore, there is no way to disable
+	//      the fog once installed.
+	if (m_depthCueingEnabled) gc.setFog(m_depthCueing);
+    }
+
+    public void setDepthCueingEnabled(boolean enable)
+    {
+	m_depthCueingEnabled = enable;
+	if (!enable)
+	{
+	    m_depthCueing = null;
 	}
     }
 
@@ -449,6 +465,7 @@ public class H3ViewParameters
     private H3Axes m_axes = new H3Axes();
     private H3PickViewer m_pickViewer;
     private H3Circle m_nodeImage = new H3Circle();
+    private boolean m_axesEnabled = true;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -480,13 +497,12 @@ public class H3ViewParameters
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private static final boolean DEPTH_CUEING = true;
-
     // Some good combinations of front and back distances are
     // (1.0, 3.5), (1.25, 3.5), (1.0, 4.0), (1.25, 4.0), and (1.5, 4.0).
     private static final double DEPTH_CUEING_FRONT = 1.25;
     private static final double DEPTH_CUEING_BACK = 3.5;
 
+    private boolean m_depthCueingEnabled = true;
     private LinearFog m_depthCueing;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
