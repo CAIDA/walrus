@@ -46,7 +46,8 @@ walrus_sources = H3AdaptivePicker.java \
 	H3TransformQueue.java \
 	H3Transformer.java \
 	H3ViewParameters.java \
-	H3WobblingRotationRequest.java
+	H3WobblingRotationRequest.java \
+	PPMWriter.java
 
 walrus_classes = $(walrus_sources:.java=.class)
 

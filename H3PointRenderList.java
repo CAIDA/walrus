@@ -179,32 +179,78 @@ public class H3PointRenderList
 
 	if (m_numNearNodesDisplayed > 0)
 	{
-	    retval.addChild(new Shape3D(m_nearNodes, m_nearNodeAppearance));
+	    Appearance appearance = cloneAppearance(m_nearNodeAppearance);
+	    appearance.getPointAttributes().setPointSize(10.0f);
+
+	    retval.addChild(new Shape3D(m_nearNodes, appearance));
 	}
 
 	if (m_numMiddleNodesDisplayed > 0)
 	{
-	    retval.addChild
-		(new Shape3D(m_middleNodes, m_middleNodeAppearance));
+	    Appearance appearance = cloneAppearance(m_middleNodeAppearance);
+	    appearance.getPointAttributes().setPointSize(6.0f);
+
+	    retval.addChild(new Shape3D(m_middleNodes, appearance));
 	}
 
 	if (m_numFarNodesDisplayed > 0)
 	{
-	    retval.addChild(new Shape3D(m_farNodes, m_farNodeAppearance));
+	    Appearance appearance = cloneAppearance(m_farNodeAppearance);
+	    appearance.getPointAttributes().setPointSize(2.0f);
+
+	    retval.addChild(new Shape3D(m_farNodes, appearance));
 	}
 
 	if (m_numTreeVerticesDisplayed > 0)
 	{
-	    retval.addChild(new Shape3D(m_treeLinks, m_treeLinkAppearance));
+	    Appearance appearance = cloneAppearance(m_treeLinkAppearance);
+	    appearance.getLineAttributes().setLineWidth(2.0f);
+
+	    retval.addChild(new Shape3D(m_treeLinks, appearance));
 	}
 
 	if (m_numNontreeVerticesDisplayed > 0)
 	{
-	    retval.addChild
-		(new Shape3D(m_nontreeLinks, m_nontreeLinkAppearance));
+	    Appearance appearance = cloneAppearance(m_nontreeLinkAppearance);
+	    appearance.getLineAttributes().setLineWidth(2.0f);
+
+	    retval.addChild(new Shape3D(m_nontreeLinks, appearance));
 	}
 
 	return retval;
+    }
+
+    // NOTE: This doesn't clone all of the attributes of an Appearance.
+    private Appearance cloneAppearance(Appearance appearance)
+    {
+	Appearance retval = new Appearance();
+
+	retval.setColoringAttributes
+	    ((ColoringAttributes)cloneNodeComponent
+	     (appearance.getColoringAttributes()));
+
+	retval.setLineAttributes
+	    ((LineAttributes)cloneNodeComponent
+	     (appearance.getLineAttributes()));
+
+	retval.setPointAttributes
+	    ((PointAttributes)cloneNodeComponent
+	     (appearance.getPointAttributes()));
+
+	retval.setRenderingAttributes
+	    ((RenderingAttributes)cloneNodeComponent
+	     (appearance.getRenderingAttributes()));
+
+	retval.setTransparencyAttributes
+	    ((TransparencyAttributes)cloneNodeComponent
+	     (appearance.getTransparencyAttributes()));
+
+	return retval;
+    }
+
+    private NodeComponent cloneNodeComponent(NodeComponent component)
+    {
+	return (component == null ? null : component.cloneNodeComponent(true));
     }
 
     ////////////////////////////////////////////////////////////////////////

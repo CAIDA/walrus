@@ -302,6 +302,8 @@ public class H3Main
 	m_saveWithLayoutAsMenuItem.setEnabled(false);
 	m_closeMenuItem.setEnabled(false);
 	m_captureScreenMenuItem.setEnabled(false);
+	m_captureScreenMenuItem2.setEnabled(false);
+	m_captureScreenMenuItem3.setEnabled(false);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
@@ -334,9 +336,21 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handleCaptureScreenRequest()
+    // NOTES:
+    //
+    //   * As far as I can tell, the size of the Screen3D associated with a
+    //     Canvas3D only determines the clipping size.  It doesn't affect
+    //     the rendering in any other way (so long as the aspect ratio is
+    //     preserved).
+    //
+    //   * My Elite3D card seems to impose a maximum effective size of
+    //     2048x2048 on a Canvas3D.  A larger size is a waste, as Java3D
+    //     treats the Canvas3D as if it were 2048x2048.
+
+    private void handleCaptureScreenRequest(int width, int height)
     {
-	System.out.println("handleCaptureScreenRequest()");
+	System.out.println
+	    ("handleCaptureScreenRequest(" + width + ", " + height + ")");
 
 	H3PointRenderList renderList = m_renderList;
 	H3DisplayPosition displayPosition = m_renderLoop.getDisplayPosition();
@@ -344,22 +358,20 @@ public class H3Main
 	m_view.removeCanvas3D(m_canvas);
 	handleStopRenderingRequest();
 	{
-	    int width = DEFAULT_FRAME_WIDTH;
-	    int height = DEFAULT_FRAME_HEIGHT;
-
 	    // Setup scene graph. - - - - - - - - - - - - - - - - - - - - - -
 
 	    GraphicsConfiguration config =
 		SimpleUniverse.getPreferredConfiguration();
 
 	    Canvas3D canvas = new Canvas3D(config, true);
-	    canvas.setSize(width, height);
+	    canvas.setSize(width, height); // probably not necessary
 
 	    SimpleUniverse univ = new SimpleUniverse(canvas);
 	    univ.getViewingPlatform().setNominalViewingTransform();
 
 	    // Move eye back in +z direction a tad so that the whole
 	    // sphere fits within the window.
+	    if (false)
 	    {
 		TransformGroup transformGroup =
 		    univ.getViewingPlatform().getViewPlatformTransform();
@@ -382,7 +394,7 @@ public class H3Main
 	    if (m_renderingConfiguration.depthCueing)
 	    {
 		LinearFog depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
-		depthCueing.setFrontDistance(2.5);
+		depthCueing.setFrontDistance(2.0);
 		depthCueing.setBackDistance(4.5);
 		depthCueing.setInfluencingBounds
 		    (new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
@@ -398,13 +410,19 @@ public class H3Main
 
 	    // Capture screen. - - - - - - - - - - - - - - - - - - - - - - -
 
-	    Dimension size = canvas.getSize();
-	    Screen3D screen = canvas.getScreen3D();
-	    screen.setSize(size);
+	    Screen3D onScreen = m_canvas.getScreen3D();
+	    double screenWidthPixelToMeterScale =
+		onScreen.getPhysicalScreenWidth() / onScreen.getSize().width;
+	    double screenHeightPixelToMeterScale =
+		onScreen.getPhysicalScreenHeight() / onScreen.getSize().height;
 
-	    double scale = m_viewParameters.getPixelToMeterScale();
-	    screen.setPhysicalScreenWidth(size.width * scale);
-	    screen.setPhysicalScreenHeight(size.height * scale);
+            double screenPhysicalWidth = width * screenWidthPixelToMeterScale;
+	    double screenPhysicalHeight = height*screenHeightPixelToMeterScale;
+
+	    Screen3D screen = canvas.getScreen3D();
+	    screen.setSize(width, height);
+	    screen.setPhysicalScreenWidth(screenPhysicalWidth);
+	    screen.setPhysicalScreenHeight(screenPhysicalHeight);
 
 	    BufferedImage image =
 		new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -417,13 +435,30 @@ public class H3Main
 	    canvas.waitForOffScreenRendering();
 	    image = canvas.getOffScreenBuffer().getImage();
 
-	    new ImageDisplayer(image);
+	    writeImage(image, width, height);
 	    
 	    scene.detach();
 	}
 	m_view.addCanvas3D(m_canvas);
 	m_canvas.stopRenderer();
 	handleStartRenderingRequest();
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void writeImage(BufferedImage image, int width, int height)
+    {
+	try
+	{
+	    String name = "capture-" + width + "x" + height + ".ppm";
+	    FileOutputStream out = new FileOutputStream(name);
+	    new PPMWriter(image).write(out);
+	    out.close();
+	}
+	catch (IOException e)
+	{
+	    System.out.println("ERROR: Couldn't write image: " + e);
+	}
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1226,6 +1261,8 @@ public class H3Main
     {
 	// File menu.
 	m_captureScreenMenuItem.setEnabled(false);
+	m_captureScreenMenuItem2.setEnabled(false);
+	m_captureScreenMenuItem3.setEnabled(false);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(true);
@@ -1249,6 +1286,8 @@ public class H3Main
     {
 	// File menu.
 	m_captureScreenMenuItem.setEnabled(true);
+	m_captureScreenMenuItem2.setEnabled(true);
+	m_captureScreenMenuItem3.setEnabled(true);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
@@ -1326,13 +1365,32 @@ public class H3Main
 		}
 	    });
 
-	m_captureScreenMenuItem = new JMenuItem("Capture Screen");
-	m_captureScreenMenuItem.setMnemonic(KeyEvent.VK_T);
+	m_captureScreenMenuItem = new JMenuItem("Capture Screen (1:1)");
 	m_captureScreenMenuItem.setEnabled(false);
 	m_captureScreenMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
-		    handleCaptureScreenRequest();
+		    handleCaptureScreenRequest
+			(m_canvas.getWidth(), m_canvas.getHeight());
+		}
+	    });
+
+	m_captureScreenMenuItem2 = new JMenuItem("Capture Screen (1500x1500)");
+	m_captureScreenMenuItem2.setEnabled(false);
+	m_captureScreenMenuItem2.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleCaptureScreenRequest(1500, 1500);
+		}
+	    });
+
+
+	m_captureScreenMenuItem3 = new JMenuItem("Capture Screen (2048x2048)");
+	m_captureScreenMenuItem3.setEnabled(false);
+	m_captureScreenMenuItem3.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleCaptureScreenRequest(2048, 2048);
 		}
 	    });
 
@@ -1359,6 +1417,8 @@ public class H3Main
 	m_fileMenu.add(m_closeMenuItem);
 	m_fileMenu.addSeparator();
 	m_fileMenu.add(m_captureScreenMenuItem);
+	m_fileMenu.add(m_captureScreenMenuItem2);
+	m_fileMenu.add(m_captureScreenMenuItem3);
 	m_fileMenu.add(preferencesMenuItem);
 	m_fileMenu.addSeparator();
 	m_fileMenu.add(exitMenuItem);
@@ -1613,6 +1673,8 @@ public class H3Main
     private JMenuItem m_saveWithLayoutAsMenuItem;
     private JMenuItem m_closeMenuItem;
     private JMenuItem m_captureScreenMenuItem;
+    private JMenuItem m_captureScreenMenuItem2;
+    private JMenuItem m_captureScreenMenuItem3;
 
     private JMenu m_renderingMenu;
     private JMenuItem m_startMenuItem;

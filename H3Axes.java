@@ -59,6 +59,9 @@ public class H3Axes
 	Appearance axisAppearance = cloneAppearance(m_axisAppearance);
 	Appearance circleAppearance = cloneAppearance(m_circleAppearance);
 
+	axisAppearance.getLineAttributes().setLineWidth(2.0f);
+	circleAppearance.getLineAttributes().setLineWidth(2.0f);
+
 	retval.addChild(new Shape3D(m_axes, axisAppearance));
 	retval.addChild(new Shape3D(m_xyCircle, circleAppearance));
 	retval.addChild(new Shape3D(m_yzCircle, circleAppearance));
