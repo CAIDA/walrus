@@ -358,6 +358,17 @@ public class H3Main
 	    SimpleUniverse univ = new SimpleUniverse(canvas);
 	    univ.getViewingPlatform().setNominalViewingTransform();
 
+	    // Move eye back in +z direction a tad so that the whole
+	    // sphere fits within the window.
+	    {
+		TransformGroup transformGroup =
+		    univ.getViewingPlatform().getViewPlatformTransform();
+		Transform3D transform = new Transform3D();
+		transformGroup.getTransform(transform);
+		transform.setTranslation(new Vector3d(0.0, 0.0, 3.0));
+		transformGroup.setTransform(transform);
+	    }
+
 	    BranchGroup BG = renderList.makeBranchGraph();
 	    TransformGroup TG =
 		new TransformGroup(displayPosition.getRotation());
@@ -370,8 +381,13 @@ public class H3Main
 
 	    if (m_renderingConfiguration.depthCueing)
 	    {
-		TG.addChild((LinearFog)m_viewParameters
-			    .getDepthCueing().cloneNode(true));
+		LinearFog depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
+		depthCueing.setFrontDistance(2.5);
+		depthCueing.setBackDistance(4.5);
+		depthCueing.setInfluencingBounds
+		    (new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
+
+		TG.addChild(depthCueing);
 	    }
 
 	    BranchGroup scene = new BranchGroup();
