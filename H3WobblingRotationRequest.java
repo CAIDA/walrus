@@ -46,8 +46,9 @@ public class H3WobblingRotationRequest
 
     public H3WobblingRotationRequest()
     {
-	m_coordinates = createXYCircleCoordinates(RADIUS, NUM_SEGMENTS);
-	m_rotations = createRotations(m_coordinates);
+	Point4d[] coordinates =
+	    createXYCircleCoordinates(RADIUS, NUM_SEGMENTS);
+	m_rotations = createRotations(coordinates);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -161,6 +162,5 @@ public class H3WobblingRotationRequest
     private boolean m_isRotating;
 
     private int m_position = 0;
-    private Point4d[] m_coordinates;
     private Matrix4d[] m_rotations;
 }
