@@ -219,11 +219,11 @@ Color Scheme
                You must select the 'RGB' menu item first to enable this menu.
             ...
        Selection Attribute
-           --- [Not Yet Implemented]  Determines which set of nodes
-               will be colored.  All nodes having a true value for the
-               attribute selected in this menu are colored according to
-               the selected color scheme; all others are assigned the
-               default color.
+           --- Determines which nodes will be drawn and which will be hidden.
+               If an attribute in this menu is chosen (that is, an attribute
+               other than 'None'), then Walrus draws only the nodes that have
+               a true value for the attribute.  All others are not drawn
+               although their incoming and outgoing links are drawn.
             ...
 
    Tree Link Color
@@ -606,9 +606,10 @@ following table compares the syntax of default values and attribute values:
 
   ---==---==---==---==---==---==---==---==---==---==---==---==---==---==---
 
-Attributes have several uses in Walrus.  For example, the user can display
-attributes as node labels, or color nodes and links by RGB values stored
-in attributes.
+Attributes have several uses in Walrus.  The user can (1) display attributes
+as node labels, (2) color nodes and links by RGB values stored in attributes,
+and (3) choose which nodes or links to show or hide based on the values of
+boolean attributes.
 
 As far as Walrus is concerned, there is no syntactic difference between an
 attribute storing color data and one storing non-color data.  Specifically,
@@ -631,6 +632,22 @@ A tuple value should specify color with components that are in the range
 [0, 1].  So {0.0, 0.0, 0.0} would be black, and {1.0, 1.0, 1.0} would be
 white.  It is recommended that colors be specified with integer values,
 since they consume less memory when loaded than tuple values.
+
+Another use for attributes is to specify which nodes or links to draw or
+hide.  By including boolean attributes in graph files, the user can direct
+Walrus to draw only a subset of the nodes or links.  Again, only the type
+matters.  Walrus automatically includes all boolean attributes in the menus
+Color Scheme->Node Color->Selection Attribute, 
+Color Scheme->Tree Link Color->Selection Attribute, and
+Color Scheme->Nontree Link Color->Selection Attribute.
+When the user chooses attributes in these menus, only the nodes or links
+with a true value for the attributes will be drawn.  The incoming and
+outgoing links of hidden nodes are still drawn, and the nodes at the
+ends of hidden links are still drawn.
+
+It should be noted that although selection attributes determine which
+objects are drawn, they do not, however, cause the layout to be recomputed
+based on the visible objects.  Also, hidden nodes are not selectable.
 
 
 ---------------------------------------------------------------------------
