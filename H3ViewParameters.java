@@ -208,6 +208,76 @@ public class H3ViewParameters
 	}
     }
 
+    public void updateDepthCueing()
+    {
+	double scale = m_objectTransform.getScale();
+	System.out.println("scale=" + scale);
+
+	Transform3D scalingTransform = new Transform3D();
+	scalingTransform.set(scale);
+
+	m_canvas.getCenterEyeInImagePlate(m_eye);
+	m_canvas.getVworldToImagePlate(m_vworldToImage);
+
+	/*
+	Transform3D transform = new Transform3D(m_vworldToImage);
+	transform.mul(scalingTransform);
+
+	Point3d pCenter = new Point3d(0.0, 0.0, 0.0);
+	Point3d pFar = new Point3d(0.0, 0.0, -1.0);
+	Point3d pNear = new Point3d(0.0, 0.0, 1.0);
+
+	transform.transform(pCenter);
+	transform.transform(pFar);
+	transform.transform(pNear);
+
+	System.out.println("eye=" + m_eye);
+	System.out.println("pCenter_img=" + pCenter);
+	System.out.println("pFar_img=" + pFar);
+	System.out.println("pNear_img=" + pNear);
+
+	pCenter.sub(m_eye);
+	pFar.sub(m_eye);
+	pNear.sub(m_eye);
+
+	System.out.println("pCenter_eye=" + pCenter);
+	System.out.println("pFar_eye=" + pFar);
+	System.out.println("pNear_eye=" + pNear);
+	*/
+
+	m_canvas.getImagePlateToVworld(m_imageToVworld);
+	Point3d eye = new Point3d(m_eye);
+	m_imageToVworld.transform(eye);
+	System.out.println("eye_vworld=" + eye);
+
+	/*
+	double front;
+	if (scale > 1.0)
+	{
+	    front = DEPTH_CUEING_ENABLED_FRONT / (scale * scale);
+	}
+	else
+	{
+	    front = DEPTH_CUEING_ENABLED_FRONT / scale;
+	}
+	double back = front +
+	    (DEPTH_CUEING_ENABLED_BACK - DEPTH_CUEING_ENABLED_FRONT) / scale;
+	*/
+
+	double frontScale = (scale > 1.0 ? scale * scale : scale);
+	double front = (eye.z - scale * (eye.z - DEPTH_CUEING_ENABLED_FRONT))
+	    / frontScale;
+
+	double back = (eye.z - scale * (eye.z - DEPTH_CUEING_ENABLED_BACK))
+	    / scale;
+
+	System.out.println("front=" + front);
+	System.out.println("back=" + back);
+
+	m_depthCueing.setFrontDistance(front);
+	m_depthCueing.setBackDistance(back);
+    }
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
     public void putModelTransform(GraphicsContext3D gc)
@@ -215,6 +285,12 @@ public class H3ViewParameters
 	gc.setModelTransform(m_objectTransform);
     }
 
+    // NOTE: The target coordinate system of the returned transform isn't
+    //       the physical eye coordinate system.  It is actually just the
+    //       image plate coordinate system with the origin translated to
+    //       the center of the image plate (from the lower-left corner).
+    //       This slightly altered coordinate system is useful for picking,
+    //       but it may not be suitable for other uses.
     public Transform3D getObjectToEyeTransform()
     {
 	m_canvas.getCenterEyeInImagePlate(m_eye);
