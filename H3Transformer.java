@@ -49,6 +49,7 @@ public class H3Transformer
     public H3Transformer(H3Graph graph, H3RenderQueue queue,
 			 boolean transformNontreeLinks)
     {
+	m_startingNode = graph.getRootNode();
 	m_graph = graph;
 	m_renderQueue = queue;
 	m_transformQueue = new H3TransformQueue(graph.getNumNodes());
@@ -431,7 +432,7 @@ public class H3Transformer
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private int m_iteration = 0;
-    private int m_startingNode = 0;
+    private int m_startingNode; // Will be set to the root node in constructor.
     private double m_startingRadius = 0.0;
 
     private boolean m_transformNontreeLinks;

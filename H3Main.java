@@ -272,6 +272,8 @@ public class H3Main
 	System.out.println("numTreeLinks = " + graph.getNumTreeLinks());
 	System.out.println("numNontreeLinks = " + graph.getNumNontreeLinks());
 
+	handler.setRootNode(graph.getRootNode());
+
 	//dumpOutdegreeHistogram(graph);
         //System.exit(0);
 
@@ -405,11 +407,10 @@ public class H3Main
 
     private static int[] computeOutdegreeHistogram(H3Graph graph)
     {
-	int maxOutdegree = computeMaxOutdegree(graph, 0);
+	int maxOutdegree = computeMaxOutdegree(graph, graph.getRootNode());
 	int[] retval = new int[maxOutdegree + 1];
-	Arrays.fill(retval, 0);
 
-	computeOutdegree(graph, retval, 0);
+	computeOutdegree(graph, retval, graph.getRootNode());
 	return retval;
     }
 
@@ -453,7 +454,7 @@ public class H3Main
 
     private static void colorLeafNodes(H3Graph graph)
     {
-	colorLeafNodesAux(graph, 0);
+	colorLeafNodesAux(graph, graph.getRootNode());
     }
 
     private static void colorLeafNodesAux(H3Graph graph, int parent)
@@ -487,8 +488,9 @@ public class H3Main
 	    Color.yellow.getRGB()
 	};
 
-	int childIndex = graph.getNodeChildIndex(0);
-	int nontreeIndex = graph.getNodeNontreeIndex(0);
+	int rootNode = graph.getRootNode();
+	int childIndex = graph.getNodeChildIndex(rootNode);
+	int nontreeIndex = graph.getNodeNontreeIndex(rootNode);
 
 	for (int i = childIndex; i < nontreeIndex; i++)
 	{
@@ -523,7 +525,7 @@ public class H3Main
 
     private static void colorNontreeLinks(H3Graph graph, int color)
     {
-	colorNontreeLinksAux(graph, 0, color);
+	colorNontreeLinksAux(graph, graph.getRootNode(), color);
     }
 
     private static void colorNontreeLinksAux(H3Graph graph, int parent,
@@ -551,6 +553,11 @@ public class H3Main
 
     private static class EventHandler extends H3MouseInputAdapter
     {
+	public void setRootNode(int rootNode)
+	{
+	    m_rootNode = m_currentNode = m_previousNode = rootNode;
+	}
+
 	public void setRenderLoop(H3RenderLoop renderLoop)
 	{
 	    m_renderLoop = new H3CapturingRenderLoop(renderLoop);
@@ -668,8 +675,8 @@ public class H3Main
 		    }
 		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
 		    {
-			m_renderLoop.translate(0);
-			shiftCenterNodes(0);
+			m_renderLoop.translate(m_rootNode);
+			shiftCenterNodes(m_rootNode);
 		    }
 		    else 
 		    {
@@ -825,8 +832,9 @@ public class H3Main
 	private int m_lastX = 0;
 	private int m_lastY = 0;
 
-	private int m_currentNode = 0;
-	private int m_previousNode = 0;
+	private int m_rootNode;
+	private int m_currentNode;
+	private int m_previousNode;
 
 	private boolean m_isRotating = false;
 	private boolean m_isCapturing = false;
