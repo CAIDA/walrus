@@ -57,8 +57,7 @@ Since 0.1, released Dec 5, 2001:
       Picking is now more accurate and intuitive in behavior.
   * Added full support for color to the nonadaptive render loop.
       The nonadaptive render loop is active when Rendering->Adaptive
-      Rendering is unchecked.  This mode now has complete support for
-      color.
+      Rendering is unchecked.
   * Fixed a refresh bug.
       The display would sometimes fail to refresh when the user clicked
       within the Walrus window to bring it to the front.
