@@ -68,15 +68,10 @@ public abstract class H3PickerCommon
 	return pick(pickedCoordinates.x, pickedCoordinates.y, center);
     }
 
-    public void highlightNode(int x, int y, boolean enableFrontRendering)
+    public void highlightNode(int x, int y)
     {
 	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
-
-	if (enableFrontRendering)
-	{
-	    gc.setBufferOverride(true);
-	    gc.setFrontBufferRendering(true);
-	}
+	boolean frontBufferRenderingState = enableFrontBufferRendering(gc);
 
 	Point3d pickedCoordinates = getPixelLocationInImagePlate(x, y);
 	m_parameters.drawPickViewer(gc, pickedCoordinates.x,
@@ -110,21 +105,13 @@ public abstract class H3PickerCommon
 	}
 
 	gc.flush(true);
-
-	if (enableFrontRendering)
-	{
-	    gc.setFrontBufferRendering(false);
-	}
+	restoreFrontBufferRenderingState(gc, frontBufferRenderingState);
     }
 
-    public void highlightNode(int node, boolean enableFrontRendering)
+    public void highlightNode(int node)
     {
 	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
-	if (enableFrontRendering)
-	{
-	    gc.setBufferOverride(true);
-	    gc.setFrontBufferRendering(true);
-	}
+	boolean frontBufferRenderingState = enableFrontBufferRendering(gc);
 
 	Point3d p = new Point3d();
 	m_graph.getNodeCoordinates(node, p);
@@ -136,11 +123,7 @@ public abstract class H3PickerCommon
 	gc.setAppearance(m_parameters.getPickAppearance());
 	gc.draw(array);
 	gc.flush(true);
-
-	if (enableFrontRendering)
-	{
-	    gc.setFrontBufferRendering(false);
-	}
+	restoreFrontBufferRenderingState(gc, frontBufferRenderingState);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -160,6 +143,20 @@ public abstract class H3PickerCommon
 	Point3d retval = new Point3d();
 	m_canvas.getPixelLocationInImagePlate(x, y, retval);
 	return retval;
+    }
+
+    protected boolean enableFrontBufferRendering(GraphicsContext3D gc)
+    {
+	boolean retval = gc.getFrontBufferRendering();
+	gc.setBufferOverride(true);
+	gc.setFrontBufferRendering(true);
+	return retval;
+    }
+
+    protected void restoreFrontBufferRenderingState
+	(GraphicsContext3D gc, boolean state)
+    {
+	gc.setFrontBufferRendering(state);
     }
 
     ////////////////////////////////////////////////////////////////////////
