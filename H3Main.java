@@ -276,17 +276,19 @@ public class H3Main
 
     private void handleCloseFileRequest()
     {
+	if (m_renderLoop != null)
+	{
+	    stopRendering();
+	}
+
 	m_renderingConfiguration = null;
+	m_rootNode = -1;
+	m_currentNode = -1;
+	m_previousNode = -1;
 	m_backingGraph = null;
 	m_graph = null;
 	m_displayPosition = null;
 	m_savedDisplayPosition = null;
-
-	if (m_renderLoop != null)
-	{
-	    m_eventHandler.forceIdleState();
-	    stopRendering();
-	}
 
 	// UI.
 	m_frame.setTitle(WALRUS_TITLE);
@@ -712,12 +714,7 @@ public class H3Main
 
     private void handleStopRenderingRequest()
     {
-	m_eventHandler.forceIdleState();
-	m_currentNode = m_eventHandler.getCurrentNode();
-	m_previousNode = m_eventHandler.getPreviousNode();
-	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
-
 	reinstateSplashScreenContentPane();
 	setupIdleRenderingMenu();
     }
@@ -726,8 +723,6 @@ public class H3Main
 
     private void handleUpdateRenderingRequest()
     {
-	m_eventHandler.forceIdleState();
-	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
 
 	RenderingConfiguration renderingConfiguration =
@@ -984,6 +979,8 @@ public class H3Main
 	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
 	     renderingConfiguration.automaticRefresh);
 
+	System.out.println("EventHandler installed.");
+
 	if (m_displayPosition != null)
 	{
 	    m_renderLoop.setDisplayPosition(m_displayPosition);
@@ -1011,6 +1008,11 @@ public class H3Main
 
     private void stopRendering()
     {
+	m_eventHandler.forceIdleState();
+	m_currentNode = m_eventHandler.getCurrentNode();
+	m_previousNode = m_eventHandler.getPreviousNode();
+	m_displayPosition = m_renderLoop.getDisplayPosition();
+
 	m_eventHandler.dispose();
 	m_eventHandler = null;
 
