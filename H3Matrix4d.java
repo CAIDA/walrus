@@ -132,6 +132,14 @@ public final class H3Matrix4d
 	m30 = t30;  m31 = t31;  m32 = t32;  m33 = t33;
     }
 
+    public void mul(MPReal s)
+    {
+	m00 = m00.multiply(s);  m01 = m01.multiply(s);  m02 = m02.multiply(s);  m03 = m03.multiply(s);
+	m10 = m10.multiply(s);  m11 = m11.multiply(s);  m12 = m12.multiply(s);  m13 = m13.multiply(s);
+	m20 = m20.multiply(s);  m21 = m21.multiply(s);  m22 = m22.multiply(s);  m23 = m23.multiply(s);
+	m30 = m30.multiply(s);  m31 = m31.multiply(s);  m32 = m32.multiply(s);  m33 = m33.multiply(s);
+    }
+
     public void rotX(double angle)
     {
 	MPReal zero = new MPReal(0);
