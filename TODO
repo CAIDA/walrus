@@ -5,6 +5,9 @@
 BUGS & ISSUES
 =========================================================================
 
+* Rotations stop working when you turn off the display of coordinate
+  axes under the nonadaptive render loop.
+
 * Improve memory usage in H3RenderQueue and H3Transformer.  The use of longs
   was an expedient that is now past its usefulness.
 
