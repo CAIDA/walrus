@@ -755,6 +755,8 @@ public class H3Main
     private void handleStopRenderingRequest()
     {
 	m_eventHandler.forceIdleState();
+	m_currentNode = m_eventHandler.getCurrentNode();
+	m_previousNode = m_eventHandler.getPreviousNode();
 	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
 
@@ -802,6 +804,9 @@ public class H3Main
 
 		m_graph = m_graphLoader.load
 		    (m_backingGraph, renderingConfiguration.spanningTree);
+
+		m_rootNode = m_graph.getRootNode();
+		m_currentNode = m_previousNode = m_rootNode;
 
 		if (DEBUG_CHECK_ID_MAPPINGS)
 		{
@@ -1034,10 +1039,9 @@ public class H3Main
 	    System.out.println("Started H3NonadaptiveRenderLoop.");
 	}
 
-	int rootNode = m_graph.getRootNode();
 	m_eventHandler = new EventHandler
-	    (m_canvas, m_renderLoop, manager, rootNode,
-	     m_graph, m_backingGraph,
+	    (m_canvas, m_renderLoop, manager, m_rootNode, m_currentNode,
+	     m_previousNode, m_graph, m_backingGraph,
 	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
 	     renderingConfiguration.automaticRefresh);
 
@@ -1592,6 +1596,9 @@ public class H3Main
     // The following, m_renderingConfiguration, will be non-null if a graph
     // has been loaded and rendered (at least once).
     private RenderingConfiguration m_renderingConfiguration;
+    private int m_rootNode;
+    private int m_currentNode;
+    private int m_previousNode;
     private Graph m_backingGraph;  // Will be non-null if a graph is open.
     private H3Graph m_graph;  // ...non-null when a graph is being rendered.
     private H3DisplayPosition m_displayPosition; // Saved while updating disp..
@@ -1674,8 +1681,8 @@ public class H3Main
     {
 	public EventHandler
 	    (H3Canvas3D canvas, H3RenderLoop renderLoop,
-	     CapturingManager manager, int rootNode,
-	     H3Graph graph, Graph backingGraph,
+	     CapturingManager manager, int rootNode, int currentNode,
+	     int previousNode, H3Graph graph, Graph backingGraph,
 	     int[] nodeLabelAttributes, JTextField statusBar,
 	     boolean automaticRefresh)
 	{
@@ -1702,7 +1709,9 @@ public class H3Main
 
 	    m_renderLoop = new H3CapturingRenderLoop(renderLoop);
 	    m_capturingManager = manager;
-	    m_rootNode = m_currentNode = m_previousNode = rootNode;
+	    m_rootNode = rootNode;
+	    m_currentNode = currentNode;
+	    m_previousNode = previousNode;
 
 	    m_graph = graph;
 	    m_backingGraph = backingGraph;
@@ -1724,6 +1733,16 @@ public class H3Main
 	    {
 		m_canvas.removeComponentListener(m_resizeListener);
 	    }
+	}
+
+	public int getCurrentNode()
+	{
+	    return m_currentNode;
+	}
+
+	public int getPreviousNode()
+	{
+	    return m_previousNode;
 	}
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
