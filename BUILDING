@@ -2,8 +2,29 @@
                                Feb 20, 2003
 
 
-All the classes of Walrus are in the top-level anonymous package, so you
+Walrus classes are declared in the top-level anonymous package, so you
 can unpack the source distribution anywhere.
+
+To build Walrus, the following items must be added to your CLASSPATH:
+libsea.jar, antlrall-mod.jar, mp.jar, and the directory containing the
+Walrus source files.  For example, if the Walrus source distribution
+has been unpacked into the directory /home/me, then the items to add
+to your CLASSPATH are
+
+   /home/me/walrus-0.6.2-src/libsea.jar
+   /home/me/walrus-0.6.2-src/antlrall-mod.jar
+   /home/me/walrus-0.6.2-src/mp.jar
+   .    [a period, representing the 'current directory']
+
+Under UNIX, you would do something like the following (the exact
+syntax is dependent on your shell):
+
+  CLASSPATH=$CLASSPATH:/home/me/walrus-0.6.2-src/libsea.jar:/home/me/walrus-0.6.2-src/antlrall-mod.jar:/home/me/walrus-0.6.2-src/mp.jar:.
+  export CLASSPATH
+
+The '.' at the end of the above CLASSPATH tells Java to also search for
+source/class files in the current directory.  This is needed so that
+the Java compiler/runtime can find all the source/class files of Walrus.
 
 To build and run Walrus, you'll need to add to your CLASSPATH the files
 libsea.jar, antlrall-mod.jar, and mp.jar.  Also, you'll need to modify,
