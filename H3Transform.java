@@ -65,7 +65,7 @@ public class H3Transform
 
 	Matrix4d retval = buildTranslation(ORIGIN4, pivot);
        
-	Matrix4d t1 = new Matrix4d(buildTranslation(pivot, ORIGIN4));
+	Matrix4d t1 = buildTranslation(pivot, ORIGIN4);
 	t1.transform(pa);
 	t1.transform(pb);
 
@@ -74,7 +74,7 @@ public class H3Transform
 
 	retval.mul(buildTranslation(ORIGIN4, pa));
 
-	Matrix4d t2 = new Matrix4d(buildTranslation(pa, ORIGIN4));
+	Matrix4d t2 = buildTranslation(pa, ORIGIN4);
 	t2.transform(pa);
 	t2.transform(pb);
 
