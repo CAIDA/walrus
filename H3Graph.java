@@ -157,23 +157,6 @@ public class H3Graph
 	return m_nodes.color[node];
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    public boolean checkNodeVisited(int node, int iteration)
-    {
-	return m_nodes.visited[node] == iteration;
-    }
-
-    public boolean markNodeVisited(int node, int iteration)
-    {
-	boolean retval = (m_nodes.visited[node] == iteration);
-	if (!retval)
-	{
-	    m_nodes.visited[node] = iteration;
-	}
-	return retval;
-    }
-
     //======================================================================
 
     public int getLinkID(int link)
@@ -429,7 +412,6 @@ public class H3Graph
 	    nontreeLinks = new int[numNodes];
 	    linksEnd = new int[numNodes];
 
-	    visited = new int[numNodes];
 	    color = new int[numNodes];
 	}
 
@@ -482,9 +464,6 @@ public class H3Graph
 	public int[] treeLinks;
 	public int[] nontreeLinks;
 	public int[] linksEnd;
-
-	// Whether a node has been visited in "traversal iteration" t > 0.
-	public int[] visited;
 
 	////////////////////////////////////////////////////////////////////
 	// INESSENTIAL NODE ATTRIBUTES

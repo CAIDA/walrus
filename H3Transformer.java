@@ -49,6 +49,7 @@ public class H3Transformer
     public H3Transformer(H3Graph graph, H3RenderQueue queue,
 			 boolean transformNontreeLinks)
     {
+	m_visited = new int[graph.getNumNodes()];
 	m_startingNode = graph.getRootNode();
 	m_graph = graph;
 	m_renderQueue = queue;
@@ -78,7 +79,7 @@ public class H3Transformer
 		m_transformTemporary.mul(transform, m_transform);
 		m_transform.set(m_transformTemporary);
 
-		m_graph.markNodeVisited(m_startingNode, m_iteration);
+		markNodeVisited(m_startingNode, m_iteration);
 		m_startingRadius = transformAndEnqueueNode(m_startingNode);
 		m_state = STATE_NODE;
 	    }
@@ -251,7 +252,7 @@ public class H3Transformer
 	    m_transformQueue.clear();
 	    m_transform.setIdentity();
 
-	    m_graph.markNodeVisited(m_startingNode, m_iteration);
+	    markNodeVisited(m_startingNode, m_iteration);
 	    m_startingRadius = transformAndEnqueueNode(m_startingNode);
 	    m_state = STATE_NODE;
 	}
@@ -273,7 +274,7 @@ public class H3Transformer
 	m_startingNode = position.startingNode;
 	m_transform.set(position.transform);
 
-	m_graph.markNodeVisited(m_startingNode, m_iteration);
+	markNodeVisited(m_startingNode, m_iteration);
 	m_startingRadius = transformAndEnqueueNode(m_startingNode);
 	m_state = STATE_NODE;
     }
@@ -368,7 +369,7 @@ public class H3Transformer
 
     private void transformAndEnqueueNodeIfNotVisited(int node)
     {
-	if (!m_graph.markNodeVisited(node, m_iteration))
+	if (!markNodeVisited(node, m_iteration))
 	{
 	    transformAndEnqueueNode(node);
 	}
@@ -418,6 +419,21 @@ public class H3Transformer
 	    m_startingNode = node;
 	    m_startingRadius = radius;
 	}
+    }
+
+    private boolean checkNodeVisited(int node, int iteration)
+    {
+	return m_visited[node] == iteration;
+    }
+
+    private boolean markNodeVisited(int node, int iteration)
+    {
+	boolean retval = (m_visited[node] == iteration);
+	if (!retval)
+	{
+	    m_visited[node] = iteration;
+	}
+	return retval;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -481,6 +497,9 @@ public class H3Transformer
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private int m_iteration = 0;
+    // Whether a node has been visited in "traversal iteration" t > 0.
+    private int[] m_visited; 
+
     private int m_startingNode; // Will be set to the root node in constructor.
     private double m_startingRadius = 0.0;
 
