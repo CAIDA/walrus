@@ -79,7 +79,7 @@ CONTACT INFORMATION
 To report bugs, email walrus-bugs@caida.org.  For general inquiry, email
 walrus-info@caida.org.
 
-There is a mailing list available to discuss Walrus use and development.
+A mailing list is available to discuss Walrus use and development.
 To subscribe, email walrus-dev-request@caida.org with
 
    subscribe your-email-address
@@ -102,7 +102,7 @@ Do the following to try out Walrus:
 
    Or execute the supplied script: ./walrus
 
-2. Select the menu item File->Open (that is, Open under the File menu),
+2. Select the menu item File->Open (that is, 'Open' under the 'File' menu),
    and load the file 'champagne.graph' in the 'samples' subdirectory.
    The window will be blank while the file loads.  This graph has
    9175 nodes, 9174 tree links, and 6345 nontree links.  This should
@@ -114,8 +114,8 @@ Do the following to try out Walrus:
 4. Click and drag with the left mouse button to rotate the display.
    It is normal for parts of the graph to disappear during rotations.
    Walrus uses an adaptive rendering algorithm that tries to maintain
-   a given framerate (currently hardcoded in the source) by rendering
-   only as much as it can within each time slot.
+   a given framerate (currently hardcoded) by rendering only as much as
+   it can within each time slot.
 
 5. Click on a node (yellow square) with the right mouse button to bring
    the node to the center.  Parts of the graph may disappear during
@@ -133,24 +133,23 @@ At this point, you should have a display with nodes in yellow, tree links
 in green, and nontree links in a cobweb-like transparent grey.  This is
 a good color scheme for exploring graphs with nontree links.
 
-Two other features you may wish to try are wobbling and continous
-rotations.  To activate wobbling, hold down the control key and briefly
-drag with the left mouse button (the location and direction of the drag
-don't matter).  The display will wobble after you end the drag and release
-the control key.  To stop the wobbling, click anywhere in the window with
-the left mouse button.  To activate continous rotations, hold down the
-shift key and briefly drag with the left mouse button (the location of the
-drag doesn't matter).  After the drag ends, the display will continously
-rotate in the direction of the drag and at a velocity roughly proportional
-to the drag velocity.  To stop the rotation, click anywhere in the window
+Two other features you may wish to try are wobbling and continuous
+rotations.  To activate wobbling, select Display->Wobble.  To stop the
+wobbling, click anywhere in the window with the left mouse button.  To
+activate continuous rotations, hold down the control key and click the left
+mouse button anywhere in the window.  Now simply move the mouse (without
+pressing or holding down any buttons and without holding down the control
+key) to change the direction and speed of the rotations.  The rotation
+vector is determined by the position of the mouse pointer relative to the
+center of the window.  To stop the rotations, click anywhere in the window
 with the left mouse button.
 
 As mentioned earlier, Walrus uses an adaptive rendering algorithm that
 tries to maintain a given framerate.  You may try out the nonadaptive
 rendering algorithm for comparison by de-selecting Rendering->Adaptive
 Rendering and then selecting Rendering->Update (the color scheme will
-change, and currently can't be overridden in this mode).  The nonadaptive
-algorithm can be smoother for small graphs.
+change, and currently can't be overridden).  The nonadaptive algorithm can
+be smoother for smaller graphs.
 
 See 'guide.txt' in the 'docs' subdirectory for information on additional
 commands and menus not covered here.
