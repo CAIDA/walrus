@@ -285,6 +285,7 @@ public class H3Main
 	m_graph = null;
 	m_displayPosition = null;
 	m_savedDisplayPosition = null;
+	m_recordedMovements = null;
 
 	if (m_renderLoop != null)
 	{
@@ -1242,6 +1243,7 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(true);
 	m_savePositionMenuItem.setEnabled(true);
 	m_restorePositionMenuItem.setEnabled(m_savedDisplayPosition != null);
+	m_replayRecordingMenuItem.setEnabled(m_recordedMovements != null);
 	m_startRecordingMenuItem.setEnabled(true);
 	m_recordMovementsMenu.setEnabled(true);
     }
@@ -1496,14 +1498,45 @@ public class H3Main
 	m_startRecordingMenuItem = new JMenuItem("Start");
 	m_startRecordingMenuItem.setMnemonic(KeyEvent.VK_S);
 	m_startRecordingMenuItem.setEnabled(false);
+	m_startRecordingMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_startRecordingMenuItem.setEnabled(false);
+		    m_stopRecordingMenuItem.setEnabled(true);
+		    m_abortRecordingMenuItem.setEnabled(true);
+		    m_eventHandler.forceIdleState();
+		    m_eventHandler.startRecording();
+		}
+	    });
 
 	m_stopRecordingMenuItem = new JMenuItem("Stop");
 	m_stopRecordingMenuItem.setMnemonic(KeyEvent.VK_P);
 	m_stopRecordingMenuItem.setEnabled(false);
+	m_stopRecordingMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_startRecordingMenuItem.setEnabled(true);
+		    m_stopRecordingMenuItem.setEnabled(false);
+		    m_abortRecordingMenuItem.setEnabled(false);
+		    m_replayRecordingMenuItem.setEnabled(true);
+		    m_eventHandler.forceIdleState();
+		    m_recordedMovements = m_eventHandler.stopRecording();
+		}
+	    });
 
 	m_abortRecordingMenuItem = new JMenuItem("Abort");
 	m_abortRecordingMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_abortRecordingMenuItem.setEnabled(false);
+	m_abortRecordingMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_startRecordingMenuItem.setEnabled(true);
+		    m_stopRecordingMenuItem.setEnabled(false);
+		    m_abortRecordingMenuItem.setEnabled(false);
+		    m_eventHandler.forceIdleState();
+		    m_eventHandler.abortRecording();
+		}
+	    });
 
 	m_recordMovementsMenu = new JMenu("Record Movements");
 	m_recordMovementsMenu.setMnemonic(KeyEvent.VK_M);
@@ -1603,6 +1636,7 @@ public class H3Main
     private H3Graph m_graph;  // ...non-null when a graph is being rendered.
     private H3DisplayPosition m_displayPosition; // Saved while updating disp..
     private H3DisplayPosition m_savedDisplayPosition; // Saved by user...
+    private H3RecordedMovements m_recordedMovements; // Saved by user...
     private H3Canvas3D m_canvas; // Always non-null; one per program run.
     private H3ViewParameters m_viewParameters; // Always non-null.
     private H3RenderLoop m_renderLoop; // ...non-null when ... being rendered.
@@ -1859,6 +1893,21 @@ public class H3Main
 		m_renderLoop.setDisplayPosition(position);
 		shiftCenterNodes(position.getCenterNode());
 	    }
+	}
+
+	public void startRecording()
+	{
+
+	}
+
+	public H3RecordedMovements stopRecording()
+	{
+
+	}
+
+	public void abortRecording()
+	{
+
 	}
 
 	// MouseListener - - - - - - - - - - - - - - - - - - - - - - - - - -
