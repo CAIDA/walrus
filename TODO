@@ -5,9 +5,6 @@
 BUGS & ISSUES
 =========================================================================
 
-* Occasionally, the display fails to refresh after an overlying window
-  is moved out of the way.
-
 * Improve memory usage in H3RenderQueue and H3Transformer.  The use of longs
   was an expedient that is now past its usefulness.
 
