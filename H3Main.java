@@ -1684,7 +1684,8 @@ public class H3Main
 
 	public void refreshDisplay()
 	{
-	    if (m_state == STATE_IDLE)
+	    if (m_state == STATE_IDLE
+		|| m_state == STATE_ROTATING_INTERACTIVE_START)
 	    {
 		m_renderLoop.refreshDisplay();		
 	    }
@@ -1790,10 +1791,41 @@ public class H3Main
 		    }
 		    else
 		    {
-			m_state = STATE_ROTATING_INTERACTIVE;
-			m_interactiveRequest.start();
-			m_interactiveRequest.rotate(0, 0);
-			m_renderLoop.rotateDisplay(m_interactiveRequest);
+			// We get here under two very different situations.
+			// The user might have pressed the left mouse button
+			// to start interactive rotations, or the user might
+			// be simply clicking (pressing and immediately
+			// releasing the button without an intervening drag)
+			// in the window.  The user might do the latter, for
+			// example, to bring the Walrus window to the front.
+			//
+			// The difference matters to us because we should
+			// attempt to refresh the display only if we're idle.
+			// By refreshing the display, I mean calling
+			// m_renderLoop.refreshDisplay().  If we call this
+			// method at any other time, such as when some type
+			// of rotation is active, we could lock up the
+			// display [because the AWT thread calling
+			// refreshDisplay() would block waiting for the
+			// renderer thread to stop rotating, while
+			// the renderer thread would never stop rotating
+			// until the AWT thread told it to stop, which leads
+			// to a deadlock].
+			//
+			// For these reasons, we switch to the intermediate
+			// state STATE_ROTATING_INTERACTIVE_START rather
+			// than directly to STATE_ROTATING_INTERACTIVE so
+			// that we can hold off on taking any action until
+			// we get the subsequent AWT event, which will then
+			// unambiguously determine our course.  Because we
+			// have a named state (namely
+			// STATE_ROTATING_INTERACTIVE_START) for this
+			// ambiguous situation, which we know is safe with
+			// respect to refreshDisplay(), this makes it
+			// possible for us to easily determine at any time
+			// whether it is safe to call refreshDisplay()--it
+			// is safe if the state is either this or STATE_IDLE.
+			m_state = STATE_ROTATING_INTERACTIVE_START;
 		    }
 		}
 		else if (checkModifiers(modifiers, InputEvent.BUTTON2_MASK))
@@ -1872,6 +1904,8 @@ public class H3Main
 		//FALLTHROUGH
 	    case STATE_ROTATING_INTERACTIVE:
 		//FALLTHROUGH
+	    case STATE_ROTATING_INTERACTIVE_START:
+		//FALLTHROUGH
 	    case STATE_ROTATING_CONTINUOUS_START:
 		//FALLTHROUGH
 		break;
@@ -1903,6 +1937,14 @@ public class H3Main
 	    case STATE_ROTATING_INTERACTIVE:
 		m_state = STATE_IDLE;
 		m_interactiveRequest.end();
+		break;
+
+	    case STATE_ROTATING_INTERACTIVE_START:
+		// The user simply clicked the left mouse button in the
+		// window without holding down any keys and without
+		// dragging.  It could have been the start of an interactive
+		// rotation, but it wasn't, so we simply return to idle.
+		m_state = STATE_IDLE;
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
@@ -1953,6 +1995,17 @@ public class H3Main
 	    case STATE_ROTATING_INTERACTIVE:
 		computeDragAngles(x, y);
 		m_interactiveRequest.rotate(m_dxRadians, m_dyRadians);
+		break;
+
+	    case STATE_ROTATING_INTERACTIVE_START:
+		m_state = STATE_ROTATING_INTERACTIVE;
+
+		// m_lastX and m_lastY were set in the STATE_IDLE case
+		// of mousePressed().
+		computeDragAngles(x, y);
+		m_interactiveRequest.start();
+		m_interactiveRequest.rotate(m_dxRadians, m_dyRadians);
+		m_renderLoop.rotateDisplay(m_interactiveRequest);
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
@@ -2008,6 +2061,10 @@ public class H3Main
 		//IGNORE
 		break;
 
+	    case STATE_ROTATING_INTERACTIVE_START:
+		//IGNORE
+		break;
+
 	    case STATE_ROTATING_CONTINUOUS:
 		//IGNORE
 		break;
@@ -2056,7 +2113,8 @@ public class H3Main
 		char c = e.getKeyChar();
 		if (c == CTRL_R)
 		{
-		    if (m_state == STATE_IDLE)
+		    if (m_state == STATE_IDLE
+			|| m_state == STATE_ROTATING_INTERACTIVE_START)
 		    {
 			m_renderLoop.refreshDisplay();
 		    }
@@ -2314,10 +2372,11 @@ public class H3Main
 	private static final int STATE_IDLE = 0;
 	private static final int STATE_DISPLAYING_ATTRIBUTES = 1;
 	private static final int STATE_ROTATING_INTERACTIVE = 2;
-	private static final int STATE_ROTATING_CONTINUOUS = 3;
-	private static final int STATE_ROTATING_CONTINUOUS_START = 4;
-	private static final int STATE_ROTATING_TRACKING = 5;
-	private static final int STATE_WOBBLING = 6;
+	private static final int STATE_ROTATING_INTERACTIVE_START = 3;
+	private static final int STATE_ROTATING_CONTINUOUS = 4;
+	private static final int STATE_ROTATING_CONTINUOUS_START = 5;
+	private static final int STATE_ROTATING_TRACKING = 6;
+	private static final int STATE_WOBBLING = 7;
 
 	private static final char CTRL_R = 'r' - 'a' + 1;
 
@@ -2368,7 +2427,8 @@ public class H3Main
 	{
 	    public void update(Observable o, Object arg)
 	    {
-		if (m_state == STATE_IDLE)
+		if (m_state == STATE_IDLE
+		    || m_state == STATE_ROTATING_INTERACTIVE_START)
 		{
 		    m_renderLoop.refreshDisplay();
 		}
@@ -2382,7 +2442,8 @@ public class H3Main
 	{
 	    public void componentResized(ComponentEvent e)
 	    {
-		if (m_state == STATE_IDLE)
+		if (m_state == STATE_IDLE
+		    || m_state == STATE_ROTATING_INTERACTIVE_START)
 		{
 		    m_renderLoop.refreshDisplay();
 		}
