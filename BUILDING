@@ -3,7 +3,7 @@
 
 
 All the classes of Walrus are in the top-level anonymous package, so you
-can unpack the source distribution wherever you wish.
+can unpack the source distribution anywhere.
 
 To build and run Walrus, you'll need to add to your CLASSPATH the files
 libsea.jar, antlrall-mod.jar, and mp.jar.  Also, you'll need to modify,
@@ -16,10 +16,11 @@ for Make.  You can get Jikes from
   http://oss.software.ibm.com/developerworks/opensource/jikes/
 
 You do not need to install Jikes if you simply want to build Walrus from
-the source.  The source distribution contains a copy of the dependency
+the source, since the source distribution contains a copy of the dependency
 files that can be used so long as no source file is modified.
 
-When everything is set, you can simply do 'make' to build Walrus.
+When everything is set, you can simply do 'make' in the 'Walrus' directory
+to build Walrus.
 
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
