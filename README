@@ -1,0 +1,62 @@
+From youngh@caida.org Wed May 23 16:15:34 2001
+Date: Tue, 14 Nov 2000 13:16:26 -0800 (PST)
+From: Young Hyun <youngh@caida.org>
+To: yz47@cornell.edu
+Cc: tmm@pa.dec.com, dmoore@caida.org, kc@caida.org
+Subject: Walrus source
+
+Justin, you may use the Walrus source for your work.  It's available
+at http://www.caida.org/~youngh/walrus/h3-src-14nov2000-1205.tar.gz.
+You'll also want the sample input files at
+http://www.caida.org/~youngh/walrus/h3-input.tar.gz.
+
+You'll need Java3D v1.2 or later and JDK 1.2 or later.
+
+Please take a look at the copyright notice in the source files.  Also,
+could you write up a few paragraphs on what you intend to use Walrus
+for?  We would like to know so that we can include it in our regular
+reports to DARPA, NSF, etc.
+
+The source is your best documentation at present.  You'll want to get
+oriented with the classes by drawing a diagram that shows the various
+relationships, like subclassing.  The architecture will become clear once
+you do this.  There are two rendering loops, an adaptive one and a
+nonadaptive one.  These show up as two parallel structures in the
+architecture.
+
+The entry point for Walrus is H3Main.  I'm sorry to say that H3Main.java
+is a bit of a mess, since it is only meant to be scaffolding till a
+proper GUI is put in place.  The rest of the code is much cleaner and
+better organized than this.
+
+You can try out Walrus by using one of the build scripts.  If you don't
+give Walrus a graph file, it will generate a graph on its own (you can
+specify the kind of graph to generate by tweaking the parameters in
+H3Main.java).  All interaction is with a (three-button) mouse.  Here is a
+list of what you can do:
+
+  button  modifier   meaning
+  ------  --------   ----------------------------------------------------
+    L                drag to rotate display about the origin
+    M                click or drag to get visual feedback on picking
+    R                click on a node to bring it to the origin
+    
+    L      shift     drag to continuously rotate the display
+                      (only the initial drag amount and direction matters)
+    L     control    drag to wobble the display
+                      (only the initial drag matters)
+
+    M      shift     click to bring back previous node at origin
+    M      control   click to bring root node to origin
+
+    R      shift     click to begin recording movements for playback
+    R      shift     click to stop recording and replay movements
+
+You'll find the layout algorithm in H3GraphLayout.java.  There are
+currently several experimental tweaks to the algorithm in that class.  You
+can choose which to use by adjusting some variables near the beginning.
+
+If you have any questions, please feel free to ask.
+
+ --Young
+
