@@ -190,10 +190,12 @@ public class H3Main
 	    }
 	}
 
-	retval.isAdaptive = m_adaptiveMenuItem.isSelected();
-	retval.useMultipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
+	retval.adaptiveRendering = m_adaptiveMenuItem.isSelected();
+	retval.multipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
+	retval.depthCueing = m_depthCueingMenuItem.isSelected();
+	retval.axes = m_axesMenuItem.isSelected();
 	retval.supportScreenCapture = m_screenCaptureMenuItem.isSelected();
-	retval.refreshAlways = m_refreshAlwaysMenuItem.isSelected();
+	retval.automaticRefresh = m_automaticRefreshMenuItem.isSelected();
 	retval.nodeColor =
 	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
 	retval.treeLinkColor =
@@ -455,7 +457,7 @@ public class H3Main
 	    break;
 
 	case ColorConfiguration.RGB:
-	    colorLinksRGB(configuration.colorAttribute);
+	    colorLinksRGB(configuration.colorAttribute, true);
 	    break;
 
 	default: throw new RuntimeException();
@@ -517,6 +519,7 @@ public class H3Main
 	    break;
 
 	case ColorConfiguration.RGB:
+	    colorLinksRGB(configuration.colorAttribute, false);
 	    break;
 
 	default: throw new RuntimeException();
@@ -540,41 +543,95 @@ public class H3Main
 	}
     }
 
-    // NOTE: Attribute must be scalar.
+    // Performance Note:
+    //
+    //   There is a possibility for poor performance in the following methods
+    //   that color nodes and links.  It turns out that exceptions are not
+    //   lightweight in Java, and so an extensive use of exceptions can
+    //   dramatically slow down a program.  The weakness of the following
+    //   methods is exactly in their potentially extensive use of exceptions.
+    //   Exceptions will be thrown whenever a node or link does not have a
+    //   value for a coloring attribute.  Ordinarily, the creator of a graph
+    //   will supply attribute values for all objects, but they are not
+    //   required to do so.  A realistic scenario where they may not supply
+    //   all values is when these values result from measurements, and there
+    //   are gaps in the measurement data.  In such situations, it would be
+    //   best if the graph creator were to add a default value to the coloring
+    //   attribute, so that all objects effectively have some value.  Some
+    //   out-of-range value indicating "unknown" would be the best approach.
+    //
+    //   Owing to the fact that IDs of nodes and links in H3Graph need not
+    //   necessarily match the IDs used in the backing libsea Graph, we
+    //   cannot simply eliminate this undesirable trait by accessing the
+    //   attributes in a different way.  Specifically, we could theoretically
+    //   avoid exceptions altogether by using AttributesByAttributeIterator,
+    //   which iterates over only the objects that have values.  What makes
+    //   this approach impracticable is its reliance on some way of mapping
+    //   IDs of objects in the backing libsea Graph to IDs used in H3Graph.
+    //   It is not impossible to set up such mappings, either in H3Graph or
+    //   in libsea.  For example, we could do so in the latter by adding an
+    //   internal attribute to all the objects which gives the ID.  Then
+    //   we could simply use the mechanisms already in place for accessing
+    //   attributes to carry out the mapping.  To set up a mapping in H3Graph,
+    //   on the other hand, would require something like a hash table or
+    //   binary search on a sorted array.  There are drawbacks, however, to
+    //   either approach.  I've therefore avoided relying on such mappings,
+    //   and used instead an approach which will work well in typical cases.
+    //   If the graph creator is careful, this approach will in fact work
+    //   well in all cases.
+
+    // NOTE: Attribute must be of type int, float3, or double3.
     private void colorNodesRGB(String colorAttribute)
     {
-	m_graph.setNodeDefaultColor(Color.white.getRGB());
+	int attribute =
+	    m_backingGraph.getAttributeDefinition(colorAttribute).getID();
 
-	AttributesByAttributeIterator iterator =
-	    m_backingGraph.getAttributeDefinition(colorAttribute)
-	    .getNodeAttributes();
-	while (!iterator.atEnd())
+	int defaultColor = Color.white.getRGB();
+	int numNodes = m_graph.getNumNodes();
+	for (int i = 0; i < numNodes; i++)
 	{
-	    int node = iterator.getObjectID();
-	    ValueIterator valueIterator = iterator.getAttributeValues();
-	    int color = extractRGBColor(valueIterator);
-	    m_graph.setNodeColor(node, color);
-
-	    iterator.advance();
+	    int color = defaultColor;
+	    try
+	    {
+		int nodeID = m_graph.getNodeID(i);
+		ValueIterator iterator =
+		    m_backingGraph.getNodeAttribute(nodeID, attribute);
+		color = extractRGBColor(iterator);
+	    }
+	    catch (AttributeUnavailableException e)
+	    {
+		// Nothing to do--simply use the default color.
+	    }
+	    m_graph.setNodeColor(i, color);
 	}
     }
 
-    // NOTE: Attribute must be scalar.
-    private void colorLinksRGB(String colorAttribute)
+    // NOTE: Attribute must be of type int, float3, or double3.
+    private void colorLinksRGB(String colorAttribute, boolean treeLink)
     {
-	m_graph.setLinkDefaultColor(Color.white.getRGB());
+	int attribute =
+	    m_backingGraph.getAttributeDefinition(colorAttribute).getID();
 
-	AttributesByAttributeIterator iterator =
-	    m_backingGraph.getAttributeDefinition(colorAttribute)
-	    .getLinkAttributes();
-	while (!iterator.atEnd())
+	int defaultColor = Color.white.getRGB();
+	int numLinks = m_graph.getTotalNumLinks();
+	for (int i = 0; i < numLinks; i++)
 	{
-	    int link = iterator.getObjectID();
-	    ValueIterator valueIterator = iterator.getAttributeValues();
-	    int color = extractRGBColor(valueIterator);
-	    m_graph.setLinkColor(link, color);
-
-	    iterator.advance();
+	    if (m_graph.checkTreeLink(i) == treeLink)
+	    {
+		int color = defaultColor;
+		try
+		{
+		    int linkID = m_graph.getLinkID(i);
+		    ValueIterator iterator =
+			m_backingGraph.getLinkAttribute(linkID, attribute);
+		    color = extractRGBColor(iterator);
+		}
+		catch (AttributeUnavailableException e)
+		{
+		    // Nothing to do--simply use the default color.
+		}
+		m_graph.setLinkColor(i, color);
+	    }
 	}
     }
 
@@ -738,6 +795,11 @@ public class H3Main
 		m_graph = m_graphLoader.load
 		    (m_backingGraph, renderingConfiguration.spanningTree);
 
+		if (DEBUG_CHECK_ID_MAPPINGS)
+		{
+		    checkGraphIDMappings(m_graph, m_backingGraph);
+		}
+
 		H3GraphLayout layout = new H3GraphLayout();
 		layout.layoutHyperbolic(m_graph);
 
@@ -781,6 +843,53 @@ public class H3Main
 	return retval;
     }
 
+    // Debugging routine.
+    // XXX: Only works for ImmutableGraph at the moment.
+    private void checkGraphIDMappings(H3Graph graph, Graph backingGraph)
+    {
+	// For immutable graphs, the node ID mapping will always be identity.
+	int numNodes = graph.getNumNodes();
+	for (int i = 0; i < numNodes; i++)
+	{
+	    if (graph.getNodeID(i) != i)
+	    {
+		String msg = "node id[" + graph.getNodeID(i) + "] != " + i;
+		throw new RuntimeException(msg);
+	    }
+	}
+
+	// The following check should work for any kind of graph, immutable
+	// or otherwise.
+	int numLinks = graph.getTotalNumLinks();
+	for (int i = 0; i < numLinks; i++)
+	{
+	    int source = graph.getLinkSource(i);
+	    int destination = graph.getLinkDestination(i);
+	    int sourceID = graph.getNodeID(source);
+	    int destinationID = graph.getNodeID(destination);
+	    int linkID = graph.getLinkID(i);
+
+	    LinkIterator iterator = backingGraph.getLink(linkID);
+	    if (iterator.getSource() != sourceID)
+	    {
+		String msg = "source[" + iterator.getSource()
+		    + "] of link[" + linkID + ", " + i + "] != ["
+		    + sourceID + "]";
+		throw new RuntimeException(msg);
+	    }
+
+	    if (iterator.getDestination() != destinationID)
+	    {
+		String msg = "destination[" + iterator.getDestination()
+		    + "] of link[" + linkID + ", " + i + "] != ["
+		    + destinationID + "]";
+		throw new RuntimeException(msg);
+	    }
+	}
+
+	System.out.println("ID mappings look consistent.");
+    }
+
     ///////////////////////////////////////////////////////////////////////
 
     private void startRendering(RenderingConfiguration renderingConfiguration)
@@ -788,6 +897,11 @@ public class H3Main
 	System.out.println("numNodes = " + m_graph.getNumNodes());
 	System.out.println("numTreeLinks = " + m_graph.getNumTreeLinks());
 	System.out.println("numNontreeLinks = " +m_graph.getNumNontreeLinks());
+
+	m_viewParameters.setDepthCueingEnabled
+	    (renderingConfiguration.depthCueing);
+	m_viewParameters.setAxesEnabled
+	    (renderingConfiguration.axes);
 
 	H3ScreenCapturer capturer = null;
 	if (renderingConfiguration.supportScreenCapture)
@@ -797,7 +911,7 @@ public class H3Main
 
 	CapturingManager manager = new NullCapturingManager();
 
-	if (renderingConfiguration.isAdaptive)
+	if (renderingConfiguration.adaptiveRendering)
 	{
 	    int queueSize = m_graph.getNumNodes() + m_graph.getTotalNumLinks();
 	    H3RenderQueue queue = new H3RenderQueue(queueSize);
@@ -816,7 +930,7 @@ public class H3Main
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	    boolean useNodeSizes =
-		renderingConfiguration.useMultipleNodeSizes;
+		renderingConfiguration.multipleNodeSizes;
 	    boolean includeNodes = determineWhetherToIncludeObject
 		(renderingConfiguration.nodeColor);
 	    boolean includeTreeLinks = determineWhetherToIncludeObject
@@ -914,9 +1028,10 @@ public class H3Main
 
 	int rootNode = m_graph.getRootNode();
 	m_eventHandler = new EventHandler
-	    (m_canvas, m_renderLoop, manager, rootNode, m_backingGraph,
+	    (m_canvas, m_renderLoop, manager, rootNode,
+	     m_graph, m_backingGraph,
 	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
-	     renderingConfiguration.refreshAlways);
+	     renderingConfiguration.automaticRefresh);
 
 	if (m_displayPosition != null)
 	{
@@ -1165,7 +1280,7 @@ public class H3Main
 		}
 	    });
 
-	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive");
+	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive Rendering");
 	m_adaptiveMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_adaptiveMenuItem.setSelected(true);
 	m_adaptiveMenuItem.addItemListener(new ItemListener() {
@@ -1177,19 +1292,29 @@ public class H3Main
 	    });
 
 	m_multipleNodeSizesMenuItem =
-	    new JCheckBoxMenuItem("Use Multiple Node Sizes");
+	    new JCheckBoxMenuItem("Multiple Node Sizes");
 	m_multipleNodeSizesMenuItem.setMnemonic(KeyEvent.VK_M);
 	m_multipleNodeSizesMenuItem.setSelected(true);
 
+	m_depthCueingMenuItem =
+	    new JCheckBoxMenuItem("Depth Cueing");
+	m_depthCueingMenuItem.setMnemonic(KeyEvent.VK_D);
+	m_depthCueingMenuItem.setSelected(true);
+
+	m_axesMenuItem =
+	    new JCheckBoxMenuItem("Coordinate Axes");
+	m_axesMenuItem.setMnemonic(KeyEvent.VK_X);
+	m_axesMenuItem.setSelected(true);
+
 	m_screenCaptureMenuItem
-	    = new JCheckBoxMenuItem("Support Screen Capture");
+	    = new JCheckBoxMenuItem("Screen Capture Support");
 	m_screenCaptureMenuItem.setMnemonic(KeyEvent.VK_C);
 	m_screenCaptureMenuItem.setSelected(false);
 
-	m_refreshAlwaysMenuItem
-	    = new JCheckBoxMenuItem("Refresh Always");
-	m_refreshAlwaysMenuItem.setMnemonic(KeyEvent.VK_F);
-	m_refreshAlwaysMenuItem.setSelected(true);
+	m_automaticRefreshMenuItem
+	    = new JCheckBoxMenuItem("Automatic Refresh");
+	m_automaticRefreshMenuItem.setMnemonic(KeyEvent.VK_F);
+	m_automaticRefreshMenuItem.setSelected(true);
 
 	m_renderingMenu = new JMenu("Rendering");
 	m_renderingMenu.setMnemonic(KeyEvent.VK_R);
@@ -1201,8 +1326,10 @@ public class H3Main
 	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
+	m_renderingMenu.add(m_depthCueingMenuItem);
+	m_renderingMenu.add(m_axesMenuItem);
 	m_renderingMenu.add(m_screenCaptureMenuItem);
-	m_renderingMenu.add(m_refreshAlwaysMenuItem);
+	m_renderingMenu.add(m_automaticRefreshMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
@@ -1252,6 +1379,7 @@ public class H3Main
 
     private static final boolean DEBUG_PRINT_LOAD_TIME = true;
     private static final boolean DEBUG_PRINT_LOAD_MEMORY = true;
+    private static final boolean DEBUG_CHECK_ID_MAPPINGS = true;
 
     private static final int DEFAULT_FRAME_WIDTH = 900;
     private static final int DEFAULT_FRAME_HEIGHT = 1000;
@@ -1294,8 +1422,10 @@ public class H3Main
     private JMenuItem m_refreshMenuItem;
     private JCheckBoxMenuItem m_adaptiveMenuItem;
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
+    private JCheckBoxMenuItem m_depthCueingMenuItem;
+    private JCheckBoxMenuItem m_axesMenuItem;
     private JCheckBoxMenuItem m_screenCaptureMenuItem;
-    private JCheckBoxMenuItem m_refreshAlwaysMenuItem;
+    private JCheckBoxMenuItem m_automaticRefreshMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -1319,10 +1449,12 @@ public class H3Main
     private static class EventHandler
 	implements KeyListener, MouseListener, MouseMotionListener
     {
-	public EventHandler(H3Canvas3D canvas, H3RenderLoop renderLoop,
-			    CapturingManager manager, int rootNode,
-			    Graph backingGraph, int[] nodeLabelAttributes,
-			    JTextField statusBar, boolean refreshAlways)
+	public EventHandler
+	    (H3Canvas3D canvas, H3RenderLoop renderLoop,
+	     CapturingManager manager, int rootNode,
+	     H3Graph graph, Graph backingGraph,
+	     int[] nodeLabelAttributes, JTextField statusBar,
+	     boolean automaticRefresh)
 	{
 	    m_canvas = canvas;
 	    m_canvas.addKeyListener(this);
@@ -1333,8 +1465,8 @@ public class H3Main
 	    // manually refresh the display in some cases.  There's some
 	    // problem deep in Java3D which makes a satisfactory solution
 	    // impossible.
-	    m_refreshAlways = refreshAlways;
-	    if (refreshAlways)
+	    m_automaticRefresh = automaticRefresh;
+	    if (automaticRefresh)
 	    {
 		m_canvas.addPaintObserver(m_paintObserver);
 	    }
@@ -1349,6 +1481,7 @@ public class H3Main
 	    m_capturingManager = manager;
 	    m_rootNode = m_currentNode = m_previousNode = rootNode;
 
+	    m_graph = graph;
 	    m_backingGraph = backingGraph;
 	    m_nodeLabelAttributes = nodeLabelAttributes;
 	    m_statusBar = statusBar;
@@ -1360,7 +1493,7 @@ public class H3Main
 	    m_canvas.removeMouseListener(this);
 	    m_canvas.removeMouseMotionListener(this);
 
-	    if (m_refreshAlways)
+	    if (m_automaticRefresh)
 	    {
 		m_canvas.removePaintObserver(m_paintObserver);
 	    }
@@ -1682,17 +1815,19 @@ public class H3Main
 		ValueType type = iterator.getType();
 		if (type.isListType())
 		{
-		    buffer.append("<<skipped>>");
+		    buffer.append("<<skipped>>"); // XXX Implement this.
 		}
 		else
 		{
-		    addAttributeValue(buffer, type, node, attribute);
+		    int nodeID = m_graph.getNodeID(node);
+		    addAttributeValue(buffer, type, nodeID, attribute);
 		}
 	    }
 
 	    m_statusBar.setText(buffer.toString());
 	}
 
+	// The parameter {node} should be the ID of a node in the libsea Graph.
 	private void addAttributeValue(StringBuffer buffer, ValueType type,
 				       int node, int attribute)
 	{
@@ -1799,6 +1934,7 @@ public class H3Main
 	private int m_currentNode;
 	private int m_previousNode;
 
+	private H3Graph m_graph;
 	private Graph m_backingGraph;
 	private int[] m_nodeLabelAttributes;
 	private JTextField m_statusBar;
@@ -1828,7 +1964,7 @@ public class H3Main
 	private H3WobblingRotationRequest m_wobblingRequest
 	    = new H3WobblingRotationRequest();
 
-	private boolean m_refreshAlways;
+	private boolean m_automaticRefresh;
 	private PaintObserver m_paintObserver = new PaintObserver();
 	private ComponentResizeListener m_resizeListener =
 	    new ComponentResizeListener();
@@ -2854,10 +2990,12 @@ public class H3Main
     private static class RenderingConfiguration
     {
 	public String spanningTree;
-	public boolean isAdaptive;
-	public boolean useMultipleNodeSizes;
+	public boolean adaptiveRendering;
+	public boolean multipleNodeSizes;
+	public boolean depthCueing;
+	public boolean axes;
 	public boolean supportScreenCapture;
-	public boolean refreshAlways;
+	public boolean automaticRefresh;
 
 	public ColorConfiguration nodeColor;
 	public ColorConfiguration treeLinkColor;
@@ -2870,12 +3008,13 @@ public class H3Main
 	    System.out.println("------------------------------------------\n");
 	    System.out.println("RenderingConfiguration:");
 	    System.out.println("\tspanningTree = " + spanningTree);
-	    System.out.println("\tisAdaptive = " + isAdaptive);
-	    System.out.println("\tuseMultipleNodeSizes = "
-			       + useMultipleNodeSizes);
+	    System.out.println("\tadaptiveRendering = " + adaptiveRendering);
+	    System.out.println("\tmultipleNodeSizes = " + multipleNodeSizes);
+	    System.out.println("\tdepthCueing = " + depthCueing);
+	    System.out.println("\taxes = " + axes);
 	    System.out.println("\tsupportScreenCapture = "
 			       + supportScreenCapture);
-	    System.out.println("\trefreshAlways = " + refreshAlways);
+	    System.out.println("\tautomaticRefresh = " + automaticRefresh);
 
 	    System.out.print("(Node) ");
 	    nodeColor.print();
