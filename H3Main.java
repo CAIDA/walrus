@@ -315,6 +315,8 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
+	m_saveAxesPositionMenuItem.setEnabled(false);
+	m_clearAxesPositionMenuItem.setEnabled(false);
 
 	// Spanning Tree menu.
 	m_spanningTreeMenu.removeAll();
@@ -369,6 +371,8 @@ public class H3Main
 	handleStartRenderingRequest();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     private void captureScreen(Canvas3D canvas, int width, int height)
     {
 	Screen3D onScreen = m_canvas.getScreen3D();
@@ -385,19 +389,25 @@ public class H3Main
 	screen.setPhysicalScreenWidth(screenPhysicalWidth);
 	screen.setPhysicalScreenHeight(screenPhysicalHeight);
 
+	canvas.setOffScreenBuffer(makeOffScreenBuffer(width, height));
+	canvas.renderOffScreenBuffer();
+	canvas.waitForOffScreenRendering();
+
+	BufferedImage image = canvas.getOffScreenBuffer().getImage();
+	writeImage(image, width, height);
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private ImageComponent2D makeOffScreenBuffer(int width, int height)
+    {
 	BufferedImage image =
 	    new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
-	ImageComponent2D buffer =
-	    new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
-
-	canvas.setOffScreenBuffer(buffer);
-	canvas.renderOffScreenBuffer();
-	canvas.waitForOffScreenRendering();
-	image = canvas.getOffScreenBuffer().getImage();
-
-	writeImage(image, width, height);
+	return new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private Canvas3D makeCaptureCanvas3D(int width, int height)
     {
@@ -410,10 +420,14 @@ public class H3Main
 	return retval;
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     private BranchGroup makeCaptureUniverse
 	(Canvas3D canvas, H3PointRenderList renderList,
 	 H3DisplayPosition displayPosition)
     {
+	CaptureScales scales = computeCaptureScales();
+
 	SimpleUniverse univ = new SimpleUniverse(canvas);
 	univ.getViewingPlatform().setNominalViewingTransform();
 
@@ -421,23 +435,27 @@ public class H3Main
 	// sphere fits within the window.
 	if (true)
 	{
-	    TransformGroup transformGroup =
+	    TransformGroup eyeTG =
 		univ.getViewingPlatform().getViewPlatformTransform();
 	    Transform3D transform = new Transform3D();
-	    transformGroup.getTransform(transform);
-	    transform.setTranslation(new Vector3d(0.0, 0.0, 3.0));
-	    transformGroup.setTransform(transform);
+	    eyeTG.getTransform(transform);
+	    transform.setTranslation(new Vector3d(0.0, 0.0, 2.9));
+	    eyeTG.setTransform(transform);
 	}
 
-	BranchGroup BG = renderList.makeBranchGraph();
-	TransformGroup TG =
-	    new TransformGroup(displayPosition.getRotation());
-	TG.addChild(BG);
+	BranchGroup retval = new BranchGroup();
+	retval.setCapability(BranchGroup.ALLOW_DETACH);
 
 	if (m_renderingConfiguration.axes)
 	{
-	    TG.addChild(m_viewParameters.makeAxesBranchGraph());
+	    retval.addChild(m_viewParameters.makeAxesBranchGraph(scales.line));
 	}
+
+	TransformGroup TG = new TransformGroup(displayPosition.getRotation());
+	retval.addChild(TG);
+
+	BranchGroup BG = renderList.makeBranchGraph(scales.point, scales.line);
+	TG.addChild(BG);
 
 	if (m_renderingConfiguration.depthCueing)
 	{
@@ -450,14 +468,12 @@ public class H3Main
 	    TG.addChild(depthCueing);
 	}
 
-	BranchGroup retval = new BranchGroup();
-	retval.setCapability(BranchGroup.ALLOW_DETACH);
-	retval.addChild(TG);
-
 	univ.addBranchGraph(retval);
 
 	return retval;
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private Dimension computeCaptureResolution()
     {
@@ -478,6 +494,36 @@ public class H3Main
 	case CAPTURE_2048_RESOLUTION:
 	    retval.width = 2048;
 	    retval.height = 2048;
+	    break;
+
+	default:
+	    throw new RuntimeException();
+	}
+
+	return retval;
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private CaptureScales computeCaptureScales()
+    {
+	CaptureScales retval = new CaptureScales();
+
+	switch (m_captureDPI)
+	{
+	case CAPTURE_SCREEN_DPI:
+	    retval.point = 1.0;
+	    retval.line = 1.0;
+	    break;
+
+	case CAPTURE_300_DPI:
+	    retval.point = 2.0;
+	    retval.line = 3.0;
+	    break;
+
+	case CAPTURE_600_DPI:
+	    retval.point = 3.0;
+	    retval.line = 6.0;
 	    break;
 
 	default:
@@ -1317,6 +1363,8 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
+	m_saveAxesPositionMenuItem.setEnabled(false);
+	m_clearAxesPositionMenuItem.setEnabled(false);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1340,6 +1388,8 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(true);
 	m_savePositionMenuItem.setEnabled(true);
 	m_restorePositionMenuItem.setEnabled(m_savedDisplayPosition != null);
+	m_saveAxesPositionMenuItem.setEnabled(true);
+	m_clearAxesPositionMenuItem.setEnabled(true);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1354,6 +1404,18 @@ public class H3Main
 
 	SimpleUniverse univ = new SimpleUniverse(m_canvas);
 	univ.getViewingPlatform().setNominalViewingTransform();
+
+	// Move eye back in +z direction a tad so that the whole
+	// sphere fits within the window.
+	if (true)
+	{
+	    TransformGroup transformGroup =
+		univ.getViewingPlatform().getViewPlatformTransform();
+	    Transform3D transform = new Transform3D();
+	    transformGroup.getTransform(transform);
+	    transform.setTranslation(new Vector3d(0.0, 0.0, 2.9));
+	    transformGroup.setTransform(transform);
+	}
 
 	m_view = m_canvas.getView();
 	m_viewParameters = new H3ViewParameters(m_canvas);
@@ -1675,6 +1737,26 @@ public class H3Main
 		}
 	    });
 
+	m_saveAxesPositionMenuItem = new JMenuItem("Save Axes Position");
+	m_saveAxesPositionMenuItem.setMnemonic(KeyEvent.VK_X);
+	m_saveAxesPositionMenuItem.setEnabled(false);
+	m_saveAxesPositionMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_viewParameters.saveAxesTransform();
+		}
+	    });
+
+	m_clearAxesPositionMenuItem = new JMenuItem("Clear Axes Position");
+	m_clearAxesPositionMenuItem.setMnemonic(KeyEvent.VK_C);
+	m_clearAxesPositionMenuItem.setEnabled(false);
+	m_clearAxesPositionMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_viewParameters.clearAxesTransform();
+		}
+	    });
+
 	m_displayMenu = new JMenu("Display");
 	m_displayMenu.setMnemonic(KeyEvent.VK_D);
 	m_displayMenu.add(m_refreshDisplayMenuItem);
@@ -1684,6 +1766,9 @@ public class H3Main
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_savePositionMenuItem);
 	m_displayMenu.add(m_restorePositionMenuItem);
+	m_displayMenu.addSeparator();
+	m_displayMenu.add(m_saveAxesPositionMenuItem);
+	m_displayMenu.add(m_clearAxesPositionMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
@@ -1810,6 +1895,8 @@ public class H3Main
     private JMenuItem m_showPreviousNodeMenuItem;
     private JMenuItem m_savePositionMenuItem;
     private JMenuItem m_restorePositionMenuItem;
+    private JMenuItem m_saveAxesPositionMenuItem;
+    private JMenuItem m_clearAxesPositionMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -3954,5 +4041,13 @@ public class H3Main
 	// After freeing graph buffer, and leaving only graph.
 	private long m_finalTotalMemory;
 	private long m_finalFreeMemory;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class CaptureScales
+    {
+	public double point;
+	public double line;
     }
 }
