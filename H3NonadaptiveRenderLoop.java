@@ -90,7 +90,7 @@ public class H3NonadaptiveRenderLoop
 		}
 
 		m_parameters.refresh();
-		m_parameters.enableDepthCueing();
+		m_parameters.installDepthCueing();
 		m_state = STATE_REFRESH;
 	    }
 	}
