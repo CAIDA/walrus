@@ -16,21 +16,21 @@ TABLE OF CONTENTS
 INSTALLATION
 ===========================================================================
 
-Extract 'walrus-0.6.1.tar.gz' or 'walrus-0.6.1.zip' anywhere you wish.  This
-will create a subdirectory named 'walrus-0.6.1' containing several JAR files,
+Extract 'walrus-0.6.2.tar.gz' or 'walrus-0.6.2.zip' anywhere you wish.  This
+will create a subdirectory named 'walrus-0.6.2' containing several JAR files,
 among other things.
 
  For UNIX users...
 
-   The file walrus-0.6.1.tar.gz was packaged with the standard TAR utility
+   The file walrus-0.6.2.tar.gz was packaged with the standard TAR utility
    and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
    it with the following command:
 
-       gzip -cd walrus-0.6.1.tar.gz | tar xvf -
+       gzip -cd walrus-0.6.2.tar.gz | tar xvf -
 
  For Windows users...
 
-   The file walrus-0.6.1.zip was packaged in the common ZIP format.  You
+   The file walrus-0.6.2.zip was packaged in the common ZIP format.  You
    can unpack it using a program like WinZip (http://www.winzip.com/).
 
 
@@ -48,7 +48,7 @@ impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
 To run Walrus on a UNIX system (such as Solaris or Linux), enter the
-following at a shell prompt from within the 'walrus-0.6.1' subdirectory:
+following at a shell prompt from within the 'walrus-0.6.2' subdirectory:
 
    java -cp mp.jar:antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
