@@ -390,31 +390,17 @@ public class H3Main
 
     private void setNodeTransparencyEnabled(boolean state)
     {
-	if (state)
-	{
-	    TransparencyAttributes attributes =
-		m_viewParameters.getTransparencyAttributes();
+	TransparencyAttributes attributes =
+	    (state ? m_viewParameters.getTransparencyAttributes() : null);
 
-	    m_viewParameters.getNodeAppearance()
-		.setTransparencyAttributes(attributes);
-	    m_viewParameters.getNearNodeAppearance()
-		.setTransparencyAttributes(attributes);
-	    m_viewParameters.getMiddleNodeAppearance()
-		.setTransparencyAttributes(attributes);
-	    m_viewParameters.getFarNodeAppearance()
-		.setTransparencyAttributes(attributes);
-	}
-	else
-	{
-	    m_viewParameters.getNodeAppearance()
-		.setTransparencyAttributes(null);
-	    m_viewParameters.getNearNodeAppearance()
-		.setTransparencyAttributes(null);
-	    m_viewParameters.getMiddleNodeAppearance()
-		.setTransparencyAttributes(null);
-	    m_viewParameters.getFarNodeAppearance()
-		.setTransparencyAttributes(null);
-	}
+	m_viewParameters.getNodeAppearance()
+	    .setTransparencyAttributes(attributes);
+	m_viewParameters.getNearNodeAppearance()
+	    .setTransparencyAttributes(attributes);
+	m_viewParameters.getMiddleNodeAppearance()
+	    .setTransparencyAttributes(attributes);
+	m_viewParameters.getFarNodeAppearance()
+	    .setTransparencyAttributes(attributes);
     }
 
     private void colorTreeLinks(ColorConfiguration configuration)
@@ -453,19 +439,11 @@ public class H3Main
 
     private void setTreeLinkTransparencyEnabled(boolean state)
     {
-	if (state)
-	{
-	    TransparencyAttributes attributes =
-		m_viewParameters.getTransparencyAttributes();
+	TransparencyAttributes attributes =
+	    (state ? m_viewParameters.getTransparencyAttributes() : null);
 
-	    m_viewParameters.getTreeLinkAppearance()
-		.setTransparencyAttributes(attributes);
-	}
-	else
-	{
-	    m_viewParameters.getTreeLinkAppearance()
-		.setTransparencyAttributes(null);
-	}
+	m_viewParameters.getTreeLinkAppearance()
+	    .setTransparencyAttributes(attributes);
     }
 
     private void colorNontreeLinks(ColorConfiguration configuration)
@@ -504,19 +482,11 @@ public class H3Main
 
     private void setNontreeLinkTransparencyEnabled(boolean state)
     {
-	if (state)
-	{
-	    TransparencyAttributes attributes =
-		m_viewParameters.getTransparencyAttributes();
+	TransparencyAttributes attributes =
+	    (state ? m_viewParameters.getTransparencyAttributes() : null);
 
-	    m_viewParameters.getNontreeLinkAppearance()
-		.setTransparencyAttributes(attributes);
-	}
-	else
-	{
-	    m_viewParameters.getNontreeLinkAppearance()
-		.setTransparencyAttributes(null);
-	}
+	m_viewParameters.getNontreeLinkAppearance()
+	    .setTransparencyAttributes(attributes);
     }
 
     // Performance Note:
