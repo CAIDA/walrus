@@ -320,7 +320,7 @@ public class H3Main
 	m_widenSubtreeMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
-	m_pruneDisplayMenuItem.setEnabled(false);
+	m_pruneSubtreeMenuItem.setEnabled(false);
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
@@ -1484,7 +1484,7 @@ public class H3Main
 	m_widenSubtreeMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
-	m_pruneDisplayMenuItem.setEnabled(false);
+	m_pruneSubtreeMenuItem.setEnabled(false);
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
@@ -1511,7 +1511,7 @@ public class H3Main
 	m_widenSubtreeMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenTowardRootMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenToGraphMenuItem.setEnabled(m_isDisplayNarrowed);
-	m_pruneDisplayMenuItem.setEnabled(true);
+	m_pruneSubtreeMenuItem.setEnabled(true);
 	m_refreshDisplayMenuItem.setEnabled(true);
 	m_wobbleDisplayMenuItem.setEnabled(true);
 	m_showRootNodeMenuItem.setEnabled(true);
@@ -1760,10 +1760,10 @@ public class H3Main
 		}
 	    });
 
-	m_pruneDisplayMenuItem = new JMenuItem("Prune Subtree");
-	m_pruneDisplayMenuItem.setMnemonic(KeyEvent.VK_P);
-	m_pruneDisplayMenuItem.setEnabled(false);
-	m_pruneDisplayMenuItem.addActionListener(new ActionListener() {
+	m_pruneSubtreeMenuItem = new JMenuItem("Prune Subtree");
+	m_pruneSubtreeMenuItem.setMnemonic(KeyEvent.VK_P);
+	m_pruneSubtreeMenuItem.setEnabled(false);
+	m_pruneSubtreeMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
 		    int node = m_eventHandler.getCurrentNode();
@@ -1855,7 +1855,7 @@ public class H3Main
 	m_displayMenu.add(m_widenSubtreeMenuItem);
 	m_displayMenu.add(m_widenTowardRootMenuItem);
 	m_displayMenu.add(m_widenToGraphMenuItem);
-	m_displayMenu.add(m_pruneDisplayMenuItem);
+	m_displayMenu.add(m_pruneSubtreeMenuItem);
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_refreshDisplayMenuItem);
 	m_displayMenu.add(m_wobbleDisplayMenuItem);
@@ -1976,7 +1976,7 @@ public class H3Main
     private JMenuItem m_widenSubtreeMenuItem;
     private JMenuItem m_widenTowardRootMenuItem;
     private JMenuItem m_widenToGraphMenuItem;
-    private JMenuItem m_pruneDisplayMenuItem;
+    private JMenuItem m_pruneSubtreeMenuItem;
     private JMenuItem m_refreshDisplayMenuItem;
     private JMenuItem m_wobbleDisplayMenuItem;
     private JMenuItem m_showRootNodeMenuItem;
