@@ -288,10 +288,8 @@ public class H3Main
 
 	// UI.
 	m_frame.setTitle(WALRUS_TITLE);
-	m_frame.getContentPane().remove(m_canvas);
-	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 	m_statusBar.setText(MSG_NO_GRAPH_LOADED);
-	m_frame.getContentPane().validate();
+	reinstateSplashScreenContentPane();
 
 	// File menu.
 	m_saveWithLayoutMenuItem.setEnabled(false);
@@ -330,15 +328,8 @@ public class H3Main
 
 	if (setupRendering(renderingConfiguration))
 	{
-	    m_startMenuItem.setEnabled(false);
-	    m_stopMenuItem.setEnabled(true);
-	    m_updateMenuItem.setEnabled(true);
-	    m_refreshMenuItem.setEnabled(true);
-
-	    m_frame.getContentPane().remove(m_splashLabel);
-	    m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
-	    m_frame.validate();
-
+	    reinstateCanvasContentPane();
+	    setupActiveRenderingMenu();
 	    startRendering(renderingConfiguration);
 	}
     }
@@ -748,14 +739,8 @@ public class H3Main
 	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
 
-	m_frame.getContentPane().remove(m_canvas);
-	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
-	m_frame.validate();
-
-	m_startMenuItem.setEnabled(true);
-	m_stopMenuItem.setEnabled(false);
-	m_updateMenuItem.setEnabled(false);
-	m_refreshMenuItem.setEnabled(false);
+	reinstateSplashScreenContentPane();
+	setupIdleRenderingMenu();
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -775,14 +760,8 @@ public class H3Main
 	}
 	else
 	{
-	    m_frame.getContentPane().remove(m_canvas);
-	    m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
-	    m_frame.validate();
-
-	    m_startMenuItem.setEnabled(true);
-	    m_stopMenuItem.setEnabled(false);
-	    m_updateMenuItem.setEnabled(false);
-	    m_refreshMenuItem.setEnabled(false);
+	    reinstateSplashScreenContentPane();
+	    setupIdleRenderingMenu();
 	}
     }
 
@@ -1174,6 +1153,48 @@ public class H3Main
 	    }
 	}
 	return retval;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void reinstateCanvasContentPane()
+    {
+	m_frame.getContentPane().remove(m_splashLabel);
+	m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
+	m_frame.validate();
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void reinstateSplashScreenContentPane()
+    {
+	m_frame.getContentPane().remove(m_canvas);
+	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
+	m_frame.validate();
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    // Changes the enabled state of the items in the Rendering menu to
+    // reflect an idle rendering state (when the splash screen is being shown).
+    private void setupIdleRenderingMenu()
+    {
+	m_startMenuItem.setEnabled(true);
+	m_stopMenuItem.setEnabled(false);
+	m_updateMenuItem.setEnabled(false);
+	m_refreshMenuItem.setEnabled(false);
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    // Changes the enabled state of the items in the Rendering menu to
+    // reflect an active rendering state (when a Canvas3D is being shown).
+    private void setupActiveRenderingMenu()
+    {
+	m_startMenuItem.setEnabled(false);
+	m_stopMenuItem.setEnabled(true);
+	m_updateMenuItem.setEnabled(true);
+	m_refreshMenuItem.setEnabled(true);
     }
 
     ///////////////////////////////////////////////////////////////////////
