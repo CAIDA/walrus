@@ -2256,7 +2256,13 @@ public class H3Main
 	// MouseListener - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	public void mouseClicked(MouseEvent e) {}
-	public void mouseEntered(MouseEvent e) {}
+
+	public void mouseEntered(MouseEvent e)
+	{
+	    // XXX: Workaround for some AWT/Swing bug.
+	    m_canvas.requestFocus();
+	}
+
 	public void mouseExited(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e)
