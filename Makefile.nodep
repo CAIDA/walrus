@@ -1,5 +1,7 @@
 #############################################################################
 # The Walrus Graph Visualization Tool.
+#
+# $Id: Makefile.nodep,v 1.4 2005/03/24 22:59:46 youngh Exp $
 #############################################################################
 
 # You must have mp.jar, antlrall-mod.jar, and libsea.jar in your CLASSPATH.
