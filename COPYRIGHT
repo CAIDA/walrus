@@ -17,8 +17,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ---------------------------------------------------------------------------
 
-The Walrus software was originally developed by the Walrus Team at the
-University of California, San Diego under the Cooperative Association
-for Internet Data Analysis (CAIDA) Program.  Support for this effort
-was provided by NSF grant ANI-9814421, DARPA NGI Contract N66001-98-2-8922,
-Sun Microsystems, and CAIDA members.
+Walrus was originally developed by Young Hyun at the University of California,
+San Diego under the Cooperative Association for Internet Data Analysis (CAIDA)
+Program.  Support for this effort was provided by NSF grant ANI-9814421,
+DARPA NGI Contract N66001-98-2-8922, Sun Microsystems, and CAIDA members.
