@@ -37,9 +37,6 @@ FEATURES
 
 * Implement the Selection Attribute menu item under the Color Scheme menu.
 
-* Selecting the nonadaptive rendering algorithm causes a fixed color scheme
-  to take effect.  Change this to work like the adaptive algorithm.
-
 * Implement File->Save with Layout and File->Save with Layout As.
 
 * Implement File->Preferences.
