@@ -24,6 +24,7 @@ walrus_sources = H3AdaptivePicker.java \
 	H3CapturingRotationRequest.java \
 	H3Circle.java \
 	H3CircleRenderer.java \
+	H3DisplayPosition.java \
 	H3Graph.java \
 	H3GraphLayout.java \
 	H3GraphLoader.java \
