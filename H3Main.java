@@ -1582,6 +1582,15 @@ public class H3Main
 			m_repeatingRequest.rotate(0, 0);
 			m_renderLoop.rotateDisplay(m_repeatingRequest);
 		    }
+		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
+		    {
+			computeTrackingAngles(x, y);
+
+			m_state = STATE_ROTATING_TRACKING;
+			m_repeatingRequest.start();
+			m_repeatingRequest.rotate(m_dxRadians, m_dyRadians);
+			m_renderLoop.rotateDisplay(m_repeatingRequest);
+		    }
 		    else
 		    {
 			m_state = STATE_ROTATING_INTERACTIVE;
@@ -1627,6 +1636,11 @@ public class H3Main
 		m_repeatingRequest.end();
 		break;
 
+	    case STATE_ROTATING_TRACKING:
+		m_state = STATE_IDLE;
+		m_repeatingRequest.end();
+		break;
+
 	    case STATE_DISPLAYING_ATTRIBUTES:
 		//FALLTHROUGH
 	    case STATE_ROTATING_INTERACTIVE:
@@ -1659,6 +1673,10 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_TRACKING:
 		//IGNORE
 		break;
 
@@ -1711,6 +1729,10 @@ public class H3Main
 		m_repeatingRequest.rotate(m_dxRadians, m_dyRadians);
 		break;
 
+	    case STATE_ROTATING_TRACKING:
+		//IGNORE
+		break;
+
 	    case STATE_WOBBLING:
 		//FALLTHROUGH
 	    case STATE_REPLAYING:
@@ -1724,15 +1746,40 @@ public class H3Main
 
 	public void mouseMoved(MouseEvent e)
 	{
-	    /*
-		    int dx = (x - m_canvas.getWidth() / 2) / 50;
-		    int dy = (y - m_canvas.getHeight() / 2) / 50;
+	    System.out.println("mouseMoved");
 
-		    double dxRad = Math.toRadians(dx);
-		    double dyRad = Math.toRadians(dy);
+	    switch (m_state)
+	    {
+	    case STATE_IDLE:
+		//IGNORE
+		break;
 
-		    m_repeatingRequest.rotate(dxRad, dyRad);
-	    */
+	    case STATE_DISPLAYING_ATTRIBUTES:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_INTERACTIVE:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_TRACKING:
+		computeTrackingAngles(e.getX(), e.getY());
+		m_repeatingRequest.rotate(m_dxRadians, m_dyRadians);
+		break;
+
+	    case STATE_WOBBLING:
+		//FALLTHROUGH
+	    case STATE_REPLAYING:
+		//FALLTHROUGH
+	    default:
+		throw new RuntimeException
+		    ("Invalid state in EventHandler: mouseMoved in state "
+		     + m_state);
+	    }
 	}
 
 	// KeyListener - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1824,6 +1871,15 @@ public class H3Main
 
 	    m_lastX = x;
 	    m_lastY = y;
+
+	    m_dxRadians = Math.toRadians(dx);
+	    m_dyRadians = Math.toRadians(dy);
+	}
+
+	private void computeTrackingAngles(int x, int y)
+	{
+	    int dx = (x - m_canvas.getWidth() / 2) / TRACKING_SCALE;
+	    int dy = (y - m_canvas.getHeight() / 2) / TRACKING_SCALE;
 
 	    m_dxRadians = Math.toRadians(dx);
 	    m_dyRadians = Math.toRadians(dy);
@@ -1959,13 +2015,15 @@ public class H3Main
 	//---------------------------------------------------------------
 
 	private static final double ROTATION_SCALE = 10.0 * Math.PI;
+	private static final int TRACKING_SCALE = 50;
 
 	private static final int STATE_IDLE = 0;
 	private static final int STATE_DISPLAYING_ATTRIBUTES = 1;
 	private static final int STATE_ROTATING_INTERACTIVE = 2;
 	private static final int STATE_ROTATING_CONTINUOUS = 3;
-	private static final int STATE_WOBBLING = 4;
-	private static final int STATE_REPLAYING = 5;
+	private static final int STATE_ROTATING_TRACKING = 4;
+	private static final int STATE_WOBBLING = 5;
+	private static final int STATE_REPLAYING = 6;
 
 	private static final char CTRL_R = 'r' - 'a' + 1;
 
