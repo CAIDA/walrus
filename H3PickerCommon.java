@@ -52,9 +52,6 @@ public abstract class H3PickerCommon
 	m_canvas = canvas;
 	m_parameters = parameters;
 
-	m_pickRadius = parameters.getPickRadius();
-	m_nodeRadius = parameters.getNodeRadius();
-
 	int numNodes = graph.getNumNodes();
 	m_pointsInEyeX = new double[numNodes];
 	m_pointsInEyeY = new double[numNodes];
@@ -170,6 +167,12 @@ public abstract class H3PickerCommon
     ////////////////////////////////////////////////////////////////////////
 
     // (x, y) should be in image plate, rather than AWT, coordinates.
+    // Image plate coordinates are specified in meters.  The image plate
+    // occupies the first quadrant of the xy-plane [that is, (0, 0) is
+    // at the lower-left corner of the image plate].
+    //
+    // The eye looks at the center of the image plate from +z, and the
+    // line of sight is perpendicular to the image plate.
     private int pick(double x, double y, Point2d center)
     {
 	long startTime = 0;
@@ -179,31 +182,21 @@ public abstract class H3PickerCommon
 	    System.out.println("pick.begin[" + startTime +"]");
 	}
 
+	double pickRadius = m_parameters.getPickRadius();
+	double pickEquivalenceRadius = m_parameters.getPickEquivalenceRadius();
+	double nodeRadius = m_parameters.getNodeRadius();
+
 	Point3d eye = m_parameters.getEye();
 
-	int closestIndex = -1;
-	double closestPickDistance = Double.MAX_VALUE;
-	double closestEyeDistanceSq = Double.MAX_VALUE;
+	// All calculations below are done in the coordinate system of the
+	// eye (which is a simple translation of the image plate coordinate
+	// system).
+	double pickX = x - eye.x;
+	double pickY = y - eye.y;
 
-	// The basic approach of the picking algorithm is as follows.
-	// Shoot a pick ray from the eye through the screen at the location
-	// where the user clicked [the (x, y) parameters to this method],
-	// and compute the intersection of the ray to the z-plane in which
-	// a node lies.  Then compute the distance between the node
-	// and the pick ray on that z-plane.  Of all nodes which lie
-	// within some radius of the pick point, choose the node that
-	// is closest to the eye along the line of sight.
-	//
-	// The reason for shooting the ray out to the node rather than
-	// projecting the node to the screen is that each node has a
-	// radius which is proportional to the distance of the node from
-	// the center of the hyperbolic space.  We would have to project
-	// this radius, as well as the node, onto the screen.  Because
-	// the screen and the node are specified in different coordinate
-	// systems, it requires extra work to project the radius (presuming
-	// the nodes themselves are projected with a perspective-projection
-	// matrix).  Hence, it seemed just as easy, if not easier, to shoot
-	// the ray out than take this approach.
+	int closestIndex = -1;
+	double closestPickDistanceSq = Double.MAX_VALUE;
+	double closestEyeDistanceSq = Double.MAX_VALUE;
 
 	computePointsInEye();
 	int numComputedPointsInEye = getNumComputedPointsInEye();
@@ -213,28 +206,68 @@ public abstract class H3PickerCommon
 	    double pY = m_pointsInEyeY[i];
 	    double pZ = m_pointsInEyeZ[i];
 
-	    double inversePerspectiveScale = 1.0 - pZ / eye.z;
-	    double pickX = (x - eye.x) * inversePerspectiveScale;
-	    double pickY = (y - eye.y) * inversePerspectiveScale;
+	    double perspectiveScale = 1.0 / (1.0 - pZ / eye.z);
+	    double ppX = pX * perspectiveScale;
+	    double ppY = pY * perspectiveScale;
 
-	    double dx = pickX - pX;
-	    double dy = pickY - pY;
+	    double dx = pickX - ppX;
+	    double dy = pickY - ppY;
 
 	    double centerDistanceSq = dx * dx + dy * dy;
 
-	    double radiusScale = m_graph.getNodeRadius(getNodeInEye(i));
-	    double radius = m_pickRadius * inversePerspectiveScale
-		          + m_nodeRadius * radiusScale;
-	    double radiusSq = radius * radius;
-
-	    if (centerDistanceSq < radiusSq)
+	    double pickDistance = pickRadius;
+	    double pickEquivalenceDistance = pickEquivalenceRadius;
+	    if (USE_NODE_RADIUS)
 	    {
-		double z0 = eye.z - pZ;
-		double eyeDistanceSq = pX * pX + pY * pY + z0 * z0;
-		if (eyeDistanceSq < closestEyeDistanceSq)
+		double radiusScale = m_graph.getNodeRadius(getNodeInEye(i));
+		pickDistance += nodeRadius * radiusScale;
+		pickEquivalenceDistance += nodeRadius * radiusScale;
+	    }
+
+	    // Since demanding great accuracy from the user is too onerous,
+	    // we pick based on two levels of precision.  Any node falling
+	    // within {pickRadius} is a candidate for picking, which
+	    // allows the user to pick quickly without worrying about
+	    // preciely positioning the pointer.  Nodes falling within
+	    // {pickRadius} are graded based on their Euclidean distance
+	    // to the pick point (on the image plate); the closer the better.
+	    // However, if multiple nodes lie very close to the pick point--
+	    // within {pickEquivalenceRadius}--then they are essentially all
+	    // overlapping the pick point, and to provide an intuitive
+	    // picking experience, we pick the node that is closest to the
+	    // eye.  This prevents surprises caused by distant, but hidden,
+	    // overlapping nodes being picked over nearby nodes.
+
+	    if (centerDistanceSq < pickDistance * pickDistance)
+	    {
+		double pickEquivalenceDistanceSq =
+		    pickEquivalenceDistance * pickEquivalenceDistance;
+
+		if (centerDistanceSq < pickEquivalenceDistanceSq)
+		{
+		    double z0 = eye.z - pZ;
+		    double eyeDistanceSq = pX * pX + pY * pY + z0 * z0;
+		    if (eyeDistanceSq < closestEyeDistanceSq)
+		    {
+			closestIndex = i;
+			closestEyeDistanceSq = eyeDistanceSq;
+
+			// We always want to choose a node that falls within
+			// the equivalence radius, if any do, over those
+			// that do not.  By setting closestPickDistanceSq
+			// to zero, we ensure that only the equivalent nodes
+			// are considered.  We use zero instead of (the
+			// current value of) pickEquivalenceDistanceSq
+			// because the latter is not an absolute threshold
+			// value when node radii are taken into account
+			// (that is, if USE_NODE_RADIUS is true).
+			closestPickDistanceSq = 0.0;
+		    }
+		}
+		else if (centerDistanceSq < closestPickDistanceSq)
 		{
 		    closestIndex = i;
-		    closestEyeDistanceSq = eyeDistanceSq;
+		    closestPickDistanceSq = centerDistanceSq;
 		}
 	    }
 	}
@@ -264,12 +297,20 @@ public abstract class H3PickerCommon
 
     protected static final boolean DEBUG_PRINT = false;
 
+    // This tunes the picking algorithm in pick().
+    // If this is false, nodes are treated like points when calculating
+    // distance to the pick point.  Otherwise, nodes are treated like
+    // spheres with the radius returned by H3Graph.getNodeRadius().
+    //
+    // Unless nodes are being displayed at a size equal to their radius,
+    // it is recommended that this value be set to false, as doing otherwise
+    // would lead to apparently unintuitive picking behavior, from the user's
+    // point of view.
+    protected static final boolean USE_NODE_RADIUS = false;
+
     protected H3Graph m_graph;
     protected H3Canvas3D m_canvas;
     protected H3ViewParameters m_parameters;
-
-    protected double m_pickRadius;
-    protected double m_nodeRadius;
 
     protected double[] m_pointsInEyeX;
     protected double[] m_pointsInEyeY;
