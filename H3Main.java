@@ -1577,16 +1577,12 @@ public class H3Main
 
 		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
 		    {
-			m_state = STATE_ROTATING_CONTINUOUS;
-			m_repeatingRequest.start();
-			m_repeatingRequest.rotate(0, 0);
-			m_renderLoop.rotateDisplay(m_repeatingRequest);
+			m_state = STATE_ROTATING_CONTINUOUS_START;
 		    }
 		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
 		    {
-			computeTrackingAngles(x, y);
-
 			m_state = STATE_ROTATING_TRACKING;
+			computeTrackingAngles(x, y);
 			m_repeatingRequest.start();
 			m_repeatingRequest.rotate(m_dxRadians, m_dyRadians);
 			m_renderLoop.rotateDisplay(m_repeatingRequest);
@@ -1641,6 +1637,8 @@ public class H3Main
 		m_repeatingRequest.end();
 		break;
 
+	    case STATE_ROTATING_CONTINUOUS_START:
+		//FALLTHROUGH
 	    case STATE_DISPLAYING_ATTRIBUTES:
 		//FALLTHROUGH
 	    case STATE_ROTATING_INTERACTIVE:
@@ -1674,6 +1672,10 @@ public class H3Main
 
 	    case STATE_ROTATING_CONTINUOUS:
 		//IGNORE
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS_START:
+		m_state = STATE_IDLE;
 		break;
 
 	    case STATE_ROTATING_TRACKING:
@@ -1716,17 +1718,15 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
+		//IGNORE -- Only the first drag determines the direction.
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS_START:
+		m_state = STATE_ROTATING_CONTINUOUS;
 		computeDragAngles(x, y);
-		System.out.println("dxRad =" + m_dxRadians
-				   + "; dyRad =" + m_dyRadians);
-
-		m_dxRadians = Math.atan(150.0 * m_dxRadians) / ROTATION_SCALE;
-		m_dyRadians = Math.atan(150.0 * m_dyRadians) / ROTATION_SCALE;
-
-		System.out.println("dxRad' =" + m_dxRadians
-				   + "; dyRad' =" + m_dyRadians);
-
+		m_repeatingRequest.start();
 		m_repeatingRequest.rotate(m_dxRadians, m_dyRadians);
+		m_renderLoop.rotateDisplay(m_repeatingRequest);
 		break;
 
 	    case STATE_ROTATING_TRACKING:
@@ -1763,6 +1763,10 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS_START:
 		//IGNORE
 		break;
 
@@ -1872,17 +1876,36 @@ public class H3Main
 	    m_lastX = x;
 	    m_lastY = y;
 
-	    m_dxRadians = Math.toRadians(dx);
-	    m_dyRadians = Math.toRadians(dy);
+	    m_dxRadians = transformDeltas(Math.toRadians(dx));
+	    m_dyRadians = transformDeltas(Math.toRadians(dy));
 	}
 
 	private void computeTrackingAngles(int x, int y)
 	{
-	    int dx = (x - m_canvas.getWidth() / 2) / TRACKING_SCALE;
-	    int dy = (y - m_canvas.getHeight() / 2) / TRACKING_SCALE;
+	    double dx = (x - m_canvas.getWidth() / 2) / TRACKING_SCALE;
+	    double dy = (y - m_canvas.getHeight() / 2) / TRACKING_SCALE;
 
 	    m_dxRadians = Math.toRadians(dx);
 	    m_dyRadians = Math.toRadians(dy);
+	}
+
+	private double transformDeltas(double x)
+	{
+	    // The following equation was empirically derived.
+	    // It's an arctan translated into the upper-right (positive x
+	    // and positive y) quadrant such that the bottom leg crosses
+            // the origin (it looks like an oblique S in the upper-right
+	    // quadrant).  The curve lies entirely underneath y=x.
+	    //
+	    // There were two goals: 1) make it possible to easily specify
+	    // a small delta (which implies a small dragging angle), and
+	    // 2) smoothly cap the maximum delta, since large values are
+	    // useless, and intermediate values the most useful.
+
+	    double t = Math.atan(10.0 * (Math.abs(x) - 0.3))
+		/ ROTATION_SCALE + 0.1987918;
+
+	    return (x >= 0.0 ? t : -t);
 	}
 
 	//---------------------------------------------------------------
@@ -2014,16 +2037,17 @@ public class H3Main
 
 	//---------------------------------------------------------------
 
-	private static final double ROTATION_SCALE = 10.0 * Math.PI;
-	private static final int TRACKING_SCALE = 50;
+	private static final double ROTATION_SCALE = 2.0 * Math.PI;
+	private static final double TRACKING_SCALE = 50.0;
 
 	private static final int STATE_IDLE = 0;
 	private static final int STATE_DISPLAYING_ATTRIBUTES = 1;
 	private static final int STATE_ROTATING_INTERACTIVE = 2;
 	private static final int STATE_ROTATING_CONTINUOUS = 3;
-	private static final int STATE_ROTATING_TRACKING = 4;
-	private static final int STATE_WOBBLING = 5;
-	private static final int STATE_REPLAYING = 6;
+	private static final int STATE_ROTATING_CONTINUOUS_START = 4;
+	private static final int STATE_ROTATING_TRACKING = 5;
+	private static final int STATE_WOBBLING = 6;
+	private static final int STATE_REPLAYING = 7;
 
 	private static final char CTRL_R = 'r' - 'a' + 1;
 
