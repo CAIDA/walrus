@@ -352,7 +352,18 @@ public class H3Main
 	System.out.print("(colorNodes) ");
 	configuration.print();
 
-	setNodeTransparencyEnabled(configuration.isTransparent);
+	// NOTE: Java3D behaves erratically if transparency is set in the
+	//       Appearance of a geometry which also includes per point/vertex
+	//       colors.  When a geometry includes both data, Java3D doesn't
+	//       draw with transparency, and furthermore, it occasionally
+	//       draws lines (and perhaps points) in black.
+	//
+	//       PointArray seems to be an exception to this, but we take
+	//       care to disable transparency even for this case just to
+	//       be sure.
+	setNodeTransparencyEnabled
+	    (configuration.isTransparent
+	     && configuration.scheme != ColorConfiguration.RGB);
 
 	switch (configuration.scheme)
 	{
@@ -408,7 +419,14 @@ public class H3Main
 	System.out.print("(colorTreeLinks) ");
 	configuration.print();
 
-	setTreeLinkTransparencyEnabled(configuration.isTransparent);
+	// NOTE: Java3D behaves erratically if transparency is set in the
+	//       Appearance of a geometry which also includes per point/vertex
+	//       colors.  When a geometry includes both data, Java3D doesn't
+	//       draw with transparency, and furthermore, it occasionally
+	//       draws lines (and perhaps points) in black.
+	setTreeLinkTransparencyEnabled
+	    (configuration.isTransparent
+	     && configuration.scheme != ColorConfiguration.RGB);
 
 	switch (configuration.scheme)
 	{
@@ -451,7 +469,14 @@ public class H3Main
 	System.out.print("(colorNontreeLinks) ");
 	configuration.print();
 
-	setNontreeLinkTransparencyEnabled(configuration.isTransparent);
+	// NOTE: Java3D behaves erratically if transparency is set in the
+	//       Appearance of a geometry which also includes per point/vertex
+	//       colors.  When a geometry includes both data, Java3D doesn't
+	//       draw with transparency, and furthermore, it occasionally
+	//       draws lines (and perhaps points) in black.
+	setNontreeLinkTransparencyEnabled
+	    (configuration.isTransparent
+	     && configuration.scheme != ColorConfiguration.RGB);
 
 	switch (configuration.scheme)
 	{
