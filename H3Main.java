@@ -2654,7 +2654,15 @@ public class H3Main
 	    }
 	    else
 	    {
-		if (c >= '0' && c <= '9')
+		if (c == 'w')
+		{
+		    m_narrowingHandler.widenSubtree(m_currentNode);
+		}
+		else if (c == 'n')
+		{
+		    m_narrowingHandler.narrowToPath(m_currentNode);
+		}
+		else if (c >= '0' && c <= '9')
 		{
 		    int distance = c - '0';
 		    m_narrowingHandler.pruneToNeighborhood
