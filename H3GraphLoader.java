@@ -61,6 +61,25 @@ public class H3GraphLoader
 
     public H3Graph load()
     {
+	long baseTotalMemory = 0;    // Stats at start.
+	long baseFreeMemory = 0;
+
+	long bufferTotalMemory = 0;  // Stats after loading into graph buffer.
+	long bufferFreeMemory = 0;
+
+	long peakTotalMemory = 0;    // Stats after populating graph, and while
+	long peakFreeMemory = 0;     // the graph buffer is still reachable.
+
+	long finalTotalMemory = 0;   // Stats after freeing graph buffer, and
+	long finalFreeMemory = 0;    // leaving only graph.
+
+	if (DEBUG_MEMORY)
+	{
+	    System.gc();
+	    baseTotalMemory = Runtime.getRuntime().totalMemory();
+	    baseFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
 	long startTime = 0;
 	if (DEBUG_PRINT)
 	{
@@ -107,8 +126,22 @@ public class H3GraphLoader
 		}
 	    }
 
+	    if (DEBUG_MEMORY)
+	    {
+		System.gc();
+		bufferTotalMemory = Runtime.getRuntime().totalMemory();
+		bufferFreeMemory = Runtime.getRuntime().freeMemory();
+	    }
+
 	    retval = m_buffer.toGraph();
 	    //m_buffer.dumpForTesting();
+
+	    if (DEBUG_MEMORY)
+	    {
+		System.gc();
+		peakTotalMemory = Runtime.getRuntime().totalMemory();
+		peakFreeMemory = Runtime.getRuntime().freeMemory();
+	    }
 	}
 	catch (IOException e)
 	{
@@ -129,12 +162,58 @@ public class H3GraphLoader
 	    System.out.println("load.time[" + duration + "]");
 	}
 
+	if (DEBUG_MEMORY)
+	{
+	    System.gc();
+	    finalTotalMemory = Runtime.getRuntime().totalMemory();
+	    finalFreeMemory = Runtime.getRuntime().freeMemory();
+
+	    long baseUsed = baseTotalMemory - baseFreeMemory;
+	    long bufferUsed = bufferTotalMemory - bufferFreeMemory;
+	    long peakUsed = peakTotalMemory - peakFreeMemory;
+	    long finalUsed = finalTotalMemory - finalFreeMemory;
+
+	    System.out.println("===========================================");
+	    System.out.println("baseTotalMemory = " + M(baseTotalMemory));
+	    System.out.println("baseFreeMemory = " + M(baseFreeMemory));
+	    System.out.println("baseUsed = " + M(baseUsed));
+	    System.out.println("bufferTotalMemory = " + M(bufferTotalMemory));
+	    System.out.println("bufferFreeMemory = " + M(bufferFreeMemory));
+	    System.out.println("bufferUsed = " + M(bufferUsed));
+	    System.out.println("peakTotalMemory = " + M(peakTotalMemory));
+	    System.out.println("peakFreeMemory = " + M(peakFreeMemory));
+	    System.out.println("peakUsed = " + M(peakUsed));
+	    System.out.println("finalTotalMemory = " + M(finalTotalMemory));
+	    System.out.println("finalFreeMemory = " + M(finalFreeMemory));
+	    System.out.println("finalUsed = " + M(finalUsed));
+	    System.out.println();
+	    System.out.println("bufferUsed - baseUsed = "
+			       + M(bufferUsed - baseUsed));
+	    System.out.println("peakUsed - baseUsed = "
+			       + M(peakUsed - baseUsed));
+	    System.out.println("peakUsed - bufferUsed = "
+			       + M(peakUsed - bufferUsed));
+	    System.out.println("finalUsed - baseUsed = "
+			       + M(finalUsed - baseUsed));
+	    System.out.println("finalUsed - peakUsed = "
+			       + M(finalUsed - peakUsed));
+	    System.out.println("===========================================");
+	}
+
 	return retval;
     }
 
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
+
+    private String M(long n)
+    {
+	long x = n / 100000;
+	long mega = x / 10;
+	long kilo = x % 10;
+	return "" + n + " (" + mega + "." + kilo + "e6)";
+    }
 
     private void parseNode()
 	throws ParseException, IOException
@@ -304,6 +383,7 @@ public class H3GraphLoader
     ////////////////////////////////////////////////////////////////////////
 
     private static final boolean DEBUG_PRINT = true;
+    private static final boolean DEBUG_MEMORY = true;
 
     private StreamTokenizer m_lexer;
     private H3GraphBuffer m_buffer = new H3GraphBuffer();
