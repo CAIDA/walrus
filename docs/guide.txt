@@ -757,7 +757,7 @@ color into 32 bits in the order (_, R, G, B), with blue occupying the
 lowest eight bits and red occupying the next to highest eight bits.  More
 precisely, given R, G, and B,
 
-           color = ((R * 255) + G) * 255 + B.
+           color = ((R * 256) + G) * 256 + B.
 
 A tuple value should specify color with components that are in the range
 [0, 1].  So {0.0, 0.0, 0.0} would be black, and {1.0, 1.0, 1.0} would be
