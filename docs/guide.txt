@@ -23,18 +23,26 @@ immediately updating the rendering upon each configuration change is
 impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
-To run Walrus, do the following, or equivalent:
+To run Walrus on a UNIX system (such as Solaris or Linux), enter the
+following at a shell prompt:
 
- $ java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+   java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
-On UNIX systems, you may use the supplied shell script instead:
+Or, you may execute the supplied shell script:
 
- $ ./walrus
+   ./walrus
 
-When viewing large graphs, you'll want to increase the maximum heap size, as
-in the following with Sun's JDK:
+On Windows, enter the following at a command prompt:
 
- $ java -Xmx128M -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+   java -cp antlrall-mod.jar;libsea.jar;walrus.jar H3Main
+
+(Windows uses semicolons to separate the components of the CLASSPATH.)
+
+When viewing large graphs, you'll want to increase the maximum heap size.
+For example, the command to run Walrus with the maximum heap size set to
+128M looks like the following with Sun's JDK on a UNIX system:
+
+   java -Xmx128M -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
 
 ===========================================================================

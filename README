@@ -98,9 +98,15 @@ QUICK START
 
 Do the following to try out Walrus:
 
-1. Execute: java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+1. Execute (on UNIX systems with Sun's JDK):
 
-   Or execute the supplied script: ./walrus
+         java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+
+         (Or execute the supplied script: ./walrus)
+
+   Execute (on Windows with Sun's JDK):
+
+         java -cp antlrall-mod.jar;libsea.jar;walrus.jar H3Main
 
 2. Select the menu item File->Open (that is, 'Open' under the 'File' menu),
    and load the file 'champagne.graph' in the 'samples' subdirectory.
