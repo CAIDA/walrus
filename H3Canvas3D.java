@@ -1,6 +1,6 @@
 // 
-// Copyright 2000,2001,2002 The Regents of the University of California
-// All Rights Reserved
+// Copyright (C) 2000,2001,2002 The Regents of the University of California.
+// All Rights Reserved.
 // 
 // Permission to use, copy, modify and distribute any part of this
 // Walrus software package for educational, research and non-profit
@@ -34,6 +34,18 @@
 // is provided by NSF grant ANI-9814421, DARPA NGI Contract N66001-98-2-8922,
 // Sun Microsystems, and CAIDA members.
 // 
+// GOVERNMENT PURPOSE RIGHTS
+// Contract No.NGI N66001-98-2-8922
+// Contractor Name: SPAWAR
+// Expiration Date: 3/1/2008
+// The Government's rights to use, modify, reproduce, release, perform, 
+// display, or disclose these technical data are restricted by paragraph 
+// (b)(2) of the Rights in Technical Data - Noncommercial Items clause 
+// contained in the above identified contract.  No restrictions apply after 
+// the expiration date shown above.  Any reproduction of technical data or 
+// portions thereof marked with this legend must also reproduce the markings.
+//
+//######END_HEADER######
 
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
