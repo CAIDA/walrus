@@ -81,9 +81,6 @@ tester_sources = H3TransformQueueTester.java
 
 tester_classes = $(tester_sources:.java=.class)
 
-%.u: %.java
-	$(JIKES) $(JIKES_FLAGS) $(JIKES_DEPENDENCY_FLAGS) $<
-
 %.class: %.java
 	$(JAVAC) $(JAVAC_FLAGS) $<
 
@@ -125,6 +122,3 @@ clean:
 
 distclean: clean
 	-rm *.u
-
-include $(walrus_sources:.java=.u)
-include $(tester_sources:.java=.u)
