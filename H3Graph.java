@@ -212,6 +212,11 @@ public class H3Graph
 	return m_nodes.parent[node];
     }
 
+    public int getNodeNumChildren(int node)
+    {
+	return getNodeLinksEndIndex(node) - getNodeChildIndex(node);
+    }
+
     // The following methods--getNodeChildIndex(), getNodeNontreeIndex(),
     // and getNodeLinksEndIndex()--provide a way of iterating over all
     // the outgoing links of a node.
@@ -220,7 +225,7 @@ public class H3Graph
     //
     //     int start = graph.getNodeChildIndex(node);
     //     int end = graph.getNodeLinksEndIndex(node);
-    //     int nontreeStart = graph.getNodeNontreeIndex();
+    //     int nontreeStart = graph.getNodeNontreeIndex(node);
     //
     //     for (int i = start; i < nontreeStart; i++)
     //     {
@@ -259,6 +264,12 @@ public class H3Graph
 	return (m_nodes.isHidden == null || !m_nodes.isHidden.get(node));
     }
 
+    public boolean checkNodeSelected(int node)
+    {
+	return (m_nodes.isUnselected == null
+		|| !m_nodes.isUnselected.get(node));
+    }
+
     //======================================================================
 
     public int getLinkID(int link)
@@ -289,6 +300,12 @@ public class H3Graph
     public boolean checkLinkVisible(int link)
     {
 	return (m_links.isHidden == null || !m_links.isHidden.get(link));
+    }
+
+    public boolean checkLinkSelected(int link)
+    {
+	return (m_links.isUnselected == null
+		|| !m_links.isUnselected.get(link));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -459,24 +476,50 @@ public class H3Graph
 
     public void setNodeVisibility(int node, boolean isVisible)
     {
-	if (m_nodes.isHidden == null)
-	{
-	    m_nodes.isHidden = new BitSet(m_numNodes);
-	}
-
 	if (isVisible)
 	{
-	    m_nodes.isHidden.clear(node);
+	    if (m_nodes.isHidden != null)
+	    {
+		m_nodes.isHidden.clear(node);
+	    }
 	}
 	else
 	{
+	    if (m_nodes.isHidden == null)
+	    {
+		m_nodes.isHidden = new BitSet(m_numNodes);
+	    }
 	    m_nodes.isHidden.set(node);
+	}
+    }
+
+    public void setNodeSelectivity(int node, boolean isSelected)
+    {
+	if (isSelected)
+	{
+	    if (m_nodes.isUnselected != null)
+	    {
+		m_nodes.isUnselected.clear(node);
+	    }
+	}
+	else
+	{
+	    if (m_nodes.isUnselected == null)
+	    {
+		m_nodes.isUnselected = new BitSet(m_numNodes);
+	    }
+	    m_nodes.isUnselected.set(node);
 	}
     }
 
     public void resetNodeVisibility()
     {
 	m_nodes.isHidden = null;
+    }
+
+    public void resetNodeSelectivity()
+    {
+	m_nodes.isUnselected = null;
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -509,18 +552,39 @@ public class H3Graph
 
     public void setLinkVisibility(int link, boolean isVisible)
     {
-	if (m_links.isHidden == null)
-	{
-	    m_links.isHidden = new BitSet(m_numLinks);
-	}
-
 	if (isVisible)
 	{
-	    m_links.isHidden.clear(link);
+	    if (m_links.isHidden != null)
+	    {
+		m_links.isHidden.clear(link);
+	    }
 	}
 	else
 	{
+	    if (m_links.isHidden == null)
+	    {
+		m_links.isHidden = new BitSet(m_numLinks);
+	    }
 	    m_links.isHidden.set(link);
+	}
+    }
+
+    public void setLinkSelectivity(int link, boolean isSelected)
+    {
+	if (isSelected)
+	{
+	    if (m_links.isUnselected != null)
+	    {
+		m_links.isUnselected.clear(link);
+	    }
+	}
+	else
+	{
+	    if (m_links.isUnselected == null)
+	    {
+		m_links.isUnselected = new BitSet(m_numLinks);
+	    }
+	    m_links.isUnselected.set(link);
 	}
     }
 
@@ -547,6 +611,166 @@ public class H3Graph
 	    {
 		m_links.isHidden = null;
 	    }
+	}
+    }
+
+    public void resetLinkSelectivity()
+    {
+	m_links.isUnselected = null;
+    }
+
+    public void resetLinkSelectivity(boolean treeLink)
+    {
+	if (m_links.isUnselected != null)
+	{
+	    int length = m_links.isUnselected.length();
+	    for (int i = 0; i < length; i++)
+	    {
+		if (m_links.isUnselected.get(i)
+		    && m_links.isTreeLink.get(i) == treeLink)
+		{
+		    m_links.isUnselected.clear(i);
+		}
+	    }
+
+	    if (m_links.isUnselected.length() == 0)
+	    {
+		m_links.isUnselected = null;
+	    }
+	}
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    public void narrowVisibility(int node)
+    {
+	hideNodes();
+	hideLinks();
+
+	setNodeVisibility(node, true);
+
+	// Show nodes & links up to root node from input node.
+	int currentNode = node;
+	int parent = getNodeParent(currentNode);
+	while (parent != -1)
+	{
+	    int link = getNodeParentLink(currentNode);
+	    setLinkVisibility(link, true);
+	    setNodeVisibility(parent, true);
+
+	    int old = parent;
+	    currentNode = parent;
+	    parent = getNodeParent(parent);
+	}
+
+	// Show nodes & links of subtree rooted at input node.
+	showSubtree(node);
+
+	computeVisibility();
+    }
+
+    // Widen visibility to the first ancestor of the given node that
+    // has more than one child--that is, to the closest branching point
+    // in the path back to the root node.
+    //
+    // Returns the node to which visibility was widened.
+    public int widenVisibilityTowardRoot(int node)
+    {
+	int currentNode = node;
+	int parent = getNodeParent(currentNode);
+	boolean found = false;
+	while (!found && parent != -1)
+	{
+	    if (getNodeNumChildren(parent) > 1)
+	    {
+		found = true;
+	    }
+
+	    currentNode = parent;
+	    parent = getNodeParent(parent);
+	}
+
+	narrowVisibility(currentNode);
+	return currentNode;
+    }
+
+    public void widenVisibility()
+    {
+	resetNodeVisibility();
+	resetLinkVisibility();
+	computeVisibility();
+    }
+
+    public void computeVisibility()
+    {
+	if (m_nodes.isUnselected != null)
+	{
+	    if (m_nodes.isHidden == null)
+	    {
+		m_nodes.isHidden = (BitSet)(m_nodes.isUnselected.clone());
+	    }
+	    else
+	    {
+		m_nodes.isHidden.or(m_nodes.isUnselected);
+	    }
+	}
+
+	if (m_links.isUnselected != null)
+	{
+	    if (m_links.isHidden == null)
+	    {
+		m_links.isHidden = (BitSet)(m_links.isUnselected.clone());
+	    }
+	    else
+	    {
+		m_links.isHidden.or(m_links.isUnselected);
+	    }
+	}
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    ////////////////////////////////////////////////////////////////////////
+
+    private void hideNodes()
+    {
+	m_nodes.isHidden = new BitSet(m_numNodes);
+	for (int i = 0; i < m_numNodes; i++)
+	{
+	    m_nodes.isHidden.set(i);
+	}
+    }
+
+    private void hideLinks()
+    {
+	m_links.isHidden = new BitSet(m_numLinks);
+	for (int i = 0; i < m_numLinks; i++)
+	{
+	    m_links.isHidden.set(i);
+	}
+    }
+
+    // Set isHidden to false for all nodes and links in the subtree
+    // rooted at input node.
+    //
+    // The input node itself is assumed to have been taken care of.
+    private void showSubtree(int node)
+    {
+	int start = getNodeChildIndex(node);
+	int end = getNodeLinksEndIndex(node);
+	int nontreeStart = getNodeNontreeIndex(node);
+    
+	for (int i = start; i < nontreeStart; i++)
+	{
+	    int child = getLinkDestination(i);
+            setNodeVisibility(child, true);
+            setLinkVisibility(i, true);
+	    showSubtree(child);
+	}
+    
+	for (int i = nontreeStart; i < end; i++)
+	{
+            setLinkVisibility(i, false);
 	}
     }
 
@@ -654,9 +878,16 @@ public class H3Graph
 
 	// Whether a node should NOT be drawn.
 	// This will be null if all nodes should be visible.
-	// We use the inverted logic because BitSet is created with all its
+	// We use inverted logic because BitSet is created with all its
 	// bits cleared.
 	public BitSet isHidden;
+
+	// Whether a node has NOT been chosen by a selection attribute.
+	// This will be null if all nodes have been selected (all nodes
+	// are implicitly selected if there is no selection attribute).
+	// We use inverted logic because BitSet is created with all its
+	// bits cleared.
+	public BitSet isUnselected;
     }
 
     public static class Links
@@ -697,9 +928,16 @@ public class H3Graph
 
 	// Whether a link should NOT be drawn.
 	// This will be null if all links should be visible.
-	// We use the inverted logic because BitSet is created with all its
+	// We use inverted logic because BitSet is created with all its
 	// bits cleared.
 	public BitSet isHidden;
+
+	// Whether a link has NOT been chosen by a selection attribute.
+	// This will be null if all links have been selected (all links
+	// are implicitly selected if there is no selection attribute).
+	// We use inverted logic because BitSet is created with all its
+	// bits cleared.
+	public BitSet isUnselected;
     }
 
     ////////////////////////////////////////////////////////////////////////
