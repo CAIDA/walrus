@@ -200,7 +200,7 @@ public class H3AdaptiveRenderLoop
 	endRequest();
     }
 
-    public H3DisplayPosition getDisplayPosition()
+    public synchronized H3DisplayPosition getDisplayPosition()
     {
 	H3DisplayPosition retval = null;
 	startRequest();
@@ -214,7 +214,7 @@ public class H3AdaptiveRenderLoop
 	return retval;
     }
 
-    public void setDisplayPosition(H3DisplayPosition position)
+    public synchronized void setDisplayPosition(H3DisplayPosition position)
     {
 	startRequest();
 	{
