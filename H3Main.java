@@ -853,6 +853,7 @@ public class H3Main
 	int node = m_eventHandler.getCurrentNode();
 	m_graph.narrowVisibility(node);
 	setupNarrowedDisplayMenus(node != m_graph.getRootNode());
+	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
     }
 
@@ -862,6 +863,7 @@ public class H3Main
     {
 	m_graph.widenSubtreeVisibility(m_eventHandler.getCurrentNode());
 	updateNarrowedDisplayMenus();
+	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
     }
 
@@ -871,6 +873,7 @@ public class H3Main
     {
 	m_graph.widenVisibilityTowardRoot(m_eventHandler.getCurrentNode());
 	updateNarrowedDisplayMenus();
+	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
     }
 
@@ -880,6 +883,7 @@ public class H3Main
     {
 	m_graph.widenVisibility();
 	setupNarrowedDisplayMenus(false);
+	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
     }
 
@@ -889,6 +893,7 @@ public class H3Main
     {
 	m_graph.pruneSubtreeVisibility(m_eventHandler.getCurrentNode());
 	setupNarrowedDisplayMenus(true);
+	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
     }
 
