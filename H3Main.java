@@ -869,6 +869,40 @@ public class H3Main
 	m_viewParameters.setAxesEnabled
 	    (renderingConfiguration.axes);
 
+	boolean useNodeSizes =
+	    renderingConfiguration.multipleNodeSizes;
+	boolean includeNodes = determineWhetherToIncludeObject
+	    (renderingConfiguration.nodeColor);
+	boolean includeTreeLinks = determineWhetherToIncludeObject
+	    (renderingConfiguration.treeLinkColor);
+	boolean includeNontreeLinks = determineWhetherToIncludeObject
+	    (renderingConfiguration.nontreeLinkColor);
+	boolean includeNodeColor = determineWhetherToIncludeColor
+	    (renderingConfiguration.nodeColor);
+	boolean includeTreeLinkColor = determineWhetherToIncludeColor
+	    (renderingConfiguration.treeLinkColor);
+	boolean includeNontreeLinkColor = determineWhetherToIncludeColor
+	    (renderingConfiguration.nontreeLinkColor);
+
+	H3PointRenderList renderList = new H3PointRenderList
+	    (m_graph, useNodeSizes,
+	     includeNodes, includeNodeColor,
+	     includeTreeLinks, includeTreeLinkColor,
+	     includeNontreeLinks, includeNontreeLinkColor);
+
+	renderList.setNearNodeAppearance
+	    (useNodeSizes
+	     ? m_viewParameters.getNearNodeAppearance()
+	     : m_viewParameters.getMiddleNodeAppearance());
+	renderList.setMiddleNodeAppearance
+	    (m_viewParameters.getMiddleNodeAppearance());
+	renderList.setFarNodeAppearance
+	    (m_viewParameters.getFarNodeAppearance());
+	renderList.setTreeLinkAppearance
+	    (m_viewParameters.getTreeLinkAppearance());
+	renderList.setNontreeLinkAppearance
+	    (m_viewParameters.getNontreeLinkAppearance());
+
 	if (renderingConfiguration.adaptiveRendering)
 	{
 	    int queueSize = m_graph.getNumNodes() + m_graph.getTotalNumLinks();
@@ -887,57 +921,16 @@ public class H3Main
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-	    boolean useNodeSizes =
-		renderingConfiguration.multipleNodeSizes;
-	    boolean includeNodes = determineWhetherToIncludeObject
-		(renderingConfiguration.nodeColor);
-	    boolean includeTreeLinks = determineWhetherToIncludeObject
-		(renderingConfiguration.treeLinkColor);
-	    boolean includeNontreeLinks = determineWhetherToIncludeObject
-		(renderingConfiguration.nontreeLinkColor);
-	    boolean includeNodeColor = determineWhetherToIncludeColor
-		(renderingConfiguration.nodeColor);
-	    boolean includeTreeLinkColor = determineWhetherToIncludeColor
-		(renderingConfiguration.treeLinkColor);
-	    boolean includeNontreeLinkColor = determineWhetherToIncludeColor
-		(renderingConfiguration.nontreeLinkColor);
-
-	    H3PointRenderList list = new H3PointRenderList
-		(m_graph, useNodeSizes,
-		 includeNodes, includeNodeColor,
-		 includeTreeLinks, includeTreeLinkColor,
-		 includeNontreeLinks, includeNontreeLinkColor);
-
-	    list.setNearNodeAppearance
-		(m_viewParameters.getNearNodeAppearance());
-	    list.setMiddleNodeAppearance
-		(m_viewParameters.getMiddleNodeAppearance());
-	    list.setFarNodeAppearance
-		(m_viewParameters.getFarNodeAppearance());
-	    list.setTreeLinkAppearance
-		(m_viewParameters.getTreeLinkAppearance());
-
-	    if (true)
-	    {
-		list.setNontreeLinkAppearance
-		    (m_viewParameters.getNontreeLinkAppearance());
-	    }
-	    else
-	    {
-		list.setNontreeLinkAppearance
-		    (m_viewParameters.getLineAppearance());
-	    }
-
 	    H3AdaptiveRenderer renderer = null;
 
 	    if (true)
 	    {
-		renderer = new H3LineRenderer(m_graph, queue, list);
+		renderer = new H3LineRenderer(m_graph, queue, renderList);
 	    }
 	    else
 	    {
 		renderer = new H3CircleRenderer
-		    (m_graph, m_viewParameters, queue, list);
+		    (m_graph, m_viewParameters, queue, renderList);
 	    }
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -960,12 +953,9 @@ public class H3Main
 	{
 	    m_graph.transformNodes(H3Transform.I4);
 
-	    boolean processNontreeLinks =
-		(renderingConfiguration.nontreeLinkColor.scheme
-		 != ColorConfiguration.INVISIBLE);
-
 	    H3NonadaptiveRenderLoop nonadaptive = new H3NonadaptiveRenderLoop
-		(m_graph, m_canvas, m_viewParameters, processNontreeLinks);
+		(m_graph, m_canvas, m_viewParameters,
+		 renderList, useNodeSizes);
 
 	    new Thread(nonadaptive).start();
 	    m_renderLoop = nonadaptive;
@@ -1301,13 +1291,6 @@ public class H3Main
 	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive Rendering");
 	m_adaptiveMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_adaptiveMenuItem.setSelected(true);
-	m_adaptiveMenuItem.addItemListener(new ItemListener() {
-		public void itemStateChanged(ItemEvent e)
-		{
-		    boolean enable =(e.getStateChange() == ItemEvent.SELECTED);
-		    m_multipleNodeSizesMenuItem.setEnabled(enable);
-		}
-	    });
 
 	m_multipleNodeSizesMenuItem =
 	    new JCheckBoxMenuItem("Multiple Node Sizes");
