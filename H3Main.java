@@ -320,7 +320,8 @@ public class H3Main
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
 	m_pruneSubtreeMenuItem.setEnabled(false);
-	m_pruneToNeighborhoodMenuItem.setEnabled(false);
+	m_pruneToChildrenMenuItem.setEnabled(false);
+	m_pruneToNeighborhoodMenu.setEnabled(false);
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
@@ -1474,7 +1475,8 @@ public class H3Main
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
 	m_pruneSubtreeMenuItem.setEnabled(false);
-	m_pruneToNeighborhoodMenuItem.setEnabled(false);
+	m_pruneToChildrenMenuItem.setEnabled(false);
+	m_pruneToNeighborhoodMenu.setEnabled(false);
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
@@ -1501,7 +1503,8 @@ public class H3Main
 	m_widenTowardRootMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenToGraphMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_pruneSubtreeMenuItem.setEnabled(true);
-	m_pruneToNeighborhoodMenuItem.setEnabled(true);
+	m_pruneToChildrenMenuItem.setEnabled(true);
+	m_pruneToNeighborhoodMenu.setEnabled(true);
 	m_refreshDisplayMenuItem.setEnabled(true);
 	m_wobbleDisplayMenuItem.setEnabled(true);
 	m_showRootNodeMenuItem.setEnabled(true);
@@ -1749,17 +1752,21 @@ public class H3Main
 		}
 	    });
 
-	m_pruneToNeighborhoodMenuItem =
-	    new JMenuItem("Prune To Neighborhood");
-	m_pruneToNeighborhoodMenuItem.setMnemonic(KeyEvent.VK_N);
-	m_pruneToNeighborhoodMenuItem.setEnabled(false);
-	m_pruneToNeighborhoodMenuItem.addActionListener(new ActionListener() {
+	m_pruneToChildrenMenuItem = new JMenuItem("Prune To Children");
+	m_pruneToChildrenMenuItem.setMnemonic(KeyEvent.VK_C);
+	m_pruneToChildrenMenuItem.setEnabled(false);
+	m_pruneToChildrenMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
 		    int node = m_eventHandler.getCurrentNode();
 		    handlePruneToNeighborhoodRequest(node, 1);
 		}
 	    });
+
+	m_pruneToNeighborhoodMenu = new JMenu("Prune To Neighborhood");
+	m_pruneToNeighborhoodMenu.setMnemonic(KeyEvent.VK_E);
+	m_pruneToNeighborhoodMenu.setEnabled(false);
+	addPruneToNeighborhoodSubmenus(m_pruneToNeighborhoodMenu);
 
 	m_refreshDisplayMenuItem = new JMenuItem("Refresh");
 	m_refreshDisplayMenuItem.setMnemonic(KeyEvent.VK_R);
@@ -1845,7 +1852,8 @@ public class H3Main
 	m_displayMenu.add(m_widenTowardRootMenuItem);
 	m_displayMenu.add(m_widenToGraphMenuItem);
 	m_displayMenu.add(m_pruneSubtreeMenuItem);
-	m_displayMenu.add(m_pruneToNeighborhoodMenuItem);
+	m_displayMenu.add(m_pruneToChildrenMenuItem);
+	m_displayMenu.add(m_pruneToNeighborhoodMenu);
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_refreshDisplayMenuItem);
 	m_displayMenu.add(m_wobbleDisplayMenuItem);
@@ -1879,6 +1887,35 @@ public class H3Main
 	retval.add(m_colorSchemeMenu.getColorSchemeMenu());
 	retval.add(m_nodeLabelMenu);
 	return retval;
+    }
+
+    private void addPruneToNeighborhoodSubmenus(JMenu menu)
+    {
+	class PruningActionListener implements ActionListener
+	{
+	    public PruningActionListener(int distance)
+	    {
+		m_distance = distance;
+	    }
+
+	    public void actionPerformed(ActionEvent e)
+	    {
+		int node = m_eventHandler.getCurrentNode();
+		handlePruneToNeighborhoodRequest(node, m_distance);
+	    }
+
+	    private final int m_distance;
+	}
+
+	int[] distances = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 50 };
+	for (int i = 0; i < distances.length; i++)
+	{
+	    int distance = distances[i];
+	    JMenuItem menuItem =
+		new JMenuItem("distance <= " + Integer.toString(distance));
+	    menuItem.addActionListener(new PruningActionListener(distance));
+	    menu.add(menuItem);
+	}
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1966,7 +2003,8 @@ public class H3Main
     private JMenuItem m_widenTowardRootMenuItem;
     private JMenuItem m_widenToGraphMenuItem;
     private JMenuItem m_pruneSubtreeMenuItem;
-    private JMenuItem m_pruneToNeighborhoodMenuItem;
+    private JMenuItem m_pruneToChildrenMenuItem;
+    private JMenu m_pruneToNeighborhoodMenu;
     private JMenuItem m_refreshDisplayMenuItem;
     private JMenuItem m_wobbleDisplayMenuItem;
     private JMenuItem m_showRootNodeMenuItem;
