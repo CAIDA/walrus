@@ -20,8 +20,6 @@ walrus_sources = H3AdaptivePicker.java \
 	H3AdaptiveRenderer.java \
 	H3Axes.java \
 	H3Canvas3D.java \
-	H3CapturingRenderLoop.java \
-	H3CapturingRotationRequest.java \
 	H3Circle.java \
 	H3CircleRenderer.java \
 	H3DisplayPosition.java \
@@ -44,7 +42,6 @@ walrus_sources = H3AdaptivePicker.java \
 	H3RenderQueue.java \
 	H3RepeatingRotationRequest.java \
 	H3RotationRequest.java \
-	H3ScreenCapturer.java \
 	H3Transform.java \
 	H3TransformQueue.java \
 	H3Transformer.java \
