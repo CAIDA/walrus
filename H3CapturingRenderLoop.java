@@ -170,6 +170,16 @@ public class H3CapturingRenderLoop
 	m_renderLoop.restoreDisplayPosition();
     }
 
+    public H3DisplayPosition getDisplayPosition()
+    {
+	return m_renderLoop.getDisplayPosition();
+    }
+
+    public void setDisplayPosition(H3DisplayPosition position)
+    {
+	m_renderLoop.setDisplayPosition(position);
+    }
+
     public void shutdown()
     {
 	m_renderLoop.shutdown();

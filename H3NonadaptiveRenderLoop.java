@@ -199,9 +199,37 @@ public class H3NonadaptiveRenderLoop
 	    m_picker.reset();
 
 	    m_parameters.restoreObjectTransform();
-
 	    m_translation.set(m_savedTranslation);
 	    m_graph.transformNodes(m_translation);
+
+	    refresh();
+	}
+	endRequest();
+    }
+
+    public H3DisplayPosition getDisplayPosition()
+    {
+	H3DisplayPosition retval = null;
+	startRequest();
+	{
+	    retval = new H3DisplayPosition(m_translationNode,
+					   m_parameters.getObjectTransform(),
+					   m_translation);
+	}
+	endRequest();
+	return retval;
+    }
+
+    public void setDisplayPosition(H3DisplayPosition position)
+    {
+	startRequest();
+	{
+	    m_picker.reset();
+
+	    m_parameters.setObjectTransform(position.getRotation());
+	    m_translation.set(position.getTranslation());
+	    m_graph.transformNodes(m_translation);
+
 	    refresh();
 	}
 	endRequest();

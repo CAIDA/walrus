@@ -200,6 +200,30 @@ public class H3AdaptiveRenderLoop
 	endRequest();
     }
 
+    public H3DisplayPosition getDisplayPosition()
+    {
+	H3DisplayPosition retval = null;
+	startRequest();
+	{
+	    H3Transformer.Position position = m_transformer.getPosition();
+	    retval = new H3DisplayPosition(position.startingNode,
+					   m_parameters.getObjectTransform(),
+					   position.transform);
+	}
+	endRequest();
+	return retval;
+    }
+
+    public void setDisplayPosition(H3DisplayPosition position)
+    {
+	startRequest();
+	{
+	    m_displayPosition = position;
+	    m_restoreDisplayRequested = true;
+	}
+	endRequest();
+    }
+
     public synchronized void shutdown()
     {
 	startRequest();
@@ -352,8 +376,24 @@ public class H3AdaptiveRenderLoop
 		m_picker.reset();
 		m_renderer.reset();
 
-		m_parameters.restoreObjectTransform();
-		m_transformer.popPosition();
+		if (m_displayPosition == null)
+		{
+		    m_parameters.restoreObjectTransform();
+		    m_transformer.popPosition();
+		}
+		else
+		{
+		    m_parameters.setObjectTransform
+			(m_displayPosition.getRotation());
+
+		    H3Transformer.Position position =
+			new H3Transformer.Position();
+		    position.startingNode = m_displayPosition.getCenterNode();
+		    position.transform.set(m_displayPosition.getTranslation());
+		    m_transformer.setPosition(position);
+
+		    m_displayPosition = null;
+		}
 
 		GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
 		gc.clear();
@@ -715,4 +755,5 @@ public class H3AdaptiveRenderLoop
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private boolean m_restoreDisplayRequested;
+    private H3DisplayPosition m_displayPosition;
 }
