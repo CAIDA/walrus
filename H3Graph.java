@@ -610,6 +610,12 @@ public class H3Graph
 	computeVisibility();
     }
 
+    public void pruneVisibilityToNeighborhood(int node, int distance)
+    {
+	setNeighborhoodDisplayability(node, 0, distance);
+	computeVisibility();
+    }
+
     public void narrowVisibility(int node)
     {
 	setNodeDisplayability(false);
@@ -632,31 +638,6 @@ public class H3Graph
 	}
 
 	setSubtreeDisplayability(node, true);
-	computeVisibility();
-    }
-
-    public void narrowVisibilityToNeighborhood(int node, int distance)
-    {
-	setNodeDisplayability(false);
-	setLinkDisplayability(false);
-
-	setNodeDisplayability(node, true);
-
-	// Show nodes & links up to root node from input node.
-	int currentNode = node;
-	int parent = getNodeParent(currentNode);
-	while (parent != -1)
-	{
-	    int link = getNodeParentLink(currentNode);
-	    setLinkDisplayability(link, true);
-	    setNodeDisplayability(parent, true);
-
-	    int old = parent;
-	    currentNode = parent;
-	    parent = getNodeParent(parent);
-	}
-
-	setNeighborhoodDisplayability(node, true, 0, distance);
 	computeVisibility();
     }
 
@@ -773,22 +754,20 @@ public class H3Graph
 
     // The input node itself is assumed to have been taken care of.
     private void setNeighborhoodDisplayability
-	(int node, boolean isDisplayable, int distance, int maxDistance)
+	(int node, int distance, int maxDistance)
     {
-	if (distance < maxDistance)
-	{
-	    int start = getNodeChildIndex(node);
-	    int end = getNodeLinksEndIndex(node);
-	    int nontreeStart = getNodeNontreeIndex(node);
+	boolean isDisplayable = (distance < maxDistance);
+
+	int start = getNodeChildIndex(node);
+	int end = getNodeLinksEndIndex(node);
+	int nontreeStart = getNodeNontreeIndex(node);
     
-	    for (int i = start; i < nontreeStart; i++)
-	    {
-		int child = getLinkDestination(i);
-		setNodeDisplayability(child, isDisplayable);
-		setLinkDisplayability(i, isDisplayable);
-		setNeighborhoodDisplayability
-		    (child, isDisplayable, distance + 1, maxDistance);
-	    }
+	for (int i = start; i < nontreeStart; i++)
+	{
+	    int child = getLinkDestination(i);
+	    setNodeDisplayability(child, isDisplayable);
+	    setLinkDisplayability(i, isDisplayable);
+	    setNeighborhoodDisplayability(child, distance + 1, maxDistance);
 	}
     }
 
