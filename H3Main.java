@@ -1873,8 +1873,6 @@ public class H3Main
     private JMenuItem m_saveWithLayoutAsMenuItem;
     private JMenuItem m_closeMenuItem;
     private JMenuItem m_captureScreenMenuItem;
-    private JMenuItem m_captureScreenMenuItem2;
-    private JMenuItem m_captureScreenMenuItem3;
     private ButtonGroup m_captureResolutionButtonGroup;
     private ButtonGroup m_captureDPIButtonGroup;
 
