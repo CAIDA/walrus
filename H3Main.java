@@ -44,6 +44,7 @@ import java.io.*;
 import com.sun.j3d.utils.geometry.Text2D;
 import com.sun.j3d.utils.geometry.*;
 import com.sun.j3d.utils.universe.*;
+import org.caida.libsea.ASCIIInputStreamReader;
 
 public class H3Main
 {
@@ -91,7 +92,10 @@ public class H3Main
 		System.out.println("Loading graph from \""
 				   + args[0] + "\" ...");
 
-		FileReader reader = new FileReader(args[0]);
+		// Class java.io.FileReader could have been used here, but
+		// it has performance problems.  See ASCIIInputStreamReader.
+		ASCIIInputStreamReader reader =
+		    new ASCIIInputStreamReader(new FileInputStream(args[0]));
 
 		H3GraphLoader loader = new H3GraphLoader(reader);
 		graph = loader.load();
