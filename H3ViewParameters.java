@@ -80,15 +80,25 @@ public class H3ViewParameters
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
     // (x, y) of the lower-left corner of the label in image-plate coordinates
-    public void drawLabel(GraphicsContext3D gc, double x, double y, String s)
+    //
+    // For some unknown reason, successive labels appear *behind* previous
+    // labels.  The parameter {zOffset} is meant to provide a hint about
+    // the ordering of a set of labels put up during one 'labelling session'.
+    // This parameter is used to calculate a small +z offset to apply to
+    // the label.  The best way to generate it in the caller is to pass in
+    // a counter, starting at zero, which increments by one as successive
+    // labels are requested.  It should be reset to zero when some user
+    // interaction causes all labels to be cleared.
+    public void drawLabel
+	(GraphicsContext3D gc, double x, double y, int zOffset, String s)
     {
 	boolean frontBufferRenderingState = gc.getFrontBufferRendering();
 	gc.setBufferOverride(true);
 	gc.setFrontBufferRendering(true);
 
 	Point3d eye = getEye();
-	double labelZ = ON_SCREEN_LABEL_Z_SCALE * eye.z
-	    + ON_SCREEN_LABEL_Z_OFFSET;
+	double labelZ = zOffset * ON_SCREEN_LABEL_Z_OFFSET_SCALE
+	    + ON_SCREEN_LABEL_Z_SCALE * eye.z + ON_SCREEN_LABEL_Z_OFFSET;
 
 	double xOffset = ON_SCREEN_LABEL_X_OFFSET * m_pixelToMeterScale;
 	double yOffset = ON_SCREEN_LABEL_Y_OFFSET * m_pixelToMeterScale;
@@ -583,7 +593,8 @@ public class H3ViewParameters
 
     private static final double ON_SCREEN_LABEL_SCALE = 0.03;
     private static final double ON_SCREEN_LABEL_Z_SCALE = 0.5;
-    private static final double ON_SCREEN_LABEL_Z_OFFSET = 0.0;
+    private static final double ON_SCREEN_LABEL_Z_OFFSET = 0.0; // meters
+    private static final double ON_SCREEN_LABEL_Z_OFFSET_SCALE = 0.0001; // m
     private static final double ON_SCREEN_LABEL_X_OFFSET = 10; // pixels
     private static final double ON_SCREEN_LABEL_Y_OFFSET = 10; // pixels
 

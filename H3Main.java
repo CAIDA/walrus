@@ -1788,6 +1788,7 @@ public class H3Main
 	    if (m_state == STATE_IDLE
 		|| m_state == STATE_ROTATING_INTERACTIVE_START)
 	    {
+		m_labelZOffsetCounter = 0;
 		m_renderLoop.refreshDisplay();		
 	    }
 	}
@@ -1796,6 +1797,7 @@ public class H3Main
 	{
 	    if (m_state == STATE_IDLE) 
 	    {
+		m_labelZOffsetCounter = 0;
 		m_state = STATE_WOBBLING;
 		m_wobblingListener = listener;
 		m_wobblingRequest.start();
@@ -1821,6 +1823,7 @@ public class H3Main
 	{
 	    if (m_state == STATE_IDLE)
 	    {
+		m_labelZOffsetCounter = 0;
 		m_renderLoop.translate(m_rootNode);
 		shiftCenterNodes(m_rootNode);
 	    }
@@ -1830,6 +1833,7 @@ public class H3Main
 	{
 	    if (m_state == STATE_IDLE)
 	    {
+		m_labelZOffsetCounter = 0;
 		m_renderLoop.translate(swapCenterNodes());
 	    }
 	}
@@ -1848,6 +1852,7 @@ public class H3Main
 	{
 	    if (m_state == STATE_IDLE)
 	    {
+		m_labelZOffsetCounter = 0;
 		m_renderLoop.setDisplayPosition(position);
 		shiftCenterNodes(position.getCenterNode());
 	    }
@@ -1880,10 +1885,12 @@ public class H3Main
 
 		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
 		    {
+			m_labelZOffsetCounter = 0;
 			m_state = STATE_ROTATING_CONTINUOUS_START;
 		    }
 		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
 		    {
+			m_labelZOffsetCounter = 0;
 			m_state = STATE_ROTATING_TRACKING;
 			computeTrackingAngles(x, y);
 			m_repeatingRequest.start();
@@ -1926,6 +1933,7 @@ public class H3Main
 			// possible for us to easily determine at any time
 			// whether it is safe to call refreshDisplay()--it
 			// is safe if the state is either this or STATE_IDLE.
+			m_labelZOffsetCounter = 0;
 			m_state = STATE_ROTATING_INTERACTIVE_START;
 		    }
 		}
@@ -1943,10 +1951,12 @@ public class H3Main
 		    }
 		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
 		    {
+			m_labelZOffsetCounter = 0;
 		        m_renderLoop.translate(swapCenterNodes());
 		    }
 		    else
 		    {
+			m_labelZOffsetCounter = 0;
 			translateDisplay(x, y);
 		    }
 		}
@@ -2217,6 +2227,7 @@ public class H3Main
 		    if (m_state == STATE_IDLE
 			|| m_state == STATE_ROTATING_INTERACTIVE_START)
 		    {
+			m_labelZOffsetCounter = 0;
 			m_renderLoop.refreshDisplay();
 		    }
 		}
@@ -2266,7 +2277,8 @@ public class H3Main
 	    GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
 	    Point3d position = new Point3d();
 	    m_canvas.getPixelLocationInImagePlate(x, y, position);
-	    m_parameters.drawLabel(gc, position.x, position.y, label);
+	    m_parameters.drawLabel
+		(gc, position.x, position.y, m_labelZOffsetCounter++, label);
 	}
 
 	private void shiftCenterNodes(int node)
@@ -2426,6 +2438,17 @@ public class H3Main
 	private JTextField m_statusBar;
 	private boolean m_onScreenLabels;
 	private NodeLabelConstructor m_labelConstructor;
+
+	// This is a workaround for dealing with the transparency issues
+	// associated with drawing successive labels.  Without this,
+	// successive labels are drawn *behind* earlier labels.
+	// See comments for H3ViewParameters.java:drawLabel().
+	//
+	// This should be reset to zero at the beginning (or end) of
+	// each 'labelling session'.  Getting the timing perfect isn't
+	// important; ensuring that it never grows too large (say > 200)
+	// is all that matters.
+	private int m_labelZOffsetCounter = 0;
 
 	private Point2d m_center = new Point2d();
 
