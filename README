@@ -1,3 +1,32 @@
+                   The Walrus Graph Visualization Tool
+
+                             version 0.1
+
+                             ___ __, 2001
+
+          (http://www.caida.org/tools/visualization/walrus/)
+
+
+DESCRIPTION
+
+Walrus is a tool for visualizing large directed graphs, where large is on
+the order of a million nodes, and about as many links. It is applicable
+mainly to graphs that are tree-like by having a meaningful spanning tree
+and by including a relatively small number of non-tree links. It overcomes
+the difficulties of visualizing large graphs in two ways. First, the
+computational cost of layout is overcome by considering only the spanning
+tree in the calculations, since techniques for tree layout scale better
+than those for general graph layout. Second, the problem of displaying a
+large graph on a small screen is overcome by making use of hyperbolic
+geometry. Hyperbolic geometry provides a Focus+Context view which resembles
+a continuous fish-eye distortion in three dimensions. It allows the user to
+examine the fine details of a small area while always having a view of the
+whole graph available as a frame of reference. The user examines the whole
+graph by interactively moving the focus.
+
+
+
+============================================================================
 From youngh@caida.org Wed May 23 16:15:34 2001
 Date: Tue, 14 Nov 2000 13:16:26 -0800 (PST)
 From: Young Hyun <youngh@caida.org>
