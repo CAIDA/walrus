@@ -2,7 +2,7 @@
 
                    The Walrus Graph Visualization Tool
 
-                             version 0.2
+                             version 0.3
 
                              ___ __, 2002
 
@@ -53,13 +53,15 @@ CHANGES
 
 Since 0.2, released Jan 25, 2002:
 
+  * Added some more introductory documentation on the LibSea file format.
+      See docs/guide.txt.
   * Added support for overlaid node labels.
       Attribute values can now be shown in the display area next to the
       relavant nodes.  These labels, however, are only temporary and
       disappear once the user moves or refreshes the window.
   * Added support for selection attributes.
       A boolean attribute in the graph file can be used to specify which
-      nodes or links are displayed.
+      nodes or links are to be displayed.
   * Added support for displaying attributes of list type.
       Previously, only scalar attributes could be displayed.
   * Improved the layout of binary trees.
@@ -95,7 +97,14 @@ JDK:     http://java.sun.com/j2se/
 A hardware-accelerated graphics card is necessary for adequate performance.
 It is also useful to have a speedy machine with lots of memory (128MB is
 probably a minimum; 256MB or more is better; 512MB is probably required
-for a million-node graph).
+for a few hundred thousand nodes).
+
+Windows 2000 users: Be sure to use the OpenGL version of Java3D and not the
+DirectX version, which has problems on this platform.
+
+Linux users: We, as well as others, have had problems running Java3D on
+an NVIDIA card.  Using JDK 1.4 and Java3D 1.3.1beta seems to help, but
+you may still experience instability.
 
 Walrus was developed and tested on a Sun Ultra 60 with an Elite 3D card
 and 512MB of RAM, running Solaris 7, a box graciously donated by Sun.
@@ -106,7 +115,7 @@ DOCUMENTATION
 
 See the 'docs' subdirectory for documentation.  In particular, the file
 'guide.txt' contains a brief guide to using Walrus (see also QUICK START
-below).
+below) and provides details on the input file format.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -134,24 +143,24 @@ QUICK START
 
 You can give Walrus a quick try by doing the following:
 
-1. Extract 'walrus-0.2.tar.gz' or 'walrus-0.2.zip' anywhere you wish.  This
-   will create a subdirectory named 'walrus-0.2' containing several JAR,
+1. Extract 'walrus-0.3.tar.gz' or 'walrus-0.3.zip' anywhere you wish.  This
+   will create a subdirectory named 'walrus-0.3' containing several JAR,
    files among other things.
 
     For UNIX users...
 
-      The file walrus-0.2.tar.gz was packaged with the standard TAR utility
+      The file walrus-0.3.tar.gz was packaged with the standard TAR utility
       and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
       it with the following command:
 
-          gzip -cd walrus-0.2.tar.gz | tar xvf -
+          gzip -cd walrus-0.3.tar.gz | tar xvf -
 
     For Windows users...
 
-      The file walrus-0.2.zip was packaged in the common ZIP format.  You
+      The file walrus-0.3.zip was packaged in the common ZIP format.  You
       can unpack it using a program like WinZip (http://www.winzip.com/).
 
-1. From the 'walrus-0.2' subdirectory, enter the following at a shell
+1. From the 'walrus-0.3' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
@@ -232,7 +241,7 @@ The directory 'samples' contains the following sample graphs.
 
      A graph file generated from the UNIX directory tree containing the
      Walrus source files.  This was generated using the perl scripts
-     included in 'walrus-0.2/docs/dirgraph'.
+     included in 'walrus-0.3/docs/dirgraph'.
 
      Many of the values shown in a directory listing are included in this
      graph file as attributes.  For example, the attribute 'full_name'
