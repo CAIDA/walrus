@@ -1512,7 +1512,7 @@ public class H3Main
     private static final boolean DEBUG_PRINT_LOAD_TIME = true;
     private static final boolean DEBUG_PRINT_LOAD_MEMORY = true;
     private static final boolean DEBUG_CHECK_ID_MAPPINGS = true;
-    private static final boolean DEBUG_EVENT_HANDLING = true;
+    private static final boolean DEBUG_EVENT_HANDLING = false;
 
     private static final int DEFAULT_FRAME_WIDTH = 900;
     private static final int DEFAULT_FRAME_HEIGHT = 1000;
