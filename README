@@ -195,6 +195,55 @@ commands and menus not covered here.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+SAMPLE GRAPHS
+
+The directory 'samples' contains the following sample graphs.
+
+ * simple.graph
+    [15 nodes, 17 links; 2 attributes]
+
+     You may want to browse this file to see what a minimal input file
+     looks like.  The '@...=' text strings are simply comments, and though
+     they make debugging easier, they are not significant nor required (see
+     champagne.graph for an example of an input file without these).
+
+ * walrus-directory.graph
+    [364 nodes, 364 links; 12 attributes]
+
+     A graph file generated from the UNIX directory tree containing the
+     Walrus source files.  This was generated using the perl scripts
+     included in 'walrus-0.2/docs/dirgraph'.
+
+     Many of the values shown in a directory listing are included in this
+     graph file as attributes.  For example, the attribute 'full_name'
+     contains the complete path of each file, and the attribute 'size'
+     contains the file size.  To see the values of these attributes, do the
+     following.  After loading the graph, select the attributes you would
+     like to examine from the 'Node Label' menu.  Then choose the menu item
+     Rendering->Update (and Rendering->Start, if rendering has not been
+     started).  Now click on a node with the middle mouse button (or the
+     right mouse button while holding down the shift key) to see the
+     attributes values in the status bar at the bottom of the window.
+
+     The graph also contains two attributes, 'mtime_color' and
+     'size_class_color', which can be used to color nodes.  For example,
+     to color nodes by their modification time, first select
+     Color Scheme->Node Color->RGB, and then
+     Color Scheme->Node Color->Color Attribute->mtime_color.  Now choose
+     Rendering->Update (and Rendering->Start, if needed).
+
+ * champagne.graph
+    [9175 nodes, 15519 links; 2 attributes]
+
+     An Internet topology graph generated from data collected by a skitter
+     monitor (http://www.caida.org/tools/measurement/skitter/).
+
+
+The extension '.graph' is only a convention employed in these sample graphs
+and is not a requirement of Walrus.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ACKNOWLEDGEMENTS
 
 The LibSea graph library distributed with Walrus uses the excellent and
