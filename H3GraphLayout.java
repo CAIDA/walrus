@@ -632,9 +632,7 @@ public class H3GraphLayout
 	    Matrix4d rotPhi = H3Transform.I4;
 
 	    Point4d childCenterAbsolute = new Point4d();
-	    Point4d childCenterRelative = new Point4d();
 	    Point4d childPoleAbsolute = new Point4d();
-	    Point4d childPoleRelative = new Point4d();
 
 	    for (int i = childIndex; i < nontreeIndex; i++)
 	    {
@@ -657,7 +655,6 @@ public class H3GraphLayout
 		// compute child's center relative to parent's coord system
 		childCenterAbsolute.set(parentRadiusE, 0.0, 0.0, 1.0);
 		rot.transform(childCenterAbsolute);
-		childCenterRelative.set(childCenterAbsolute);
 
 		// compute child's pole relative to parent's coordinate system
 		double childPoleE =
@@ -666,7 +663,6 @@ public class H3GraphLayout
 
 		childPoleAbsolute.set(childPoleE, 0.0, 0.0, 1.0);
 		rot.transform(childPoleAbsolute);
-		childPoleRelative.set(childPoleAbsolute);
 
 		parentTransform.transform(childCenterAbsolute);
 		parentTransform.transform(childPoleAbsolute);
@@ -714,9 +710,7 @@ public class H3GraphLayout
 	    H3Matrix4d rotPhi = H3Transform.I4_MP;
 
 	    H3Point4d childCenterAbsolute = new H3Point4d();
-	    H3Point4d childCenterRelative = new H3Point4d();
 	    H3Point4d childPoleAbsolute = new H3Point4d();
-	    H3Point4d childPoleRelative = new H3Point4d();
 
 	    Point4d p = new Point4d();
 
@@ -742,7 +736,6 @@ public class H3GraphLayout
 		// compute child's center relative to parent's coord system
 		childCenterAbsolute.set(parentRadiusE, 0.0, 0.0, 1.0);
 		rot.transform(childCenterAbsolute);
-		childCenterRelative.set(childCenterAbsolute);
 
 		// compute child's pole relative to parent's coordinate system
 		double childPoleE =
@@ -751,7 +744,6 @@ public class H3GraphLayout
 
 		childPoleAbsolute.set(childPoleE, 0.0, 0.0, 1.0);
 		rot.transform(childPoleAbsolute);
-		childPoleRelative.set(childPoleAbsolute);
 
 		parentTransform.transform(childCenterAbsolute);
 		parentTransform.transform(childPoleAbsolute);
