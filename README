@@ -56,10 +56,10 @@ Walrus requires Java3D v1.2.1 (or later) and JDK 1.3.0 (or later).
 Java3D:  http://java.sun.com/products/java-media/3D/index.html
 JDK:     http://java.sun.com/j2se/
 
-A hardware-accelerated graphics card is a must.  Software-based OpenGL
-packages like Mesa may produce poor results.  Also, you'll want a fairly
-speedy machine with lots of memory (128MB is probably a minimum; 256MB or
-more is better; 512MB for a million-node graph).
+A hardware-accelerated graphics card is necessary for adequate performance.
+It is also useful to have a speedy machine with lots of memory (128MB is
+probably a minimum; 256MB or more is better; 512MB is probably required
+for a million-node graph).
 
 Walrus was developed and tested on a Sun Ultra 60 with an Elite 3D card
 and 512MB of RAM, running Solaris 7, a box graciously donated by Sun.
