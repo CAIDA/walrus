@@ -54,6 +54,7 @@ CHANGES
 Since 0.6.2, released Feb 20, 2003:
 
   * No changes to any functionality; just a licensing change to the GPL.
+  * Added 'palmtree.graph' to set of sample graphs.
 
 Since 0.6.1, released Nov 4, 2002:
 
