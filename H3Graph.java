@@ -261,13 +261,17 @@ public class H3Graph
 
     public boolean checkNodeVisible(int node)
     {
-	return (m_nodes.isHidden == null || !m_nodes.isHidden.get(node));
+	return m_nodes.isVisible.check(node);
+    }
+
+    public boolean checkNodeDisplayable(int node)
+    {
+	return m_nodes.isDisplayable.check(node);
     }
 
     public boolean checkNodeSelected(int node)
     {
-	return (m_nodes.isUnselected == null
-		|| !m_nodes.isUnselected.get(node));
+	return m_nodes.isSelected.check(node);
     }
 
     //======================================================================
@@ -299,13 +303,17 @@ public class H3Graph
 
     public boolean checkLinkVisible(int link)
     {
-	return (m_links.isHidden == null || !m_links.isHidden.get(link));
+	return m_links.isVisible.check(link);
+    }
+
+    public boolean checkLinkDisplayable(int link)
+    {
+	return m_links.isDisplayable.check(link);
     }
 
     public boolean checkLinkSelected(int link)
     {
-	return (m_links.isUnselected == null
-		|| !m_links.isUnselected.get(link));
+	return m_links.isSelected.check(link);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -476,50 +484,32 @@ public class H3Graph
 
     public void setNodeVisibility(int node, boolean isVisible)
     {
-	if (isVisible)
-	{
-	    if (m_nodes.isHidden != null)
-	    {
-		m_nodes.isHidden.clear(node);
-	    }
-	}
-	else
-	{
-	    if (m_nodes.isHidden == null)
-	    {
-		m_nodes.isHidden = new BitSet(m_numNodes);
-	    }
-	    m_nodes.isHidden.set(node);
-	}
+	m_nodes.isVisible.set(node, isVisible);
+    }
+
+    public void setNodeDisplayability(int node, boolean isDisplayable)
+    {
+	m_nodes.isDisplayable.set(node, isDisplayable);
     }
 
     public void setNodeSelectivity(int node, boolean isSelected)
     {
-	if (isSelected)
-	{
-	    if (m_nodes.isUnselected != null)
-	    {
-		m_nodes.isUnselected.clear(node);
-	    }
-	}
-	else
-	{
-	    if (m_nodes.isUnselected == null)
-	    {
-		m_nodes.isUnselected = new BitSet(m_numNodes);
-	    }
-	    m_nodes.isUnselected.set(node);
-	}
+	m_nodes.isSelected.set(node, isSelected);
     }
 
-    public void resetNodeVisibility()
+    public void setNodeVisibility(boolean isVisible)
     {
-	m_nodes.isHidden = null;
+	m_nodes.isVisible.set(isVisible);
     }
 
-    public void resetNodeSelectivity()
+    public void setNodeDisplayability(boolean isDisplayable)
     {
-	m_nodes.isUnselected = null;
+	m_nodes.isDisplayable.set(isDisplayable);
+    }
+
+    public void setNodeSelectivity(boolean isSelected)
+    {
+	m_nodes.isSelected.set(isSelected);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -552,102 +542,68 @@ public class H3Graph
 
     public void setLinkVisibility(int link, boolean isVisible)
     {
-	if (isVisible)
-	{
-	    if (m_links.isHidden != null)
-	    {
-		m_links.isHidden.clear(link);
-	    }
-	}
-	else
-	{
-	    if (m_links.isHidden == null)
-	    {
-		m_links.isHidden = new BitSet(m_numLinks);
-	    }
-	    m_links.isHidden.set(link);
-	}
+	m_links.isVisible.set(link, isVisible);
+    }
+
+    public void setLinkDisplayability(int link, boolean isDisplayable)
+    {
+	m_links.isDisplayable.set(link, isDisplayable);
     }
 
     public void setLinkSelectivity(int link, boolean isSelected)
     {
-	if (isSelected)
-	{
-	    if (m_links.isUnselected != null)
-	    {
-		m_links.isUnselected.clear(link);
-	    }
-	}
-	else
-	{
-	    if (m_links.isUnselected == null)
-	    {
-		m_links.isUnselected = new BitSet(m_numLinks);
-	    }
-	    m_links.isUnselected.set(link);
-	}
+	m_links.isSelected.set(link, isSelected);
     }
 
-    public void resetLinkVisibility()
+    public void setLinkVisibility(boolean isVisible)
     {
-	m_links.isHidden = null;
+	m_links.isVisible.set(isVisible);
     }
 
-    public void resetLinkVisibility(boolean treeLink)
+    public void setLinkVisibility(boolean treeLink, boolean isVisible)
     {
-	if (m_links.isHidden != null)
-	{
-	    int length = m_links.isHidden.length();
-	    for (int i = 0; i < length; i++)
-	    {
-		if (m_links.isHidden.get(i)
-		    && m_links.isTreeLink.get(i) == treeLink)
-		{
-		    m_links.isHidden.clear(i);
-		}
-	    }
-
-	    if (m_links.isHidden.length() == 0)
-	    {
-		m_links.isHidden = null;
-	    }
-	}
+	m_links.isVisible.set(treeLink, isVisible);
     }
 
-    public void resetLinkSelectivity()
+    public void setLinkDisplayability(boolean isDisplayable)
     {
-	m_links.isUnselected = null;
+	m_links.isDisplayable.set(isDisplayable);
     }
 
-    public void resetLinkSelectivity(boolean treeLink)
+    public void setLinkDisplayability(boolean treeLink, boolean isDisplayable)
     {
-	if (m_links.isUnselected != null)
-	{
-	    int length = m_links.isUnselected.length();
-	    for (int i = 0; i < length; i++)
-	    {
-		if (m_links.isUnselected.get(i)
-		    && m_links.isTreeLink.get(i) == treeLink)
-		{
-		    m_links.isUnselected.clear(i);
-		}
-	    }
+	m_links.isDisplayable.set(treeLink, isDisplayable);
+    }
 
-	    if (m_links.isUnselected.length() == 0)
-	    {
-		m_links.isUnselected = null;
-	    }
-	}
+    public void setLinkSelectivity(boolean isSelected)
+    {
+	m_links.isSelected.set(isSelected);
+    }
+
+    public void setLinkSelectivity(boolean treeLink, boolean isSelected)
+    {
+	m_links.isVisible.set(treeLink, isSelected);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+    public void pruneSubtreeVisibility(int node)
+    {
+	if (getNodeParent(node) != -1)
+	{
+	    setLinkDisplayability(getNodeParentLink(node), false);
+	}
+	setNodeDisplayability(node, false);
+	setSubtreeDisplayability(node, false);
+	computeVisibility();
+    }
+
     public void narrowVisibility(int node)
     {
-	hideNodes();
-	hideLinks();
+	setNodeDisplayability(false);
+	setLinkDisplayability(false);
 
-	setNodeVisibility(node, true);
+	setNodeDisplayability(node, true);
 
 	// Show nodes & links up to root node from input node.
 	int currentNode = node;
@@ -655,17 +611,15 @@ public class H3Graph
 	while (parent != -1)
 	{
 	    int link = getNodeParentLink(currentNode);
-	    setLinkVisibility(link, true);
-	    setNodeVisibility(parent, true);
+	    setLinkDisplayability(link, true);
+	    setNodeDisplayability(parent, true);
 
 	    int old = parent;
 	    currentNode = parent;
 	    parent = getNodeParent(parent);
 	}
 
-	// Show nodes & links of subtree rooted at input node.
-	showSubtree(node);
-
+	setSubtreeDisplayability(node, true);
 	computeVisibility();
     }
 
@@ -696,65 +650,26 @@ public class H3Graph
 
     public void widenVisibility()
     {
-	resetNodeVisibility();
-	resetLinkVisibility();
+	setNodeDisplayability(true);
+	setLinkDisplayability(true);
 	computeVisibility();
     }
 
     public void computeVisibility()
     {
-	if (m_nodes.isUnselected != null)
-	{
-	    if (m_nodes.isHidden == null)
-	    {
-		m_nodes.isHidden = (BitSet)(m_nodes.isUnselected.clone());
-	    }
-	    else
-	    {
-		m_nodes.isHidden.or(m_nodes.isUnselected);
-	    }
-	}
+	m_nodes.isVisible.conjunction
+	    (m_nodes.isDisplayable, m_nodes.isSelected);
 
-	if (m_links.isUnselected != null)
-	{
-	    if (m_links.isHidden == null)
-	    {
-		m_links.isHidden = (BitSet)(m_links.isUnselected.clone());
-	    }
-	    else
-	    {
-		m_links.isHidden.or(m_links.isUnselected);
-	    }
-	}
+	m_links.isVisible.conjunction
+	    (m_links.isDisplayable, m_links.isSelected);
     }
 
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
 
-    private void hideNodes()
-    {
-	m_nodes.isHidden = new BitSet(m_numNodes);
-	for (int i = 0; i < m_numNodes; i++)
-	{
-	    m_nodes.isHidden.set(i);
-	}
-    }
-
-    private void hideLinks()
-    {
-	m_links.isHidden = new BitSet(m_numLinks);
-	for (int i = 0; i < m_numLinks; i++)
-	{
-	    m_links.isHidden.set(i);
-	}
-    }
-
-    // Set isHidden to false for all nodes and links in the subtree
-    // rooted at input node.
-    //
     // The input node itself is assumed to have been taken care of.
-    private void showSubtree(int node)
+    private void setSubtreeDisplayability(int node, boolean isDisplayable)
     {
 	int start = getNodeChildIndex(node);
 	int end = getNodeLinksEndIndex(node);
@@ -763,14 +678,14 @@ public class H3Graph
 	for (int i = start; i < nontreeStart; i++)
 	{
 	    int child = getLinkDestination(i);
-            setNodeVisibility(child, true);
-            setLinkVisibility(i, true);
-	    showSubtree(child);
+            setNodeDisplayability(child, isDisplayable);
+            setLinkDisplayability(i, isDisplayable);
+	    setSubtreeDisplayability(child, isDisplayable);
 	}
     
 	for (int i = nontreeStart; i < end; i++)
 	{
-            setLinkVisibility(i, false);
+            setLinkDisplayability(i, false);
 	}
     }
 
@@ -816,6 +731,9 @@ public class H3Graph
 	    linksEnd = new int[numNodes];
 
 	    color = new int[numNodes];
+	    isVisible = new NodeProperty(numNodes);
+	    isDisplayable = new NodeProperty(numNodes);
+	    isSelected = new NodeProperty(numNodes);
 	}
 
 	////////////////////////////////////////////////////////////////////
@@ -876,19 +794,19 @@ public class H3Graph
 	// Color in packed RGB format (R, G, and B in the lower three octets).
 	public int[] color;
 
-	// Whether a node should NOT be drawn.
-	// This will be null if all nodes should be visible.
-	// We use inverted logic because BitSet is created with all its
-	// bits cleared.
-	public BitSet isHidden;
+	// Whether a node should be drawn.
+	// This is usually the logical AND of isDisplayable and isSelected.
+	public NodeProperty isVisible;
 
-	// Whether a node has NOT been chosen by a selection attribute.
-	// This will be null if all nodes have been selected (all nodes
-	// are implicitly selected if there is no selection attribute).
-	// We use inverted logic because BitSet is created with all its
-	// bits cleared.
-	public BitSet isUnselected;
+	// Whether a node is displayable (that is, potentially visible,
+	// depending on isSelected).
+	public NodeProperty isDisplayable;
+
+	// Whether a node has been chosen by a selection attribute for display.
+	public NodeProperty isSelected;
     }
+
+    ////////////////////////////////////////////////////////////////////////
 
     public static class Links
     {
@@ -899,6 +817,9 @@ public class H3Graph
 	    destination = new int[numLinks];
 	    isTreeLink = new BitSet(numLinks);
 	    color = new int[numLinks];
+	    isVisible = new LinkProperty(numLinks, isTreeLink);
+	    isDisplayable = new LinkProperty(numLinks, isTreeLink);
+	    isSelected = new LinkProperty(numLinks, isTreeLink);
 	}
 
 	public int nextIndex = 0;
@@ -926,18 +847,231 @@ public class H3Graph
 	// Color in packed RGB format (R, G, and B in the lower three octets).
 	public int[] color;
 
-	// Whether a link should NOT be drawn.
-	// This will be null if all links should be visible.
-	// We use inverted logic because BitSet is created with all its
-	// bits cleared.
-	public BitSet isHidden;
+	// Whether a link should be drawn.
+	// This is usually the logical AND of isDisplayable and isSelected.
+	public LinkProperty isVisible;
 
-	// Whether a link has NOT been chosen by a selection attribute.
-	// This will be null if all links have been selected (all links
-	// are implicitly selected if there is no selection attribute).
-	// We use inverted logic because BitSet is created with all its
-	// bits cleared.
-	public BitSet isUnselected;
+	// Whether a link is displayable (that is, potentially visible,
+	// depending on isSelected).
+	public LinkProperty isDisplayable;
+
+	// Whether a link has been chosen by a selection attribute for display.
+	public LinkProperty isSelected;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    // This implementation uses inverted logic because BitSet is created
+    // with all its bits cleared.
+    private static final class NodeProperty
+    {
+	public NodeProperty(int numNodes)
+	{
+	    m_numNodes = numNodes;
+	}
+
+	public boolean check(int node)
+	{
+	    return (m_property == null || !m_property.get(node));
+	}
+
+	public void set(int node, boolean value)
+	{
+	    if (value)
+	    {
+		if (m_property != null)
+		{
+		    m_property.clear(node);
+		}
+	    }
+	    else
+	    {
+		ensureAllocated();
+		m_property.set(node);
+	    }
+	}
+
+	// Set value for all nodes.
+	public void set(boolean value)
+	{
+	    if (value)
+	    {
+		m_property = null;
+	    }
+	    else
+	    {
+		ensureAllocated();
+		for (int i = 0; i < m_numNodes; i++)
+		{
+		    m_property.set(i);
+		}
+	    }
+	}
+
+	// Sets this to a logical AND of np1 and np2.
+	// Because this implementation uses inverted logic, the logical
+	// AND is carried out with a logical OR of the negated parameters
+	// (that is, ~R = ~P | ~Q implies R = P & Q).
+	public void conjunction(NodeProperty p1, NodeProperty p2)
+	{
+	    if (p1.m_property == null && p2.m_property == null)
+	    {
+		m_property = null;
+	    }
+	    else if (p1.m_property == null && p2.m_property != null)
+	    {
+		m_property = (BitSet)p2.m_property.clone();
+	    }
+	    else if (p1.m_property != null && p2.m_property == null)
+	    {
+		m_property = (BitSet)p1.m_property.clone();
+	    }
+	    else
+	    {
+		m_property = (BitSet)p1.m_property.clone();
+		m_property.or(p2.m_property);
+	    }
+	}
+
+	private void ensureAllocated()
+	{
+	    if (m_property == null)
+	    {
+		m_property = new BitSet(m_numNodes);
+	    }
+	}
+
+	private int m_numNodes;
+	private BitSet m_property;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    // This implementation uses inverted logic because BitSet is created
+    // with all its bits cleared.
+    private static final class LinkProperty
+    {
+	public LinkProperty(int numLinks, BitSet isTreeLink)
+	{
+	    m_numLinks = numLinks;
+	    m_isTreeLink = isTreeLink;
+	}
+
+	public boolean check(int link)
+	{
+	    return (m_property == null || !m_property.get(link));
+	}
+
+	public void set(int link, boolean value)
+	{
+	    if (value)
+	    {
+		if (m_property != null)
+		{
+		    m_property.clear(link);
+		}
+	    }
+	    else
+	    {
+		ensureAllocated();
+		m_property.set(link);
+	    }
+	}
+
+	// Set value for all links.
+	public void set(boolean value)
+	{
+	    if (value)
+	    {
+		m_property = null;
+	    }
+	    else
+	    {
+		ensureAllocated();
+		for (int i = 0; i < m_numLinks; i++)
+		{
+		    m_property.set(i);
+		}
+	    }
+	}
+
+	// Set value for all links of the specified type.
+	public void set(boolean treeLink, boolean value)
+	{
+	    if (value)
+	    {
+		if (m_property != null)
+		{
+		    setBits(treeLink, false);
+		    if (m_property.length() == 0)
+		    {
+			m_property = null;
+		    }
+		}
+	    }
+	    else
+	    {
+		ensureAllocated();
+		setBits(treeLink, true);
+	    }
+	}
+
+	// Assumes m_property != null.
+	private void setBits(boolean treeLink, boolean value)
+	{
+	    int length = m_property.length();
+	    for (int i = 0; i < length; i++)
+	    {
+		if (m_isTreeLink.get(i) == treeLink)
+		{
+		    if (value)
+		    {
+			m_property.set(i);
+		    }
+		    else
+		    {
+			m_property.clear(i);
+		    }
+		}
+	    }
+	}
+
+	// Sets this to a logical AND of np1 and np2.
+	// Because this implementation uses inverted logic, the logical
+	// AND is carried out with a logical OR of the negated parameters
+	// (that is, ~R = ~P | ~Q implies R = P & Q).
+	public void conjunction(LinkProperty p1, LinkProperty p2)
+	{
+	    if (p1.m_property == null && p2.m_property == null)
+	    {
+		m_property = null;
+	    }
+	    else if (p1.m_property == null && p2.m_property != null)
+	    {
+		m_property = (BitSet)p2.m_property.clone();
+	    }
+	    else if (p1.m_property != null && p2.m_property == null)
+	    {
+		m_property = (BitSet)p1.m_property.clone();
+	    }
+	    else
+	    {
+		m_property = (BitSet)p1.m_property.clone();
+		m_property.or(p2.m_property);
+	    }
+	}
+
+	private void ensureAllocated()
+	{
+	    if (m_property == null)
+	    {
+		m_property = new BitSet(m_numLinks);
+	    }
+	}
+
+	private int m_numLinks;
+	private BitSet m_isTreeLink;
+	private BitSet m_property;
     }
 
     ////////////////////////////////////////////////////////////////////////
