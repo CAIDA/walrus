@@ -15,21 +15,21 @@ TABLE OF CONTENTS
 INSTALLATION
 ===========================================================================
 
-Extract 'walrus-0.3.tar.gz' or 'walrus-0.3.zip' anywhere you wish.  This
-will create a subdirectory named 'walrus-0.3' containing several JAR files,
+Extract 'walrus-0.4.tar.gz' or 'walrus-0.4.zip' anywhere you wish.  This
+will create a subdirectory named 'walrus-0.4' containing several JAR files,
 among other things.
 
  For UNIX users...
 
-   The file walrus-0.3.tar.gz was packaged with the standard TAR utility
+   The file walrus-0.4.tar.gz was packaged with the standard TAR utility
    and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
    it with the following command:
 
-       gzip -cd walrus-0.3.tar.gz | tar xvf -
+       gzip -cd walrus-0.4.tar.gz | tar xvf -
 
  For Windows users...
 
-   The file walrus-0.3.zip was packaged in the common ZIP format.  You
+   The file walrus-0.4.zip was packaged in the common ZIP format.  You
    can unpack it using a program like WinZip (http://www.winzip.com/).
 
 
@@ -47,9 +47,9 @@ impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
 To run Walrus on a UNIX system (such as Solaris or Linux), enter the
-following at a shell prompt from within the 'walrus-0.3' subdirectory:
+following at a shell prompt from within the 'walrus-0.4' subdirectory:
 
-   java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+   java -cp mp.jar:antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
 Or, you may execute the supplied shell script:
 
@@ -57,7 +57,7 @@ Or, you may execute the supplied shell script:
 
 On Windows, enter the following at a command prompt:
 
-   java -cp antlrall-mod.jar;libsea.jar;walrus.jar H3Main
+   java -cp mp.jar;antlrall-mod.jar;libsea.jar;walrus.jar H3Main
 
 (Windows uses semicolons to separate the components of the CLASSPATH.)
 
@@ -65,7 +65,7 @@ When viewing large graphs, you'll want to increase the maximum heap size.
 For example, the command to run Walrus with the maximum heap size set to
 128M looks like the following with Sun's JDK on a UNIX system:
 
-   java -Xmx128M -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+   java -Xmx128M -cp mp.jar:antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
 
 ===========================================================================
@@ -95,6 +95,22 @@ Rendering
       --- Updates rendering to current configuration.  You must select
           this menu item to make configuration changes (such as changing
           the color of nodes) take effect.
+   Recompute Layout with Extended Precision
+      --- Recomputes the layout of the entire graph using extended precision
+          arithmetic.  Intermediate calculations are carried out with
+	  around 30 decimal digits of precision instead of the 15 digits
+          available with the built-in 'double' type.  Recomputing the layout
+          in extended precision may eliminate artifacts of numerical
+          instability in the layout.  However, it can take more than 200
+          times longer to compute the layout with extended precision, so
+          a layout that took just 1 second to compute in double precision
+          would now take more than 3 minutes, and a layout that took 1
+          minute would now take more than 3 hours.  A line of the following
+          form in the output shows the time, in milliseconds, it took
+          Walrus to compute the layout:
+
+               layoutHyperbolic.time[17473]
+
    Adaptive Rendering
       --- Selects whether the adaptive rendering algorithm is used.
           The adaptive rendering algorithm tries to maintain a given
@@ -128,6 +144,21 @@ Rendering
           flicker annoyingly.  By disabling this option and by manually
           refreshing when needed (see 'Refresh' below), you can
           reduce these distracting flickers.
+   Automatic Extended Precision Layout
+      --- Selects whether layout calculations automatically switch to
+          extended precision arithmetic when needed.  If this is not
+          checked, the user is prompted when calculations fail from
+          an insufficient amount of precision.  The user can then choose
+          to either recompute the entire layout using extended precision
+          arithmetic, simply place the problematic nodes at the origin,
+          or cancel the layout attempt.  Note that when this menu item
+          is selected, the layout of only the problematic nodes is
+          calculated in extended precision.  Because not all nodes are
+          calculated in extended precision, the final layout may show
+          signs of numerical instability and thus may still be
+          unsatisfactory.  In such cases, you might want to select
+          Rendering->Recompute Layout with Extended Precision to recompute
+          the layout of the entire graph in extended precision.
 
 Display
 

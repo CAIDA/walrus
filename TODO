@@ -8,9 +8,7 @@ BUGS & ISSUES
 * It can be slow (say, 5 minutes) loading large (50-80MB) graphs, and
   Walrus provides no feedback during the load (such as with a progress bar).
 
-* With very large graphs (> ~500k nodes), the layout algorithm will fail
-  when the hyperbolic compression of space causes calculations to exceed
-  the precision of floating point numbers.  The display may also become
+* With very large graphs (> ~500k nodes), the display may become
   corrupted during navigation.
 
 * After a user resizes the Walrus window by clicking the zoom
