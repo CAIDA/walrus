@@ -47,7 +47,7 @@ public interface H3Picker
 
     // (x, y) are the AWT (that is, window) coordinates of the location
     // clicked on by the user.
-    void highlightNode(int x, int y, boolean enableFrontRendering);
-    void highlightNode(int node, boolean enableFrontRendering);
+    void highlightNode(int x, int y);
+    void highlightNode(int node);
     void reset();
 }

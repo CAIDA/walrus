@@ -133,7 +133,7 @@ public class H3AdaptiveRenderLoop
 	    if (m_state == STATE_IDLE || m_state == STATE_COMPLETE)
 	    {
 		m_parameters.refresh(); // See comments for this elsewhere.
-		m_picker.highlightNode(x, y, (m_state == STATE_IDLE));
+		m_picker.highlightNode(x, y);
 	    }
 	}
 	endRequest();
@@ -146,7 +146,7 @@ public class H3AdaptiveRenderLoop
 	    if (m_state == STATE_IDLE || m_state == STATE_COMPLETE)
 	    {
 		m_parameters.refresh(); // See comments for this elsewhere.
-		m_picker.highlightNode(node, (m_state == STATE_IDLE));
+		m_picker.highlightNode(node);
 	    }
 	}
 	endRequest();
@@ -553,6 +553,7 @@ public class H3AdaptiveRenderLoop
     private void beRefreshState()
     {
 	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
+	m_parameters.putModelTransform(gc);
 	gc.setBufferOverride(true);
 	gc.setFrontBufferRendering(true);
 	gc.clear();
@@ -569,6 +570,7 @@ public class H3AdaptiveRenderLoop
     private void beCompleteInitState()
     {
 	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
+	m_parameters.putModelTransform(gc);
 	gc.setBufferOverride(true);
 	gc.setFrontBufferRendering(true);
 	m_state = STATE_COMPLETE;
