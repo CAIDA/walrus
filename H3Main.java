@@ -1561,7 +1561,7 @@ public class H3Main
 
 	public void mousePressed(MouseEvent e)
 	{
-	    System.out.println("mousePressed");
+	    dumpMouseEvent("mousePressed", e);
 
 	    int x = e.getX();
 	    int y = e.getY();
@@ -1618,15 +1618,6 @@ public class H3Main
 		}
 		break;
 
-	    case STATE_WOBBLING:
-		m_state = STATE_IDLE;
-		m_wobblingRequest.end();
-		break;
-
-	    case STATE_REPLAYING:
-		// XXX: Cancel replay...
-		break;
-
 	    case STATE_ROTATING_CONTINUOUS:
 		m_state = STATE_IDLE;
 		m_repeatingRequest.end();
@@ -1637,12 +1628,54 @@ public class H3Main
 		m_repeatingRequest.end();
 		break;
 
-	    case STATE_ROTATING_CONTINUOUS_START:
-		//FALLTHROUGH
+	    case STATE_WOBBLING:
+		m_state = STATE_IDLE;
+		m_wobblingRequest.end();
+		break;
+
+	    case STATE_REPLAYING:
+		// XXX: Cancel replay...
+		break;
+
+		// Under normal circumstances, a mousePressed event shouldn't
+		// occur in STATE_DISPLAYING_ATTRIBUTES,
+		// STATE_ROTATING_INTERACTIVE, or
+		// STATE_ROTATING_CONTINUOUS_START.  Such an event has no
+		// meaning.  However, the user can cause them nonetheless
+		// by pressing down on unrelated mouse buttons while
+		// the relavant button is being held down.  For example,
+		// while the user is dragging with the middle mouse button,
+		// s/he can click the other buttons to generate mousePressed
+		// events.
+		// 
+		// My tendency is to handle this situation gracefully by
+		// ignoring the events (both here and in mouseReleased()),
+		// but the MouseEvent mechanism makes this difficult to do
+		// without tracking changes in successive MouseEvent objects.
+		// Specifically, examining a single MouseEvent doesn't reveal
+		// which mouse buttons were released.  For example, the
+		// following sequence of events is ambiguous:
+		//
+		//      mousePressed: 1--
+		//      mousePressed: 1-3
+		//      mouseReleased: 1-3
+		//
+		// Was the mouseReleased event for the release of button 1
+		// or button 3, or even both buttons 1 and 3?  You can't tell.
+		// You have to look at the next MouseEvent to see which
+		// buttons were actually released.
+		// 
+		// Because of the difficulty, we don't bother trying to be
+		// graceful.  Hence, the user can cause Walrus to enter
+		// unanticipated states.
+
 	    case STATE_DISPLAYING_ATTRIBUTES:
 		//FALLTHROUGH
 	    case STATE_ROTATING_INTERACTIVE:
 		//FALLTHROUGH
+	    case STATE_ROTATING_CONTINUOUS_START:
+		//FALLTHROUGH
+		break;
 	    default:
 		throw new RuntimeException
 		    ("Invalid state in EventHandler: mousePressed in state "
@@ -1652,7 +1685,7 @@ public class H3Main
 
 	public void mouseReleased(MouseEvent e)
 	{
-	    System.out.println("mouseReleased");
+	    dumpMouseEvent("mouseReleased", e);
 
 	    int modifiers = e.getModifiers();
 	    switch (m_state)
@@ -1671,7 +1704,8 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
-		//IGNORE
+		//IGNORE -- We ignore the mouseReleased event that matches
+		// the mousePressed that initiated the continuous rotations.
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS_START:
@@ -1679,7 +1713,8 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_TRACKING:
-		//IGNORE
+		//IGNORE -- We ignore the mouseReleased event that matches
+		// the mousePressed that initiated the tracking rotations.
 		break;
 
 	    case STATE_WOBBLING:
@@ -1697,7 +1732,7 @@ public class H3Main
 
 	public void mouseDragged(MouseEvent e)
 	{
-	    System.out.println("mouseDragged");
+	    dumpMouseEvent("mouseDragged", e);
 
 	    int x = e.getX();
 	    int y = e.getY();
@@ -1718,7 +1753,11 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
-		//IGNORE -- Only the first drag determines the direction.
+		//IGNORE -- The rotation vector is determined solely from
+		// the first mouseDragged event in the gesture initiating
+		// a continuous rotation.  However, this determining
+		// mouseDragged event is caught in
+		// STATE_ROTATING_CONTINUOUS_START below.
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS_START:
@@ -1730,7 +1769,10 @@ public class H3Main
 		break;
 
 	    case STATE_ROTATING_TRACKING:
-		//IGNORE
+		//IGNORE -- We care only about mouseMoved events in this state.
+		// However, a user may have entered this state by dragging
+		// rather than simply clicking, so we should be prepared to
+		// ignore the resulting mouseDragged events.
 		break;
 
 	    case STATE_WOBBLING:
@@ -1746,7 +1788,7 @@ public class H3Main
 
 	public void mouseMoved(MouseEvent e)
 	{
-	    System.out.println("mouseMoved");
+	    dumpMouseEvent("mouseMoved", e);
 
 	    switch (m_state)
 	    {
@@ -1776,9 +1818,13 @@ public class H3Main
 		break;
 
 	    case STATE_WOBBLING:
-		//FALLTHROUGH
+		//IGNORE
+		break;
+
 	    case STATE_REPLAYING:
-		//FALLTHROUGH
+		//IGNORE
+		break;
+
 	    default:
 		throw new RuntimeException
 		    ("Invalid state in EventHandler: mouseMoved in state "
@@ -2033,6 +2079,31 @@ public class H3Main
 	    {
 		buffer.append("<<unavailable>>");
 	    }
+	}
+
+	private void dumpMouseEvent(String name, MouseEvent e)
+	{
+	    System.out.print(name + " in state " + m_state + ": ");
+
+	    int modifiers = e.getModifiers();
+	    System.out.print
+		(checkModifiers(modifiers, InputEvent.BUTTON1_MASK)
+		 ? "1" : "-");
+	    System.out.print
+		(checkModifiers(modifiers, InputEvent.BUTTON2_MASK)
+		 ? "2" : "-");
+	    System.out.print
+		(checkModifiers(modifiers, InputEvent.BUTTON3_MASK)
+		 ? "3" : "-");
+
+	    System.out.print
+		(checkModifiers(modifiers, InputEvent.SHIFT_MASK)
+		 ? "S" : "-");
+	    System.out.print
+		(checkModifiers(modifiers, InputEvent.CTRL_MASK)
+		 ? "C" : "-");
+
+	    System.out.println();
 	}
 
 	//---------------------------------------------------------------
