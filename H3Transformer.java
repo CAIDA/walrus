@@ -142,6 +142,15 @@ public class H3Transformer
         m_savedPositions.remove(m_savedPositions.size() - 1);
     }
 
+    public synchronized void shutdown()
+    {
+	startRequest();
+	{
+	    m_state = STATE_SHUTDOWN;
+	}
+	endRequest();
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // INTERFACE METHODS (Runnable)
     ////////////////////////////////////////////////////////////////////////
@@ -153,6 +162,11 @@ public class H3Transformer
 	while (true)
 	{
 	    rendezvousWithRequests();
+	    if (m_state == STATE_SHUTDOWN)
+	    {
+		System.out.println("H3Transformer exiting...");
+		return;
+	    }
 
 	    m_numTransformed = 0;
 	    while (m_state != STATE_IDLE
@@ -184,6 +198,8 @@ public class H3Transformer
 		    beNontreeLinkState();
 		    break;
 
+		case STATE_SHUTDOWN:
+		    //FALLTHROUGH
 		case STATE_IDLE:
 		    //FALLTHROUGH
 		default:
@@ -417,10 +433,11 @@ public class H3Transformer
 
     private static final boolean DEBUG_PRINT = false;
 
-    private static final int STATE_IDLE = 0;
-    private static final int STATE_NODE = 1;
-    private static final int STATE_CHILD_LINK = 2;
-    private static final int STATE_NONTREE_LINK = 3;
+    private static final int STATE_SHUTDOWN = 0;
+    private static final int STATE_IDLE = 1;
+    private static final int STATE_NODE = 2;
+    private static final int STATE_CHILD_LINK = 3;
+    private static final int STATE_NONTREE_LINK = 4;
 
     private int m_state = STATE_IDLE;
 
