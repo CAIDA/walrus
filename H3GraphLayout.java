@@ -707,12 +707,14 @@ public class H3GraphLayout
 		H3Math.euclideanDistance(layout.radius[parent]);
 
 	    double lastPhi = 0.0;
-	    H3Matrix4d rotPhi = H3Transform.I4_MP;
+	    Matrix4d rotPhi = H3Transform.I4;
 
-	    H3Point4d childCenterAbsolute = new H3Point4d();
-	    H3Point4d childPoleAbsolute = new H3Point4d();
-
+	    Point4d childCenterAbsolute = new Point4d();
+	    Point4d childPoleAbsolute = new Point4d();
 	    Point4d p = new Point4d();
+
+	    H3Point4d childCenterAbsoluteMP = new H3Point4d();
+	    H3Point4d childPoleAbsoluteMP = new H3Point4d();
 
 	    for (int i = childIndex; i < nontreeIndex; i++)
 	    {
@@ -725,12 +727,10 @@ public class H3GraphLayout
 		if (childPhi != lastPhi)
 		{
 		    lastPhi = childPhi;
-		    rotPhi = H3Transform.buildZRotationMP(childPhi);
+		    rotPhi = H3Transform.buildZRotation(childPhi);
 		}
 
-		H3Matrix4d rot =
-		    H3Transform.buildXRotationMP(layout.theta[child]);
-
+		Matrix4d rot = H3Transform.buildXRotation(layout.theta[child]);
 		rot.mul(rotPhi);
 
 		// compute child's center relative to parent's coord system
@@ -745,15 +745,18 @@ public class H3GraphLayout
 		childPoleAbsolute.set(childPoleE, 0.0, 0.0, 1.0);
 		rot.transform(childPoleAbsolute);
 
-		parentTransform.transform(childCenterAbsolute);
-		parentTransform.transform(childPoleAbsolute);
+		childCenterAbsoluteMP.set(childCenterAbsolute);
+		childPoleAbsoluteMP.set(childPoleAbsolute);
 
-		convertToDoubleCoordinates(p, childCenterAbsolute);
+		parentTransform.transform(childCenterAbsoluteMP);
+		parentTransform.transform(childPoleAbsoluteMP);
+
+		convertToDoubleCoordinates(p, childCenterAbsoluteMP);
 		graph.setNodeLayoutCoordinates(child, p);
 
 		H3Matrix4d childTransform = H3Transform
-		    .buildCanonicalOrientation(childCenterAbsolute,
-					       childPoleAbsolute);
+		    .buildCanonicalOrientation(childCenterAbsoluteMP,
+					       childPoleAbsoluteMP);
 
 		computeCoordinatesSubtreeMP(graph, layout,
 					    childTransform, child);
