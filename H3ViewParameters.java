@@ -38,6 +38,8 @@
 import java.util.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
+import java.awt.Font;
+import com.sun.j3d.utils.geometry.Text2D;
 
 public class H3ViewParameters
 {
@@ -77,9 +79,68 @@ public class H3ViewParameters
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+    // (x, y) of the lower-left corner of the label in image-plate coordinates
+    public void drawLabel(GraphicsContext3D gc, double x, double y, String s)
+    {
+	boolean frontBufferRenderingState = gc.getFrontBufferRendering();
+	gc.setBufferOverride(true);
+	gc.setFrontBufferRendering(true);
+
+	Point3d eye = getEye();
+	double labelZ = ON_SCREEN_LABEL_Z_SCALE * eye.z
+	    + ON_SCREEN_LABEL_Z_OFFSET;
+
+	double xOffset = ON_SCREEN_LABEL_X_OFFSET * m_pixelToMeterScale;
+	double yOffset = ON_SCREEN_LABEL_Y_OFFSET * m_pixelToMeterScale;
+	Point3d p = new Point3d(x + xOffset, y + yOffset, 0.0);
+	{
+	    // Project given (x, y) coordinates to the plane z=labelZ.
+
+	    // Convert from image-plate to eye coordinates.
+	    p.x -= eye.x;  p.y -= eye.y;
+
+	    double inversePerspectiveScale = 1.0 - labelZ / eye.z;
+	    p.x *= inversePerspectiveScale;
+	    p.y *= inversePerspectiveScale;
+
+	    // Convert from eye to image-plate coordinates.
+	    p.x += eye.x;  p.y += eye.y;
+	}
+
+	Transform3D scale = new Transform3D();
+	scale.set(ON_SCREEN_LABEL_SCALE);
+
+	Vector3d t = new Vector3d(p.x, p.y, labelZ);
+	Transform3D translation = new Transform3D();
+	translation.set(t);
+	translation.mul(scale);
+
+	Transform3D transform = new Transform3D(m_imageToVworld);
+	transform.mul(translation);
+
+	gc.setModelTransform(transform);
+
+	// XXX: Courier may not be available on all systems.
+	Text2D text = new Text2D(s, new Color3f(1.0f, 1.0f, 1.0f),
+				 "Courier", 24, Font.BOLD);
+
+	gc.draw(text);
+	gc.flush(true);
+	
+	// NOTE: Resetting the model transform here is very important.
+	//       For some reason, not doing this causes the immediate
+	//       following frame to render incorrectly (but subsequent
+	//       frames will render correctly).  In some ways, this
+	//       makes sense, because most rendering code assumes that
+	//       GraphicsContext3D has been set to some reasonable
+	//       transform.
+	gc.setModelTransform(m_objectTransform);
+	gc.setFrontBufferRendering(frontBufferRenderingState);
+    }
+
+    // (x, y) in image-plate coordinates
     public void drawPickViewer(GraphicsContext3D gc, double x, double y)
     {
-	gc.setModelTransform(m_objectTransform);
 	m_pickViewer.draw(gc, x, y);
     }
 
@@ -517,6 +578,14 @@ public class H3ViewParameters
 
     private boolean m_depthCueingEnabled = true;
     private LinearFog m_depthCueing;
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private static final double ON_SCREEN_LABEL_SCALE = 0.03;
+    private static final double ON_SCREEN_LABEL_Z_SCALE = 0.5;
+    private static final double ON_SCREEN_LABEL_Z_OFFSET = 0.0;
+    private static final double ON_SCREEN_LABEL_X_OFFSET = 10; // pixels
+    private static final double ON_SCREEN_LABEL_Y_OFFSET = 10; // pixels
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
