@@ -229,7 +229,25 @@ public class H3Transform
 
     public static H3Matrix4d buildTranslation(H3Point4d source, H3Point4d dest)
     {
-	return I4_MP;  // XXX: FIX
+	MPReal aa_h = source.minkowski(source);
+	MPReal bb_h = dest.minkowski(dest);
+	MPReal ab_h = source.minkowski(dest);
+	MPReal sourceScale = bb_h.multiply(ab_h).sqrt();
+	MPReal destScale = aa_h.multiply(ab_h).sqrt();
+	H3Point4d midpoint = new H3Point4d();
+	midpoint.x =
+	    sourceScale.multiply(source.x).add(destScale.multiply(dest.x));
+	midpoint.y =
+	    sourceScale.multiply(source.y).add(destScale.multiply(dest.y));
+	midpoint.z =
+	    sourceScale.multiply(source.z).add(destScale.multiply(dest.z));
+	midpoint.w =
+	    sourceScale.multiply(source.w).add(destScale.multiply(dest.w));
+
+	H3Matrix4d r_a = buildReflection(source);
+	H3Matrix4d r_m = buildReflection(midpoint);
+	r_m.mul(r_a);
+	return r_m;
     }
 
     // Build a 4x4 matrix for hyperbolic reflection across point p.  From
@@ -253,10 +271,10 @@ public class H3Transform
 
 	double ww = p.w * p.w;
 
-	Matrix4d ppTI31 = new Matrix4d( xx, xy, xz, -xw,
-					xy, yy, yz, -yw,
-					xz, yz, zz, -zw,
-					xw, yw, zw, -ww);
+	Matrix4d ppTI31 = new Matrix4d(xx, xy, xz, -xw,
+				       xy, yy, yz, -yw,
+				       xz, yz, zz, -zw,
+				       xw, yw, zw, -ww);
 
 	double pp_h = xx + yy + zz - ww;
 	ppTI31.mul(-2.0 / pp_h);
@@ -271,7 +289,35 @@ public class H3Transform
 
     public static H3Matrix4d buildReflection(H3Point4d p)
     {
-	return I4_MP;  // XXX: FIX
+	MPReal xx = p.x.multiply(p.x);
+	MPReal xy = p.x.multiply(p.y);
+	MPReal xz = p.x.multiply(p.z);
+	MPReal xw = p.x.multiply(p.w);
+
+	MPReal yy = p.y.multiply(p.y);
+	MPReal yz = p.y.multiply(p.z);
+	MPReal yw = p.y.multiply(p.w);
+
+	MPReal zz = p.z.multiply(p.z);
+	MPReal zw = p.z.multiply(p.w);
+
+	MPReal ww = p.w.multiply(p.w);
+
+	H3Matrix4d ppTI31 = new H3Matrix4d(xx, xy, xz, xw.negate(),
+					   xy, yy, yz, yw.negate(),
+					   xz, yz, zz, zw.negate(),
+					   xw, yw, zw, ww.negate());
+
+	MPReal pp_h = xx.add(yy).add(zz).subtract(ww);
+	ppTI31.mul(new MPReal(-2.0).divide(pp_h));
+
+	MPReal one = new MPReal(1.0);
+        ppTI31.m00 = ppTI31.m00.add(one);
+        ppTI31.m11 = ppTI31.m11.add(one);
+        ppTI31.m22 = ppTI31.m22.add(one);
+        ppTI31.m33 = ppTI31.m33.add(one);
+
+	return ppTI31;
     }
 
     //-------------------------------------------------------------------------
@@ -328,6 +374,26 @@ public class H3Transform
 
     private static H3Point4d findPivotPoint(H3Point4d a4, H3Point4d b4)
     {
-	return ORIGIN4_MP;
+	H3Point4d a = new H3Point4d();
+	H3Point4d b = new H3Point4d();
+
+	a.project(a4);
+	b.project(b4);
+
+	H3Point4d a_minus_b = new H3Point4d(a);
+	a_minus_b.sub(b);
+
+	MPReal p = a.vectorDot3(a_minus_b);
+	MPReal q = b.vectorDot3(a_minus_b);
+	MPReal r = a_minus_b.vectorDot3(a_minus_b);
+
+	MPReal pbx = p.multiply(b.x);  MPReal qax = q.multiply(a.x);
+	MPReal pby = p.multiply(b.y);  MPReal qay = q.multiply(a.y);
+	MPReal pbz = p.multiply(b.z);  MPReal qaz = q.multiply(a.z);
+
+	return new H3Point4d(pbx.subtract(qax),
+			     pby.subtract(qay),
+			     pbz.subtract(qaz),
+			     r);
     }
 }
