@@ -51,6 +51,13 @@ examine every part of the graph in detail.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 CHANGES
 
+Since 0.2, released Jan 25, 2002:
+
+  * Fixed bug in which links would sometimes be drawn as black lines.
+      If you had transparency enabled and then switched the coloring of
+      links to RGB (that is, by colors stored in an attribute), then
+      links would sometimes be drawn incorrectly as black lines.
+
 Since 0.1, released Dec 5, 2001:
 
   * Re-implemented the picking algorithm.
