@@ -310,6 +310,8 @@ public class H3Main
 	// Display menu.
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
+	m_showRootNodeMenuItem.setEnabled(false);
+	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
 	m_startRecordingMenuItem.setEnabled(false);
@@ -1207,6 +1209,8 @@ public class H3Main
 	// Display menu.
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
+	m_showRootNodeMenuItem.setEnabled(false);
+	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
 	m_startRecordingMenuItem.setEnabled(false);
@@ -1230,6 +1234,8 @@ public class H3Main
 	// Display menu.
 	m_refreshDisplayMenuItem.setEnabled(true);
 	m_wobbleDisplayMenuItem.setEnabled(true);
+	m_showRootNodeMenuItem.setEnabled(true);
+	m_showPreviousNodeMenuItem.setEnabled(true);
 	m_savePositionMenuItem.setEnabled(true);
 	m_restorePositionMenuItem.setEnabled(m_savedDisplayPosition != null);
 	m_startRecordingMenuItem.setEnabled(true);
@@ -1438,6 +1444,28 @@ public class H3Main
 		}
 	    });
 
+	m_showRootNodeMenuItem = new JMenuItem("Show Root Node");
+	m_showRootNodeMenuItem.setMnemonic(KeyEvent.VK_D);
+	m_showRootNodeMenuItem.setEnabled(false);
+	m_showRootNodeMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.forceIdleState();
+		    m_eventHandler.showRootNode();
+		}
+	    });
+
+	m_showPreviousNodeMenuItem = new JMenuItem("Show Previous Node");
+	m_showPreviousNodeMenuItem.setMnemonic(KeyEvent.VK_N);
+	m_showPreviousNodeMenuItem.setEnabled(false);
+	m_showPreviousNodeMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.forceIdleState();
+		    m_eventHandler.showPreviousNode();
+		}
+	    });
+
 	m_savePositionMenuItem = new JMenuItem("Save Position");
 	m_savePositionMenuItem.setMnemonic(KeyEvent.VK_S);
 	m_savePositionMenuItem.setEnabled(false);
@@ -1445,7 +1473,7 @@ public class H3Main
 		public void actionPerformed(ActionEvent e)
 		{
 		    m_eventHandler.forceIdleState();
-		    m_savedDisplayPosition = m_renderLoop.getDisplayPosition();
+		    m_savedDisplayPosition = m_eventHandler.savePosition();
 		    m_restorePositionMenuItem.setEnabled(true);
 		}
 	    });
@@ -1457,7 +1485,7 @@ public class H3Main
 		public void actionPerformed(ActionEvent e)
 		{
 		    m_eventHandler.forceIdleState();
-		    m_renderLoop.setDisplayPosition(m_savedDisplayPosition);
+		    m_eventHandler.restorePosition(m_savedDisplayPosition);
 		}
 	    });
 
@@ -1488,6 +1516,8 @@ public class H3Main
 	m_displayMenu.setMnemonic(KeyEvent.VK_D);
 	m_displayMenu.add(m_refreshDisplayMenuItem);
 	m_displayMenu.add(m_wobbleDisplayMenuItem);
+	m_displayMenu.add(m_showRootNodeMenuItem);
+	m_displayMenu.add(m_showPreviousNodeMenuItem);
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_savePositionMenuItem);
 	m_displayMenu.add(m_restorePositionMenuItem);
@@ -1597,6 +1627,8 @@ public class H3Main
     private JMenu m_displayMenu;
     private JMenuItem m_refreshDisplayMenuItem;
     private JMenuItem m_wobbleDisplayMenuItem;
+    private JMenuItem m_showRootNodeMenuItem;
+    private JMenuItem m_showPreviousNodeMenuItem;
     private JMenuItem m_savePositionMenuItem;
     private JMenuItem m_restorePositionMenuItem;
     private JMenu m_recordMovementsMenu;
@@ -1696,14 +1728,6 @@ public class H3Main
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	public void refreshDisplay()
-	{
-	    if (m_state == STATE_IDLE)
-	    {
-		m_renderLoop.refreshDisplay();		
-	    }
-	}
-
 	public void forceIdleState()
 	{
 	    switch (m_state)
@@ -1749,6 +1773,14 @@ public class H3Main
 	    m_state = STATE_IDLE;
 	}
 
+	public void refreshDisplay()
+	{
+	    if (m_state == STATE_IDLE)
+	    {
+		m_renderLoop.refreshDisplay();		
+	    }
+	}
+
 	public void startWobbling(CancellationListener listener)
 	{
 	    if (m_state == STATE_IDLE) 
@@ -1771,6 +1803,42 @@ public class H3Main
 		m_state = STATE_IDLE;
 		m_wobblingListener = null;
 		m_wobblingRequest.end();
+	    }
+	}
+
+	public void showRootNode()
+	{
+	    if (m_state == STATE_IDLE)
+	    {
+		m_renderLoop.translate(m_rootNode);
+		shiftCenterNodes(m_rootNode);
+	    }
+	}
+
+	public void showPreviousNode()
+	{
+	    if (m_state == STATE_IDLE)
+	    {
+		m_renderLoop.translate(swapCenterNodes());
+	    }
+	}
+
+	public H3DisplayPosition savePosition()
+	{
+	    H3DisplayPosition retval = null;
+	    if (m_state == STATE_IDLE)
+	    {
+		retval = m_renderLoop.getDisplayPosition();
+	    }
+	    return retval;
+	}
+
+	public void restorePosition(H3DisplayPosition position)
+	{
+	    if (m_state == STATE_IDLE)
+	    {
+		m_renderLoop.setDisplayPosition(position);
+		shiftCenterNodes(position.getCenterNode());
 	    }
 	}
 
