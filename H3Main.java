@@ -316,7 +316,7 @@ public class H3Main
 	m_recomputeLayoutExtendedMenuItem.setEnabled(false);
 
 	// Display menu.
-	m_narrowToPathMenuItem.setEnabled(false);
+	m_narrowToSubtreeMenuItem.setEnabled(false);
 	m_widenSubtreeMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
@@ -886,7 +886,7 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handleNarrowToPathRequest(int node)
+    private void handleNarrowToSubtreeRequest(int node)
     {
 	m_graph.narrowVisibility(node);
 	updateDisplayNarrowingMenusAndRefresh();
@@ -1334,8 +1334,8 @@ public class H3Main
 
 	NarrowingEventHandler narrowingHandler = new NarrowingEventHandler()
 	    {
-		public void narrowToPath(int node)
-		{ handleNarrowToPathRequest(node); }
+		public void narrowToSubtree(int node)
+		{ handleNarrowToSubtreeRequest(node); }
 
 		public void widenSubtree(int node)
 		{ handleWidenSubtreeRequest(node); }
@@ -1539,7 +1539,7 @@ public class H3Main
 	    (m_renderingConfiguration != null);
 
 	// Display menu.
-	m_narrowToPathMenuItem.setEnabled(false);
+	m_narrowToSubtreeMenuItem.setEnabled(false);
 	m_widenSubtreeMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
@@ -1569,7 +1569,7 @@ public class H3Main
 	m_recomputeLayoutExtendedMenuItem.setEnabled(true);
 
 	// Display menu.
-	m_narrowToPathMenuItem.setEnabled(true);
+	m_narrowToSubtreeMenuItem.setEnabled(true);
 	m_widenSubtreeMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenTowardRootMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenToGraphMenuItem.setEnabled(m_isDisplayNarrowed);
@@ -1779,14 +1779,14 @@ public class H3Main
 
 	// Create "Display" menu. ------------------------------------------
 
-	m_narrowToPathMenuItem = new JMenuItem("Narrow To Path");
-	m_narrowToPathMenuItem.setMnemonic(KeyEvent.VK_N);
-	m_narrowToPathMenuItem.setEnabled(false);
-	m_narrowToPathMenuItem.addActionListener(new ActionListener() {
+	m_narrowToSubtreeMenuItem = new JMenuItem("Narrow To Subtree");
+	m_narrowToSubtreeMenuItem.setMnemonic(KeyEvent.VK_N);
+	m_narrowToSubtreeMenuItem.setEnabled(false);
+	m_narrowToSubtreeMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
 		    int node = m_eventHandler.getCurrentNode();
-		    handleNarrowToPathRequest(node);
+		    handleNarrowToSubtreeRequest(node);
 		}
 	    });
 
@@ -1941,7 +1941,7 @@ public class H3Main
 
 	m_displayMenu = new JMenu("Display");
 	m_displayMenu.setMnemonic(KeyEvent.VK_D);
-	m_displayMenu.add(m_narrowToPathMenuItem);
+	m_displayMenu.add(m_narrowToSubtreeMenuItem);
 	m_displayMenu.add(m_widenSubtreeMenuItem);
 	m_displayMenu.add(m_widenTowardRootMenuItem);
 	m_displayMenu.add(m_widenToGraphMenuItem);
@@ -2094,7 +2094,7 @@ public class H3Main
     private JCheckBoxMenuItem m_automaticExtendedPrecisionMenuItem;
 
     private JMenu m_displayMenu;
-    private JMenuItem m_narrowToPathMenuItem;
+    private JMenuItem m_narrowToSubtreeMenuItem;
     private JMenuItem m_widenSubtreeMenuItem;
     private JMenuItem m_widenTowardRootMenuItem;
     private JMenuItem m_widenToGraphMenuItem;
@@ -2135,7 +2135,7 @@ public class H3Main
 
     private static interface NarrowingEventHandler
     {
-	void narrowToPath(int node);
+	void narrowToSubtree(int node);
 	void widenSubtree(int node);
 	void widenTowardRoot(int node);
 	void widenToGraph();
@@ -2464,7 +2464,7 @@ public class H3Main
 			int node = m_renderLoop.pickNode(x, y, m_center);
 			if (node >= 0)
 			{		
-			    m_narrowingHandler.narrowToPath(node);
+			    m_narrowingHandler.narrowToSubtree(node);
 			}
 		    }
 		    else
@@ -2771,7 +2771,7 @@ public class H3Main
 		}
 		else if (c == 'n')
 		{
-		    m_narrowingHandler.narrowToPath(m_currentNode);
+		    m_narrowingHandler.narrowToSubtree(m_currentNode);
 		}
 		else if (c == 'p')
 		{
