@@ -25,6 +25,14 @@ public final class H3Point4d
 	x = rhs.x;  y = rhs.y;  z = rhs.z;  w = rhs.w;
     }
 
+    public H3Point4d(Point4d rhs)
+    {
+	x = new MPReal(rhs.x);
+	y = new MPReal(rhs.y);
+	z = new MPReal(rhs.z);
+	w = new MPReal(rhs.w);
+    }
+
     public H3Point4d(MPReal x, MPReal y, MPReal z, MPReal w)
     {
 	this.x = x;
@@ -84,10 +92,10 @@ public final class H3Point4d
 
     public void set(Point4d t1)
     {
-	this.x = new MPReal(t1.x);
-	this.y = new MPReal(t1.y);
-	this.z = new MPReal(t1.z);
-	this.w = new MPReal(t1.w);
+	x = new MPReal(t1.x);
+	y = new MPReal(t1.y);
+	z = new MPReal(t1.z);
+	w = new MPReal(t1.w);
     }
 
     public void set(double x, double y, double z, double w)
