@@ -813,7 +813,7 @@ public class H3Main
     private boolean setupRendering
 	(RenderingConfiguration renderingConfiguration)
     {
-	boolean retval = false;
+	boolean retval = true;
 	try
 	{
 	    if (m_renderingConfiguration == null
@@ -837,15 +837,41 @@ public class H3Main
 		H3GraphLayout layout = new H3GraphLayout();
 		layout.layoutHyperbolic(m_graph);
 
-		System.out.println("Finished graph layout.");
+		printGraphStatistics(m_graph);
 
-		colorNodes(renderingConfiguration.nodeColor);
-		colorTreeLinks(renderingConfiguration.treeLinkColor);
-		colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+		int numNodes = m_graph.getNumNodes();
+		int numGoodNodes = m_graph.checkLayoutCoordinates();
 
-		selectNodes(renderingConfiguration.nodeColor);
-		selectLinks(renderingConfiguration.treeLinkColor, true);
-		selectLinks(renderingConfiguration.nontreeLinkColor, false);
+		retval = (numGoodNodes == numNodes);
+		if (!retval)
+		{
+		    int numBadNodes = numNodes - numGoodNodes;
+
+		    String msg = "Graph could not be laid out within the"
+			+ " limits of floating-point precision.\n"
+			+ "Layout failed for "  + numBadNodes
+			+ " of " + numNodes + " nodes.\n\n"
+			+ "Would you like to proceed anyway by arbitrarily"
+			+ " placing these nodes?"; 
+		    JOptionPane dialog = new JOptionPane();
+		    int response = dialog.showConfirmDialog
+			(null, msg, "Rendering Setup Failed",
+			 JOptionPane.YES_NO_OPTION);
+		    retval = (response == JOptionPane.YES_OPTION);
+		}
+
+		if (retval)
+		{
+		    System.out.println("Finished graph layout.");
+
+		    colorNodes(renderingConfiguration.nodeColor);
+		    colorTreeLinks(renderingConfiguration.treeLinkColor);
+		    colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+
+		    selectNodes(renderingConfiguration.nodeColor);
+		    selectLinks(renderingConfiguration.treeLinkColor, true);
+		    selectLinks(renderingConfiguration.nontreeLinkColor,false);
+		}
 	    }
 	    else
 	    {
@@ -871,17 +897,195 @@ public class H3Main
 		}
 	    }
 
-	    m_renderingConfiguration = renderingConfiguration;
-	    retval = true;
+	    if (retval)
+	    {
+		m_renderingConfiguration = renderingConfiguration;
+	    }
 	}
 	catch (H3GraphLoader.InvalidGraphDataException e)
 	{
+	    retval = false;
 	    String msg = "Graph file lacks needed data: " + e.getMessage();
 	    JOptionPane dialog = new JOptionPane();
-	    dialog.showMessageDialog(null, msg, "Rendering Failed",
+	    dialog.showMessageDialog(null, msg, "Rendering Setup Failed",
 				     JOptionPane.ERROR_MESSAGE);
 	}
 	return retval;
+    }
+
+    private void printGraphStatistics(final H3Graph graph)
+    {
+	GraphVisitor depthVisitor = new GraphVisitor()
+	    {
+		public void visit(int node, int level)
+		{
+		    if (level > m_maxDepth)
+		    {
+			m_maxDepth = level;
+		    }
+		}
+
+		public int getStatistics()
+		{
+		    return m_maxDepth;
+		}
+
+		private int m_maxDepth = 0;
+	    };
+
+	new GraphTraversal(graph, depthVisitor).traverse();
+	System.out.println("maxDepth = " + depthVisitor.getStatistics());
+
+	GraphVisitor branchingVisitor = new GraphVisitor()
+	    {
+		public void visit(int node, int level)
+		{
+		    int branching = graph.getNodeNontreeIndex(node)
+			- graph.getNodeChildIndex(node);
+
+		    if (branching > m_maxBranching)
+		    {
+			m_maxBranching = branching;
+		    }
+		}
+
+		public int getStatistics()
+		{
+		    return m_maxBranching;
+		}
+
+		private int m_maxBranching = 0;
+	    };
+
+	new GraphTraversal(graph, branchingVisitor).traverse();
+	System.out.println("maxBranching = "
+			   + branchingVisitor.getStatistics());
+
+	GraphVisitor coordinatesVisitor = new GraphVisitor()
+	    {
+		public void visit(int node, int level)
+		{
+		    graph.getNodeLayoutCoordinates(node, m_p);
+		    if (!isValidCoordinates(m_p))
+		    {
+			int parent = findGoodParent(node);
+			if (parent != -1)
+			{
+			    graph.getNodeLayoutCoordinates(parent, m_p);
+			    /*
+			    System.out.println
+				("(" + m_p.x + ", " + m_p.y + ", "
+				 + m_p.z + ", " + m_p.w + ")");
+			    */
+
+			    double x = m_p.x / m_p.w;
+			    double y = m_p.y / m_p.w;
+			    double z = m_p.z / m_p.w;
+			    System.out.println
+				("  <<" + x + ", " + y + ", " + z + ">>");
+			}
+		    }
+		}
+
+		public int getStatistics()
+		{
+		    return -1;
+		}
+
+		private int findGoodParent(int node)
+		{
+		    int retval = node;
+
+		    do
+		    {
+			retval = graph.getNodeParent(retval);
+			if (retval != -1)
+			{
+			    graph.getNodeLayoutCoordinates(retval, m_p);
+			}
+		    }
+		    while (retval != -1 && !isValidCoordinates(m_p));
+
+		    return retval;
+		}
+
+		private Point4d m_p = new Point4d();
+	    };
+
+	new GraphTraversal(graph, coordinatesVisitor).traverse();
+
+	GraphVisitor layoutVisitor = new GraphVisitor()
+	    {
+		public void visit(int node, int level)
+		{
+		    graph.getNodeLayoutCoordinates(node, m_p);
+		    if (!isValidCoordinates(m_p))
+		    {
+			m_p.x = 0.0;
+			m_p.y = 0.0;
+			m_p.z = 0.0;
+			m_p.w = 1.0;
+			graph.setNodeLayoutCoordinates(node, m_p);
+		    }
+		}
+
+		public int getStatistics()
+		{
+		    return -1;
+		}
+
+		private Point4d m_p = new Point4d();
+	    };
+
+	new GraphTraversal(graph, layoutVisitor).traverse();
+    }
+
+    private boolean isValidCoordinates(Point4d p)
+    {
+	return isGood(p.x) && isGood(p.y)
+	    && isGood(p.z) && isGood(p.w);
+    }
+
+    private boolean isGood(double x)
+    {
+	return !Double.isNaN(x) && !Double.isInfinite(x);
+    }
+
+    private interface GraphVisitor
+    {
+	void visit(int node, int level);
+	int getStatistics();
+    }
+
+    private class GraphTraversal
+    {
+	public GraphTraversal(H3Graph graph, GraphVisitor visitor)
+	{
+	    m_graph = graph;
+	    m_visitor = visitor;
+	}
+
+	public void traverse()
+	{
+	    traverseNode(m_graph.getRootNode(), 0);
+	}
+
+	private void traverseNode(int node, int level)
+	{
+	    m_visitor.visit(node, level);
+
+	    int start = m_graph.getNodeChildIndex(node);
+	    int nontreeStart = m_graph.getNodeNontreeIndex(node);
+    
+	    for (int i = start; i < nontreeStart; i++)
+	    {
+		int child = m_graph.getLinkDestination(i);
+		traverseNode(child, level + 1);
+	    }
+	}
+
+	private H3Graph m_graph;
+	private GraphVisitor m_visitor;
     }
 
     // Debugging routine.
@@ -1568,7 +1772,7 @@ public class H3Main
 
     private static final boolean DEBUG_PRINT_LOAD_TIME = true;
     private static final boolean DEBUG_PRINT_LOAD_MEMORY = true;
-    private static final boolean DEBUG_CHECK_ID_MAPPINGS = true;
+    private static final boolean DEBUG_CHECK_ID_MAPPINGS = false;
     private static final boolean DEBUG_EVENT_HANDLING = false;
 
     private static final int DEFAULT_FRAME_WIDTH = 900;
