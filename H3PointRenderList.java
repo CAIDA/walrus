@@ -170,6 +170,44 @@ public class H3PointRenderList
     }
 
     ////////////////////////////////////////////////////////////////////////
+    // PUBLIC METHODS
+    ////////////////////////////////////////////////////////////////////////
+
+    public BranchGroup makeBranchGraph()
+    {
+	BranchGroup retval = new BranchGroup();
+
+	if (m_numNearNodesDisplayed > 0)
+	{
+	    retval.addChild(new Shape3D(m_nearNodes, m_nearNodeAppearance));
+	}
+
+	if (m_numMiddleNodesDisplayed > 0)
+	{
+	    retval.addChild
+		(new Shape3D(m_middleNodes, m_middleNodeAppearance));
+	}
+
+	if (m_numFarNodesDisplayed > 0)
+	{
+	    retval.addChild(new Shape3D(m_farNodes, m_farNodeAppearance));
+	}
+
+	if (m_numTreeVerticesDisplayed > 0)
+	{
+	    retval.addChild(new Shape3D(m_treeLinks, m_treeLinkAppearance));
+	}
+
+	if (m_numNontreeVerticesDisplayed > 0)
+	{
+	    retval.addChild
+		(new Shape3D(m_nontreeLinks, m_nontreeLinkAppearance));
+	}
+
+	return retval;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // INTERFACE METHODS (H3RenderList)
     ////////////////////////////////////////////////////////////////////////
 

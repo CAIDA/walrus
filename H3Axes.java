@@ -52,6 +52,70 @@ public class H3Axes
 	createGeneralAppearances();
     }
 
+    public BranchGroup makeBranchGraph()
+    {
+	BranchGroup retval = new BranchGroup();
+
+	Appearance axisAppearance = cloneAppearance(m_axisAppearance);
+	Appearance circleAppearance = cloneAppearance(m_circleAppearance);
+
+	retval.addChild(new Shape3D(m_axes, axisAppearance));
+	retval.addChild(new Shape3D(m_xyCircle, circleAppearance));
+	retval.addChild(new Shape3D(m_yzCircle, circleAppearance));
+	retval.addChild(new Shape3D(m_xzCircle, circleAppearance));
+
+	retval.addChild(makeLabelBranchGraph(m_xLabel, m_xT3D));
+	retval.addChild(makeLabelBranchGraph(m_yLabel, m_yT3D));
+	retval.addChild(makeLabelBranchGraph(m_zLabel, m_zT3D));
+
+	return retval;
+    }
+
+    // NOTE: This doesn't clone all of the attributes of an Appearance.
+    private Appearance cloneAppearance(Appearance appearance)
+    {
+	Appearance retval = new Appearance();
+
+	retval.setColoringAttributes
+	    ((ColoringAttributes)cloneNodeComponent
+	     (appearance.getColoringAttributes()));
+
+	retval.setLineAttributes
+	    ((LineAttributes)cloneNodeComponent
+	     (appearance.getLineAttributes()));
+
+	retval.setPointAttributes
+	    ((PointAttributes)cloneNodeComponent
+	     (appearance.getPointAttributes()));
+
+	retval.setRenderingAttributes
+	    ((RenderingAttributes)cloneNodeComponent
+	     (appearance.getRenderingAttributes()));
+
+	retval.setTransparencyAttributes
+	    ((TransparencyAttributes)cloneNodeComponent
+	     (appearance.getTransparencyAttributes()));
+
+	return retval;
+    }
+
+    private NodeComponent cloneNodeComponent(NodeComponent component)
+    {
+	return (component == null ? null : component.cloneNodeComponent(true));
+    }
+
+    private TransformGroup makeLabelBranchGraph
+	(Shape3D label, Transform3D transform)
+    {
+	Geometry geometry = label.getGeometry();
+	Appearance appearance = cloneAppearance(label.getAppearance());
+	Shape3D shape = new Shape3D(geometry, appearance);
+
+	TransformGroup retval = new TransformGroup(transform);
+	retval.addChild(shape);
+	return retval;
+    }
+
     public void draw(GraphicsContext3D gc, Transform3D transform)
     {
 	gc.setModelTransform(transform);

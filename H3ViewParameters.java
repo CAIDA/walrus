@@ -96,6 +96,11 @@ public class H3ViewParameters
 	m_axesEnabled = enable;
     }
 
+    public BranchGroup makeAxesBranchGraph()
+    {
+	return m_axes.makeBranchGraph();
+    }
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
     public void installDepthCueing()
@@ -125,6 +130,11 @@ public class H3ViewParameters
 	{
 	    m_depthCueing = null;
 	}
+    }
+
+    public LinearFog getDepthCueing()
+    {
+	return m_depthCueing;
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

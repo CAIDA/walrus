@@ -39,6 +39,7 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.*;
 import java.io.*;
 import java.util.Observer;
 import java.util.Observable;
@@ -49,6 +50,7 @@ import java.util.HashMap;
 import java.util.ListIterator;
 import javax.swing.*;
 import com.sun.j3d.utils.universe.*;
+import com.sun.j3d.utils.geometry.*;
 import org.caida.libsea.*;
 
 public class H3Main
@@ -299,6 +301,7 @@ public class H3Main
 	m_saveWithLayoutMenuItem.setEnabled(false);
 	m_saveWithLayoutAsMenuItem.setEnabled(false);
 	m_closeMenuItem.setEnabled(false);
+	m_captureScreenMenuItem.setEnabled(false);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
@@ -327,6 +330,84 @@ public class H3Main
 	m_nodeLabelAttributes = null;
 
 	System.out.println("Finished handleCloseFileRequest()");
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleCaptureScreenRequest()
+    {
+	System.out.println("handleCaptureScreenRequest()");
+
+	H3PointRenderList renderList = m_renderList;
+	H3DisplayPosition displayPosition = m_renderLoop.getDisplayPosition();
+
+	m_view.removeCanvas3D(m_canvas);
+	handleStopRenderingRequest();
+	{
+	    int width = DEFAULT_FRAME_WIDTH;
+	    int height = DEFAULT_FRAME_HEIGHT;
+
+	    // Setup scene graph. - - - - - - - - - - - - - - - - - - - - - -
+
+	    GraphicsConfiguration config =
+		SimpleUniverse.getPreferredConfiguration();
+
+	    Canvas3D canvas = new Canvas3D(config, true);
+	    canvas.setSize(width, height);
+
+	    SimpleUniverse univ = new SimpleUniverse(canvas);
+	    univ.getViewingPlatform().setNominalViewingTransform();
+
+	    BranchGroup BG = renderList.makeBranchGraph();
+	    TransformGroup TG =
+		new TransformGroup(displayPosition.getRotation());
+	    TG.addChild(BG);
+
+	    if (m_renderingConfiguration.axes)
+	    {
+		TG.addChild(m_viewParameters.makeAxesBranchGraph());
+	    }
+
+	    if (m_renderingConfiguration.depthCueing)
+	    {
+		TG.addChild((LinearFog)m_viewParameters
+			    .getDepthCueing().cloneNode(true));
+	    }
+
+	    BranchGroup scene = new BranchGroup();
+	    scene.setCapability(BranchGroup.ALLOW_DETACH);
+	    scene.addChild(TG);
+
+	    univ.addBranchGraph(scene);
+
+	    // Capture screen. - - - - - - - - - - - - - - - - - - - - - - -
+
+	    Dimension size = canvas.getSize();
+	    Screen3D screen = canvas.getScreen3D();
+	    screen.setSize(size);
+
+	    double scale = m_viewParameters.getPixelToMeterScale();
+	    screen.setPhysicalScreenWidth(size.width * scale);
+	    screen.setPhysicalScreenHeight(size.height * scale);
+
+	    BufferedImage image =
+		new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+	    ImageComponent2D buffer =
+		new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
+
+	    canvas.setOffScreenBuffer(buffer);
+	    canvas.renderOffScreenBuffer();
+	    canvas.waitForOffScreenRendering();
+	    image = canvas.getOffScreenBuffer().getImage();
+
+	    new ImageDisplayer(image);
+	    
+	    scene.detach();
+	}
+	m_view.addCanvas3D(m_canvas);
+	m_canvas.stopRenderer();
+	handleStartRenderingRequest();
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -854,23 +935,23 @@ public class H3Main
 	boolean includeNontreeLinkColor = determineWhetherToIncludeColor
 	    (renderingConfiguration.nontreeLinkColor);
 
-	H3PointRenderList renderList = new H3PointRenderList
+	m_renderList = new H3PointRenderList
 	    (m_graph, useNodeSizes,
 	     includeNodes, includeNodeColor,
 	     includeTreeLinks, includeTreeLinkColor,
 	     includeNontreeLinks, includeNontreeLinkColor);
 
-	renderList.setNearNodeAppearance
+	m_renderList.setNearNodeAppearance
 	    (useNodeSizes
 	     ? m_viewParameters.getNearNodeAppearance()
 	     : m_viewParameters.getMiddleNodeAppearance());
-	renderList.setMiddleNodeAppearance
+	m_renderList.setMiddleNodeAppearance
 	    (m_viewParameters.getMiddleNodeAppearance());
-	renderList.setFarNodeAppearance
+	m_renderList.setFarNodeAppearance
 	    (m_viewParameters.getFarNodeAppearance());
-	renderList.setTreeLinkAppearance
+	m_renderList.setTreeLinkAppearance
 	    (m_viewParameters.getTreeLinkAppearance());
-	renderList.setNontreeLinkAppearance
+	m_renderList.setNontreeLinkAppearance
 	    (m_viewParameters.getNontreeLinkAppearance());
 
 	if (renderingConfiguration.adaptiveRendering)
@@ -895,7 +976,7 @@ public class H3Main
 
 	    if (true)
 	    {
-		renderer = new H3LineRenderer(m_graph, queue, renderList);
+		renderer = new H3LineRenderer(m_graph, queue, m_renderList);
 	    }
 	    else
 	    {
@@ -912,7 +993,7 @@ public class H3Main
 		// serves as an example of how the architecture supports
 		// variation in the rendering of nodes.
 		renderer = new H3CircleRenderer
-		    (m_graph, m_viewParameters, queue, renderList);
+		    (m_graph, m_viewParameters, queue, m_renderList);
 	    }
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -946,7 +1027,7 @@ public class H3Main
 
 	    H3NonadaptiveRenderLoop nonadaptive = new H3NonadaptiveRenderLoop
 		(m_graph, m_canvas, m_viewParameters,
-		 renderList, useNodeSizes);
+		 m_renderList, useNodeSizes);
 
 	    new Thread(nonadaptive).start();
 	    m_renderLoop = nonadaptive;
@@ -1020,6 +1101,7 @@ public class H3Main
 	m_renderLoop.shutdown();
 	m_renderLoop.waitForShutdown();
 	m_renderLoop = null;
+	m_renderList = null;
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1126,6 +1208,9 @@ public class H3Main
     // rendering state (when the splash screen is being shown).
     private void setupIdleRenderingMenu()
     {
+	// File menu.
+	m_captureScreenMenuItem.setEnabled(false);
+
 	// Rendering menu.
 	m_startMenuItem.setEnabled(true);
 	m_stopMenuItem.setEnabled(false);
@@ -1146,6 +1231,9 @@ public class H3Main
     // rendering state (when a Canvas3D is being shown).
     private void setupActiveRenderingMenu()
     {
+	// File menu.
+	m_captureScreenMenuItem.setEnabled(true);
+
 	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(true);
@@ -1173,6 +1261,7 @@ public class H3Main
 	SimpleUniverse univ = new SimpleUniverse(m_canvas);
 	univ.getViewingPlatform().setNominalViewingTransform();
 
+	m_view = m_canvas.getView();
 	m_viewParameters = new H3ViewParameters(m_canvas);
     }
 
@@ -1221,6 +1310,16 @@ public class H3Main
 		}
 	    });
 
+	m_captureScreenMenuItem = new JMenuItem("Capture Screen");
+	m_captureScreenMenuItem.setMnemonic(KeyEvent.VK_T);
+	m_captureScreenMenuItem.setEnabled(false);
+	m_captureScreenMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleCaptureScreenRequest();
+		}
+	    });
+
 	JMenuItem preferencesMenuItem = new JMenuItem("Preferences");
 	preferencesMenuItem.setMnemonic(KeyEvent.VK_R);
 	preferencesMenuItem.setEnabled(false);
@@ -1243,6 +1342,7 @@ public class H3Main
 	m_fileMenu.add(m_saveWithLayoutAsMenuItem);
 	m_fileMenu.add(m_closeMenuItem);
 	m_fileMenu.addSeparator();
+	m_fileMenu.add(m_captureScreenMenuItem);
 	m_fileMenu.add(preferencesMenuItem);
 	m_fileMenu.addSeparator();
 	m_fileMenu.add(exitMenuItem);
@@ -1479,8 +1579,10 @@ public class H3Main
     private H3DisplayPosition m_displayPosition; // Saved while updating disp..
     private H3DisplayPosition m_savedDisplayPosition; // Saved by user...
     private H3Canvas3D m_canvas; // Always non-null; one per program run.
+    private View m_view; // Always non-null; one per program run.
     private H3ViewParameters m_viewParameters; // Always non-null.
     private H3RenderLoop m_renderLoop; // ...non-null when ... being rendered.
+    private H3PointRenderList m_renderList; // ...non-null when ... rendered.
     private EventHandler m_eventHandler; // ...non-null when ...being rendered.
     private MemoryUsage m_memoryUsage = new MemoryUsage();
     private H3GraphLoader m_graphLoader = new H3GraphLoader();
@@ -1494,6 +1596,7 @@ public class H3Main
     private JMenuItem m_saveWithLayoutMenuItem;
     private JMenuItem m_saveWithLayoutAsMenuItem;
     private JMenuItem m_closeMenuItem;
+    private JMenuItem m_captureScreenMenuItem;
 
     private JMenu m_renderingMenu;
     private JMenuItem m_startMenuItem;
