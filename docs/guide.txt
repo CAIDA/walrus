@@ -15,21 +15,21 @@ TABLE OF CONTENTS
 INSTALLATION
 ===========================================================================
 
-Extract 'walrus-0.2.tar.gz' or 'walrus-0.2.zip' anywhere you wish.  This
-will create a subdirectory named 'walrus-0.2' containing several JAR files,
+Extract 'walrus-0.3.tar.gz' or 'walrus-0.3.zip' anywhere you wish.  This
+will create a subdirectory named 'walrus-0.3' containing several JAR files,
 among other things.
 
  For UNIX users...
 
-   The file walrus-0.2.tar.gz was packaged with the standard TAR utility
+   The file walrus-0.3.tar.gz was packaged with the standard TAR utility
    and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
    it with the following command:
 
-       gzip -cd walrus-0.2.tar.gz | tar xvf -
+       gzip -cd walrus-0.3.tar.gz | tar xvf -
 
  For Windows users...
 
-   The file walrus-0.2.zip was packaged in the common ZIP format.  You
+   The file walrus-0.3.zip was packaged in the common ZIP format.  You
    can unpack it using a program like WinZip (http://www.winzip.com/).
 
 
@@ -47,7 +47,7 @@ impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
 To run Walrus on a UNIX system (such as Solaris or Linux), enter the
-following at a shell prompt from within the 'walrus-0.2' subdirectory:
+following at a shell prompt from within the 'walrus-0.3' subdirectory:
 
    java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
@@ -113,7 +113,8 @@ Rendering
    Depth Cueing
       --- Selects whether depth cueing (the progressive darkening of the
           display away from the viewer) is enabled.  Depth cueing helps
-          the user to disambiguate the near from the far.
+          the user to disambiguate the near from the far.  A bug in Java3D
+          currently prevents depth cueing from being disabled.
    Coordinate Axes
       --- Selects whether the coordinate axes and labels, and spherical
           outline, are drawn.  These provide a valuable cue to the orientation
@@ -338,18 +339,320 @@ control R:
 FILE FORMAT
 ===========================================================================
 
-Walrus uses the LibSea graph library to read and write graph files.  Please
-see the documentation accompanying LibSea for a detailed description of the
-file format.  However, the LibSea file format is by design open-ended.  It
-provides flexible mechanisms by which application-specific conventions and
-policies may be implemented.  This section describes the conventions
-employed by Walrus.
+Walrus uses CAIDA's as yet unreleased LibSea graph library to read and
+write graph files.  Please see the files graph-format.txt and
+graph-example.txt, both in this directory, for a more detailed discussion
+of the syntax of the files.
 
-There is currently only one convention.  Every graph file must specify at
-least one spanning tree (but there can be more than one) by means of
-qualifiers.  A spanning tree provides the crucial information needed to lay
-out a graph.  The following excerpt from a graph file shows the required
-form of the spanning tree qualifier:
+The LibSea file format is by design open-ended.  It provides flexible
+mechanisms by which application-specific conventions and policies may be
+implemented.  The remainder of this section describes the most important
+aspects of the LibSea file format (explanations that should help the
+user get up to speed quickly) and describes the conventions employed
+by Walrus.
+
+To aid understanding, the discussion in this section refer to the following
+graph, which is 'samples/simple.graph' slightly modified and with lines
+numbered.  Note: The '#' character introduces one-line comments that are
+ignored by the parser.  Similarly, text of the form '@....=' are inline
+comments that have no significance; they are somewhat analogous to
+C/C++/Java comments of the form /* ... */.
+
+     1	Graph
+     2	{
+     3	   ### metadata ###
+     4	   @name="Binary Tree";
+     5	   @description="A complete binary tree of height 3.";
+     6	   @numNodes=15;
+     7	   @numLinks=17;
+     8	   @numPaths=0;
+     9	   @numPathLinks=0;
+    10	
+    11	   ### structural data ###
+    12	   @links=[
+    13	      { @source=0; @destination=1; },
+    14	      { @source=0; @destination=2; },
+    15	      { @source=1; @destination=3; },
+    16	      { @source=1; @destination=4; },
+    17	      { @source=2; @destination=5; },
+    18	      { @source=2; @destination=6; },
+    19	      { @source=3; @destination=7; },
+    20	      { @source=3; @destination=8; },
+    21	      { @source=4; @destination=9; },
+    22	      { @source=4; @destination=10; },
+    23	      { @source=5; @destination=11; },
+    24	      { @source=5; @destination=12; },
+    25	      { @source=6; @destination=13; },
+    26	      { @source=6; @destination=14; },
+    27	      { @source=7; @destination=0; },
+    28	      { @source=14; @destination=0; },
+    29	      { @source=1; @destination=2; }
+    30	   ];
+    31	   @paths=;
+    32	
+    33	   ### attribute data ###
+    34	   @enumerations=;
+    35	   @attributeDefinitions=[
+    36	      {
+    37	         @name=$root;
+    38	         @type=bool;
+    39	         @default=|| false ||;
+    40	         @nodeValues=[ { @id=0; @value=T; } ];
+    41	         @linkValues=;
+    42	         @pathValues=;
+    43	      },
+    44	      {
+    45	         @name=$tree_link;
+    46	         @type=bool;
+    47	         @default=|| false ||;
+    48	         @nodeValues=;
+    49	         @linkValues=[
+    50	            { @id=0; @value=T; },
+    51	            { @id=1; @value=T; },
+    52	            { @id=2; @value=T; },
+    53	            { @id=3; @value=T; },
+    54	            { @id=4; @value=T; },
+    55	            { @id=5; @value=T; },
+    56	            { @id=6; @value=T; },
+    57	            { @id=7; @value=T; },
+    58	            { @id=8; @value=T; },
+    59	            { @id=9; @value=T; },
+    60	            { @id=10; @value=T; },
+    61	            { @id=11; @value=T; },
+    62	            { @id=12; @value=T; },
+    63	            { @id=13; @value=T; }
+    64	         ];
+    65	         @pathValues=;
+    66	      }
+    67	   ];
+    68	   @qualifiers=[
+    69	      {
+    70	         @type=$spanning_tree;
+    71	         @name=$sample_spanning_tree;
+    72	         @description=;
+    73	         @attributes=[
+    74	            { @attribute=0; @alias=$root; },
+    75	            { @attribute=1; @alias=$tree_link; }
+    76	         ];
+    77	      }
+    78	   ];
+    79	
+    80	   ### visualization hints ###
+    81	   @filters=;
+    82	   @selectors=;
+    83	   @displays=;
+    84	   @presentations=;
+    85	
+    86	   ### interface hints ###
+    87	   @presentationMenus=;
+    88	   @displayMenus=;
+    89	   @selectorMenus=;
+    90	   @filterMenus=;
+    91	   @attributeMenus=;
+    92	}
+
+---------------------------------------------------------------------------
+Metadata
+---------------------------------------------------------------------------
+
+The LibSea file format avoids including explicit counts of objects whenever
+possible as a way of reducing the number of places where inconsistency may
+occur.  Thus the only counts are those on lines 6 to 9.  They specify the
+total number of nodes, links, and paths in the file, and the total number
+of links in all paths.  Note that Walrus does not currently support paths.
+
+Nodes, links, and paths have an implicitly assigned ID or index which is
+used to connect together instances of objects in the file (such as between
+a link and its endpoints).  The ID's range from 0 to one minus the count
+without gaps.  So in the sample graph, nodes have ID's 0, 1, ..., 14; links
+have ID's 0, 1, ..., 16; and so on.  The ID is assigned in the order of
+textual appearance in the file.
+
+However, because nodes, unlike other objects, are not defined in a file in
+any way, a graph file doesn't actually contain any information about the
+ultimate correspondence between nodes and ID's.  In contrast, a simple
+examination of the file will yield the correspondence between links and
+their ID's.  The creator of the graph file must instead choose some
+ordering of the nodes and use this ordering consistently whenever data
+about nodes is written to the file, such as when specifying the endpoints
+of links or when associating attribute values to nodes.
+
+The following example should clarify the point about node ID's.  Suppose
+you have three nodes A, B, and C, with links from A to B and from A to C.
+Suppose further that you have a node attribute called 'size', with A having
+the value 123, B having 456, and C having 789.  Now, for the purposes of
+creating a graph file, you might make the arbitrary ordering A(=0), B(=1),
+C(=2).  The only requirement on the ordering is that it start at zero and
+increase without gap until all nodes are accounted for.
+
+This assignment--A to 0, B to 1, and C to 2--is not explicitly recorded
+in the file.  Instead, the ordering determines how other data is written
+out.  For example, the links would be specified as
+
+     ...
+   @links=[
+      { @source=0; @destination=1; },
+      { @source=0; @destination=2; }
+   ];
+     ...
+
+And the 'size' attribute would be specified as
+
+     ...
+   @attributeDefinitions=[
+      {
+         @name=$size;
+         @type=int;
+         @default=;
+         @nodeValues=[
+            { @id=0; @value=123; },
+            { @id=1; @value=456; },
+            { @id=2; @value=789; }
+         ];
+         @linkValues=;
+         @pathValues=;
+      },
+     ...
+
+The example shows that node ID's are really assigned by the creator of
+the graph whereas the ID's of links (and other objects) are implicitly
+determined by their order of appearance in a file.
+
+
+---------------------------------------------------------------------------
+Structural Data
+---------------------------------------------------------------------------
+
+Links in LibSea are always directed and are specified by listing the ID's
+of the source and destination nodes, as on lines 13 to 29.  The first pair
+of nodes on line 13 is assigned link ID 0, the second pair on line 14 is ID
+1, and so on.  There is only a single list which includes all links,
+whether tree link or nontree link.  The distinction between tree and nontree
+links is made instead with attributes.
+
+
+---------------------------------------------------------------------------
+Attributes
+---------------------------------------------------------------------------
+
+Attributes are the means by which data can be associated with nodes, links,
+or paths.  A file may contain any number of attributes, and each attribute
+may be one of eight basic types.  The scalar types are boolean, integer,
+float, double, string, triples of floats ('float3'), triples of doubles
+('double3'), and enumerations.  The remaining supported types are lists of
+each scalar type.  Lists of lists are not supported, and each list must
+contain elements of a single type.
+
+All attributes are defined in a single attribute definitions list, as shown
+on line 35.  Attributes, like other objects, have ID's.  The ID of an
+attribute is simply the position of that attribute in the attribute
+definitions list.
+
+Each element in the list both defines the attribute--specifying the name
+and type--and provides the values, including the default value.  An
+attribute of a given name may supply values for any combination of nodes,
+links, or paths.  That is, attributes are not defined specifically for a
+single type of object, although in practice, most attributes will not apply
+to, or supply values for, all types of objects.  For example, the attribute
+named 'root' defined on lines 37 to 42, which marks the root node of a
+spanning tree, only supplies explicit values for nodes (on line 40).
+
+Each attribute definition includes three lists in which the values of the
+attribute for the three types of objects (nodes, links, and paths) are
+provided.  In the case of the 'root' attribute, the list for node values
+appears on line 40, link values on line 41, and path values on line 42.
+These lists enumerate the mapping from object ID's to attribute values with
+(ID, value) pairs.  For example, the pair
+
+                         { @id=0; @value=T; }
+
+on line 40 says that the node with ID 0 has a value of true ('T') for the
+boolean attribute named 'root'.  The pair on line 50, which is an element
+of the list for link values, says that the link with ID 0 has a value of
+true for the boolean attribute named 'tree_link'.  Although not required,
+it is recommended for performance reasons that the ID's in these lists be
+sorted in ascending order.  Of course, the lists need not include a mapping
+for all objects of a given type.  In fact, to save space both in the file
+and in the internal representation once loaded, it is recommended that
+attributes have default values and that they include explicit value
+mappings only where needed.
+
+Default values of attributes are specified in a syntax that differs
+slightly from that used in the lists providing attribute values.  The
+following table compares the syntax of default values and attribute values:
+
+                       syntax of                   syntax of
+       type         attribute values             default values
+      ------      ---------------------     --------------------------
+
+       bool               T                       ||  true  ||
+       bool               F                       || false  ||
+       int               123                      ||   123  ||
+      float             123.4f                    || 123.4f ||
+      double            123.4                     || 123.4  ||
+      string            "abc"                     || "abc"  ||
+      float3      { 0.5f; 1.0f; 2.0f; }     || { 0.5f, 1.0f, 2.0f } ||
+      double3     {  0.5;  1.0;  2.0; }     ||  { 0.5, 1.0, 2.0 }   ||
+      enum 9            enum 7                 || #fruits:APPLE ||
+     list int        [ 1, 2, 3 ]               ||   [1, 2, 3]   ||
+
+  ---==---==---==---==---==---==---==---==---==---==---==---==---==---==---
+
+Attributes have several uses in Walrus.  For example, the user can display
+attributes as node labels, or color nodes and links by RGB values stored
+in attributes.
+
+As far as Walrus is concerned, there is no syntactic difference between an
+attribute storing color data and one storing non-color data.  Specifically,
+Walrus doesn't interpret the names of attributes in any way, or employ any
+other convention for distinguising between the two types of attributes.
+However, attributes intended to be used for coloring nodes/links must be of
+type integer, float3, or double3.  Walrus considers attributes of these
+types to be potential sources of coloring information and automatically
+builds several menus, such as Color Scheme->Node Color->Color Attribute,
+listing them.
+
+An integer value should specify a color with the red, green, and blue
+components encoded into 32 bits in the order (_, R, G, B), with blue
+occupying the lowest eight bits and red occupying the next to highest eight
+bits.  More precisely, given R, G, and B,
+
+           color = ((R * 255) + G) * 255 + B.
+
+A tuple value should specify color with components that are in the range
+[0, 1].  So {0.0, 0.0, 0.0} would be black, and {1.0, 1.0, 1.0} would be
+white.  It is recommended that colors be specified with integer values,
+since they consume less memory when loaded than tuple values.
+
+
+---------------------------------------------------------------------------
+Spanning Trees
+---------------------------------------------------------------------------
+
+Every graph file must specify at least one spanning tree.  The description
+of a spanning tree consists of two parts, information about the root node
+and the tree links.  A spanning tree is specified in a graph file with a
+combination of two boolean attributes, which indicate the root node and the
+tree links, and a qualifier.  The qualifier groups together the two
+attributes and indicates to Walrus that they form a specification for a
+spanning tree.
+
+A qualifier specifying a spanning tree appears on lines 70 to 76.  The
+actual information is provided by the two attributes referenced by the
+qualifier on lines 74 and 75.  Line 74 states that the attribute with ID 0
+indicates the root node, and line 75 states that the attribute with ID 1
+indicates the tree links.  The qualifier itself should have 'type' equal to
+'spanning_tree', as on line 70, but the choice of a name is entirely
+arbitrary (this one is called 'sample_spanning_tree').  The referenced
+attributes need not be named 'root' and 'tree_link', although this happens
+to be the case in the sample graph (on lines 37 and 45).  It is crucial,
+however, that correct names are supplied for the '@alias=' component, as
+they are done here on lines 74 and 75.
+
+Walrus allows graph files to include more than one spanning tree.  The
+following lines illustrate the specification of two spanning trees,
+presuming the graph file includes four attributes with ID's 0, 1, 3, and 4
+that contain the actual data about the spanning trees:
 
    @qualifiers=[
       {
@@ -372,47 +675,5 @@ form of the spanning tree qualifier:
       }
    ];
 
-The qualifiers must have type 'spanning_tree' and contain attributes
-named 'root' and 'tree_link'.  In situations where the attributes
-referenced by the qualifiers are not named 'root' or 'tree_link', you
-can provide '@alias=' values that specify qualifier-specific alternate
-names that match the required ones.  The use of '@alias=' values is
-required when more than one spanning tree is included in a file, since
-attribute names (outside of qualifiers) must be unique.
-
-The referenced attributes must have boolean type.  The 'root' attribute
-specifies the root node of the spanning tree, and the 'tree_link' attribute
-specifies the subset of included links that make up the spanning tree.
-The following shows how these attributes might be defined in a graph file:
-
-   @attributeDefinitions=[
-      {
-         @name=$root;
-         @type=bool;
-         @default=|| false ||;
-         @nodeValues=[ { @id=0; @value=T; } ];
-         @linkValues=;
-         @pathValues=;
-      },
-      {
-         @name=$tree_link;
-         @type=bool;
-         @default=|| false ||;
-         @nodeValues=;
-         @linkValues=[
-            { @id=0; @value=T; },
-            { @id=1; @value=T; },
-            { @id=2; @value=T; },
-                  ...
-            { @id=361; @value=T; },
-            { @id=362; @value=T; },
-            { @id=363; @value=T; }
-         ];
-         @pathValues=;
-      }
-   ]
-
-To save space both in the file and in the internal representation, it is
-recommended that these attributes be defined with a default value of false
-and that explicit values be supplied only for nodes and links that have
-true values.
+It is quite all right for a single attribute to be referenced by multiple
+spanning tree qualifiers.
