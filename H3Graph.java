@@ -1241,6 +1241,47 @@ public class H3Graph
 
     ////////////////////////////////////////////////////////////////////////
 
+    // Returns the number of nodes reachable in the spanning tree, or -1
+    // if some node is visited more than once, indicating a cycle,
+    // a parallel edge, or some other problem.  The set of tree links
+    // is assumed to define a spanning tree.
+    public int checkSpanningTree()
+    {
+	BitSet visited = new BitSet();
+	return checkSpanningTree(visited, m_rootNode);
+    }
+
+    private int checkSpanningTree(BitSet visited, int node)
+    {
+	if (visited.get(node))
+	{
+	    return -1;
+	}
+	visited.set(node);
+
+	int start = getNodeChildIndex(node);
+	int nontreeStart = getNodeNontreeIndex(node);
+
+	int retval = 1;
+	for (int i = start; i < nontreeStart; i++)
+	{
+	    int child = getLinkDestination(i);
+	    int numReachable = checkSpanningTree(visited, child);
+	    if (numReachable == -1)
+	    {
+		return -1;
+	    }
+	    retval += numReachable;
+	}
+
+	return retval;
+    }
+
+    public int checkTreeReachability()
+    {
+	return checkTreeReachability(m_rootNode);
+    }
+
     public int checkTreeReachability(int node)
     {
 	BitSet visited = new BitSet();
