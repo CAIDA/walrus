@@ -41,6 +41,7 @@ public interface H3RenderLoop
 {
     void synchronizeWithRendering();
     void refreshDisplay();
+    void resizeDisplay();
     void rotateDisplay(H3RotationRequest request);
 
     // (x, y) are the AWT (that is, window) coordinates of the location
