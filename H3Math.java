@@ -222,4 +222,27 @@ public class H3Math
 	p.z /= s;
 	p.w = 1.0;
     }
+
+    // The following two methods (computeRadiusHyperbolic and
+    // computeRadiusEuclidean) are very special-purpose methods.  They're
+    // used to calculate the visible size of nodes, when the rendering of
+    // nodes at multiple sizes is enabled.  These are called in H3Transformer
+    // and in H3NonadaptiveRenderLoop.
+
+    // Returns 1.0 / d_hyp(0, p), where d_hyp is the hyperbolic metric
+    // (simplified) and 0 is the origin.
+    public static double computeRadiusHyperbolic(Point4d p)
+    {
+	double d = (p.x * p.x + p.y * p.y + p.z * p.z) / (p.w * p.w);
+	double a = Math.sqrt(1.0 / (1.0 - d));
+	double b = Math.sqrt(d / (1.0 - d));
+	return 1.0 / (1.0 + 2.0 * Math.log(a + b));
+    }
+
+    // This seems to be about ten times faster than computeRadiusHyperbolic().
+    public static double computeRadiusEuclidean(Point4d p)
+    {
+	double d = (p.x * p.x + p.y * p.y + p.z * p.z) / (p.w * p.w);
+	return 1.0 - d;
+    }
 }
