@@ -188,24 +188,24 @@ QUICK START
 
 You can give Walrus a quick try by doing the following:
 
-1. Extract 'walrus-0.6.tar.gz' or 'walrus-0.6.zip' anywhere you wish.
-   This will create a subdirectory named 'walrus-0.6' containing several
+1. Extract 'walrus-0.6.1.tar.gz' or 'walrus-0.6.1.zip' anywhere you wish.
+   This will create a subdirectory named 'walrus-0.6.1' containing several
    JAR files, among other things.
 
     For UNIX users...
 
-      The file walrus-0.6.tar.gz was packaged with the standard TAR utility
+      The file walrus-0.6.1.tar.gz was packaged with the standard TAR utility
       and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
       it with the following command:
 
-          gzip -cd walrus-0.6.tar.gz | tar xvf -
+          gzip -cd walrus-0.6.1.tar.gz | tar xvf -
 
     For Windows users...
 
-      The file walrus-0.6.zip was packaged in the common ZIP format.  You
+      The file walrus-0.6.1.zip was packaged in the common ZIP format.  You
       can unpack it using a program like WinZip (http://www.winzip.com/).
 
-1. From the 'walrus-0.6' subdirectory, enter the following at a shell
+1. From the 'walrus-0.6.1' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
@@ -307,7 +307,7 @@ The directory 'samples' contains the following sample graphs.
 
      A graph file generated from the UNIX directory tree containing the
      Walrus source files.  This was generated using the perl scripts
-     included in 'walrus-0.6/docs/dirgraph'.
+     included in 'walrus-0.6.1/docs/dirgraph'.
 
      Many of the values shown in a directory listing are included in this
      graph file as attributes.  For example, the attribute 'full_name'
