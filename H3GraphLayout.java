@@ -726,7 +726,7 @@ public class H3GraphLayout
 		else
 		{
 		    System.out.println("Switching to extended precision"
-				       + " for subtree at child " + child);
+				       + " for subtree at node " + child);
 
 		    H3Point4d childCenterAbsoluteMP =
 			new H3Point4d(childCenterAbsolute);
