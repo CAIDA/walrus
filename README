@@ -342,6 +342,15 @@ The directory 'samples' contains the following sample graphs.
      An Internet topology graph generated from data collected by a skitter
      monitor (http://www.caida.org/tools/measurement/skitter/).
 
+ * palmtree.graph
+    [3652 nodes, 3651 links; 2 attributes]
+
+     A graph contributed by Robert Hubley <rhubley@systemsbiology.org>.
+     This organic looking graph, with an extremely long "trunk", nicely
+     demonstrates the support in Walrus for extended-precision layout
+     calculations.  It would be impossible to lay out "tall" graphs like
+     this with even double precision values.
+
 
 The extension '.graph' is only a convention employed in these sample graphs
 and is not a requirement of Walrus.
