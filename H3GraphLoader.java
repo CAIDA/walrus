@@ -36,6 +36,7 @@
 // 
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.ArrayList;
@@ -71,9 +72,11 @@ public class H3GraphLoader
 
 	H3Graph retval = new H3Graph(numNodes, numLinks);
 
+	IDMap map = populateNodeIDs(retval, graph);
 	findSpanningTreeQualifierAttributes(graph, spanningTree);
-	retval.setRootNode(findSpanningTreeRootNode(graph, m_rootAttribute));
-	populateLinks(retval, graph, m_treeLinkAttribute);
+	int rootID = findSpanningTreeRootNodeID(graph, m_rootAttribute);
+	retval.setRootNode(map.map(rootID));
+	populateLinks(retval, graph, map, m_treeLinkAttribute);
 
 	return retval;
     }
@@ -177,22 +180,24 @@ public class H3GraphLoader
 
     ///////////////////////////////////////////////////////////////////////
 
-    private int findSpanningTreeRootNode(Graph graph, int attribute)
+    private int findSpanningTreeRootNodeID(Graph graph, int attribute)
 	throws InvalidGraphDataException
     {
 	AttributesByAttributeIterator iterator =
 	    graph.getAttributeDefinition(attribute).getNodeAttributes();
-	while (!iterator.atEnd())
+	while (!iterator.atEnd()
+	       && !iterator.getAttributeValues().getBooleanValue())
 	{
-	    if (iterator.getAttributeValues().getBooleanValue())
-	    {
-		return iterator.getObjectID();
-	    }
 	    iterator.advance();
 	}
 
-	String msg = "no root node found for spanning tree";
-	throw new InvalidGraphDataException(msg);
+	if (iterator.atEnd())
+	{
+	    String msg = "no root node found for spanning tree";
+	    throw new InvalidGraphDataException(msg);
+	}
+
+	return iterator.getObjectID();
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -216,7 +221,7 @@ public class H3GraphLoader
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void populateLinks(H3Graph retval, Graph graph,
+    private void populateLinks(H3Graph retval, Graph graph, IDMap map,
 			       int treeLinkAttribute)
     {
 	BitSet treeLinksMap = createTreeLinksMap(graph, treeLinkAttribute);
@@ -224,7 +229,7 @@ public class H3GraphLoader
 	NodeIterator nodeIterator = graph.getNodes();
 	while (!nodeIterator.atEnd())
 	{
-	    int node = nodeIterator.getObjectID();
+	    int node = map.map(nodeIterator.getObjectID());
 	    retval.startChildLinks(node);
 	    {
 		LinkIterator linkIterator =
@@ -234,8 +239,9 @@ public class H3GraphLoader
 		    int link = linkIterator.getObjectID();
 		    if (treeLinksMap.get(link))
 		    {
-			retval.addChildLink
-			    (node, linkIterator.getDestination());
+			int destination =
+			    map.map(linkIterator.getDestination());
+			retval.addChildLink(node, destination, link);
 		    }
 		    linkIterator.advance();
 		}
@@ -249,8 +255,9 @@ public class H3GraphLoader
 		    int link = linkIterator.getObjectID();
 		    if (!treeLinksMap.get(link))
 		    {
-			retval.addNontreeLink
-			    (node, linkIterator.getDestination());
+			int destination =
+			    map.map(linkIterator.getDestination());
+			retval.addNontreeLink(node, destination, link);
 		    }
 		    linkIterator.advance();
 		}
@@ -265,7 +272,7 @@ public class H3GraphLoader
 
     private BitSet createTreeLinksMap(Graph graph, int treeLinkAttribute)
     {
-	BitSet retval = new BitSet(graph.getNumLinks());
+	BitSet retval = new BitSet(graph.getLinkIDRange());
 
 	AttributesByAttributeIterator iterator =
 	    graph.getAttributeDefinition(treeLinkAttribute)
@@ -282,6 +289,46 @@ public class H3GraphLoader
 	return retval;
     }
     
+    ///////////////////////////////////////////////////////////////////////
+
+    private IDMap populateNodeIDs(H3Graph retval, Graph graph)
+    {
+	int[] mapping = extractSortedNodeIDs(graph);
+	for (int i = 0; i < mapping.length; i++)
+	{
+	    retval.setNodeID(i, mapping[i]);
+	}
+	return new IDMap(mapping);
+    }
+
+    private int[] extractSortedNodeIDs(Graph graph)
+    {
+	int numNodes = graph.getNumNodes();
+	int[] retval = new int[numNodes];
+
+	boolean isSorted = true;
+	int previousID = -1; // Must be less than all valid IDs.
+
+	int i = 0;
+	NodeIterator iterator = graph.getNodes();
+	while (!iterator.atEnd())
+	{
+	    int id = iterator.getObjectID();
+	    retval[i++] = id;
+	    isSorted = isSorted && (previousID <= id);
+	    previousID = id;
+
+	    iterator.advance();
+	}
+
+	if (!isSorted)
+	{
+	    Arrays.sort(retval);
+	}
+
+	return retval;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE FIELDS
     ////////////////////////////////////////////////////////////////////////
@@ -310,5 +357,30 @@ public class H3GraphLoader
 	{
 	    super(s);
 	}
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // PRIVATE CLASSES
+    ////////////////////////////////////////////////////////////////////////
+
+    private static class IDMap
+    {
+	public IDMap(int[] mapping)
+	{
+	    m_mapping = mapping;
+	}
+
+	public int map(int id)
+	{
+	    int retval = Arrays.binarySearch(m_mapping, id);
+	    if (retval < 0)
+	    {
+		String msg = "id[" + id + "] not found";
+		throw new RuntimeException(msg);
+	    }
+	    return retval;
+	}
+
+	private int[] m_mapping;
     }
 }

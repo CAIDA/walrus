@@ -85,6 +85,11 @@ public class H3Graph
 	return m_rootNode;
     }
 
+    public int getNodeID(int node)
+    {
+	return m_nodes.id[node];
+    }
+
     public double getNodeRadius(int node)
     {
 	return m_nodes.radius[node];
@@ -171,6 +176,11 @@ public class H3Graph
 
     //======================================================================
 
+    public int getLinkID(int link)
+    {
+	return m_links.id[link];
+    }
+
     public int getLinkSource(int link)
     {
 	return m_links.source[link];
@@ -179,6 +189,11 @@ public class H3Graph
     public int getLinkDestination(int link)
     {
 	return m_links.destination[link];
+    }
+
+    public boolean checkTreeLink(int link)
+    {
+	return m_links.isTreeLink.get(link);
     }
 
     public int getLinkColor(int link)
@@ -211,6 +226,11 @@ public class H3Graph
     public void setRootNode(int node)
     {
 	m_rootNode = node;
+    }
+
+    public void setNodeID(int node, int id)
+    {
+	m_nodes.id[node] = id;
     }
 
     public void setNodeRadius(int node, double radius)
@@ -285,14 +305,17 @@ public class H3Graph
 	m_nodes.treeLinks[node] = m_links.nextIndex;
     }
 
-    public void addChildLink(int node, int child)
+    // linkID is the ID of the corresponding link in the backing libsea graph.
+    public void addChildLink(int node, int child, int linkID)
     {
 	++m_numTreeLinks;
 
-	m_nodes.parent[child] = m_links.nextIndex;
-	m_links.source[m_links.nextIndex] = node;
-	m_links.destination[m_links.nextIndex] = child;
-	++m_links.nextIndex;
+	int link = m_links.nextIndex++;
+	m_nodes.parent[child] = link;
+	m_links.id[link] = linkID;
+	m_links.source[link] = node;
+	m_links.destination[link] = child;
+	m_links.isTreeLink.set(link);
     }
 
     public void startNontreeLinks(int node)
@@ -300,13 +323,15 @@ public class H3Graph
 	m_nodes.nontreeLinks[node] = m_links.nextIndex;
     }
 
-    public void addNontreeLink(int node, int target)
+    // linkID is the ID of the corresponding link in the backing libsea graph.
+    public void addNontreeLink(int node, int target, int linkID)
     {
 	++m_numNontreeLinks;
 
-	m_links.source[m_links.nextIndex] = node;
-	m_links.destination[m_links.nextIndex] = target;
-	++m_links.nextIndex;
+	int link = m_links.nextIndex++;
+	m_links.id[link] = linkID;
+	m_links.source[link] = node;
+	m_links.destination[link] = target;
     }
 
     public void endNodeLinks(int node)
@@ -335,6 +360,11 @@ public class H3Graph
     {
 	int color = (r << 16) | (g << 8) | b;
 	setNodeDefaultColor(color);
+    }
+
+    public void setLinkID(int link, int id)
+    {
+	m_links.id[link] = id;
     }
 
     public void setLinkColor(int link, int color)
@@ -380,38 +410,37 @@ public class H3Graph
     {
 	public Nodes(int numNodes)
 	{
+	    id = new int[numNodes];
 	    radius = new double[numNodes];
-
 	    x = new double[numNodes];
 	    y = new double[numNodes];
 	    z = new double[numNodes];
-
 	    layoutX = new double[numNodes];
 	    layoutY = new double[numNodes];
 	    layoutZ = new double[numNodes];
 	    layoutW = new double[numNodes];
-
 	    parent = new int[numNodes];
-	    parent[0] = -1;  // The node at index zero is always the root.
 
 	    // The automatic initialization of these arrays to zero is
 	    // important in giving consistent values for nodes without
-	    // child or non-tree links (when startChildLinks() et al.
+	    // child or non-tree links (e.g., when startChildLinks() et al.
 	    // are not called for them).
 	    treeLinks = new int[numNodes];
 	    nontreeLinks = new int[numNodes];
 	    linksEnd = new int[numNodes];
 
 	    visited = new int[numNodes];
-
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 	    color = new int[numNodes];
 	}
 
 	////////////////////////////////////////////////////////////////////
 	// ESSENTIAL NODE ATTRIBUTES
 	////////////////////////////////////////////////////////////////////
+
+	// The ID of the node in the backing org.caida.libsea.Graph.
+	// This mapping is necessary since the IDs in the backing graph
+	// need not form a contiguous block starting at zero.
+	public int[] id;
 
 	// The radius of the nodes as determined solely by their position.
 	// This is inversely proportional to the distance from the origin to
@@ -469,11 +498,10 @@ public class H3Graph
     {
 	public Links(int numLinks)
 	{
+	    id = new int[numLinks];
 	    source = new int[numLinks];
 	    destination = new int[numLinks];
-
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+	    isTreeLink = new BitSet(numLinks);
 	    color = new int[numLinks];
 	}
 
@@ -483,9 +511,17 @@ public class H3Graph
 	// ESSENTIAL LINK ATTRIBUTES
 	////////////////////////////////////////////////////////////////////
 
+	// The ID of the link in the backing org.caida.libsea.Graph.
+	// This mapping is necessary since the IDs in the backing graph
+	// need not form a contiguous block starting at zero.
+	public int[] id;
+
 	// The indices of nodes.
 	public int[] source;
 	public int[] destination;
+
+	// Whether a link is a tree link or a nontree link.
+	public BitSet isTreeLink;
 
 	////////////////////////////////////////////////////////////////////
 	// INESSENTIAL LINK ATTRIBUTES
