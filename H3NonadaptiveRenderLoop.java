@@ -92,6 +92,20 @@ public class H3NonadaptiveRenderLoop
 	endRequest();
     }
 
+    public synchronized void resizeDisplay()
+    {
+	startRequest();
+	{
+	    if (DEBUG_PRINT)
+	    {
+		System.out.println("resizing display ("
+				   + STATE_NAMES[m_state] + ")");
+	    }
+	    m_picker.reset();
+	}
+	endRequest();
+    }
+
     public synchronized void rotateDisplay(H3RotationRequest request)
     {
 	startRequest();
