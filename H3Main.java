@@ -352,6 +352,7 @@ public class H3Main
 	    break;
 
 	case ColorConfiguration.TRANSPARENT:
+	    // No further work needed.
 	    break;
 
 	case ColorConfiguration.FIXED_COLOR:
@@ -454,6 +455,7 @@ public class H3Main
 	    break;
 
 	case ColorConfiguration.RGB:
+	    colorLinksRGB(configuration.colorAttribute);
 	    break;
 
 	default: throw new RuntimeException();
@@ -550,26 +552,46 @@ public class H3Main
 	{
 	    int node = iterator.getObjectID();
 	    ValueIterator valueIterator = iterator.getAttributeValues();
-	    colorNodeRGB(node, valueIterator);
+	    int color = extractRGBColor(valueIterator);
+	    m_graph.setNodeColor(node, color);
 
 	    iterator.advance();
 	}
     }
 
-    private void colorNodeRGB(int node, ValueIterator iterator)
+    // NOTE: Attribute must be scalar.
+    private void colorLinksRGB(String colorAttribute)
     {
+	m_graph.setLinkDefaultColor(Color.white.getRGB());
+
+	AttributesByAttributeIterator iterator =
+	    m_backingGraph.getAttributeDefinition(colorAttribute)
+	    .getLinkAttributes();
+	while (!iterator.atEnd())
+	{
+	    int link = iterator.getObjectID();
+	    ValueIterator valueIterator = iterator.getAttributeValues();
+	    int color = extractRGBColor(valueIterator);
+	    m_graph.setLinkColor(link, color);
+
+	    iterator.advance();
+	}
+    }
+
+    private int extractRGBColor(ValueIterator iterator)
+    {
+	int retval = 0;
 	switch (iterator.getType().getType())
 	{
 	case ValueType._INTEGER:
-	    m_graph.setNodeColor(node, iterator.getIntegerValue());
+	    retval = iterator.getIntegerValue();
 	    break;
 
 	case ValueType._FLOAT3:
 	    {
 		iterator.getFloat3Value(m_float3Temporary);
 		normalizeColorComponents(m_float3Temporary);
-		int color = makeColor(m_float3Temporary);
-		m_graph.setNodeColor(node, color);
+		retval = makeColor(m_float3Temporary);
 	    }
 	    break;
 
@@ -577,8 +599,7 @@ public class H3Main
 	    {
 		iterator.getDouble3Value(m_double3Temporary);
 		normalizeColorComponents(m_double3Temporary);
-		int color = makeColor(m_double3Temporary);
-		m_graph.setNodeColor(node, color);
+		retval = makeColor(m_double3Temporary);
 	    }
 	    break;
 
@@ -594,6 +615,7 @@ public class H3Main
 	    //FALLTHROUGH
 	default: throw new RuntimeException();
 	}
+	return retval;
     }
 
     private void normalizeColorComponents(float[] color)
