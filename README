@@ -68,7 +68,9 @@ and 512MB of RAM, running Solaris 7, a box graciously donated by Sun.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 DOCUMENTATION
 
-See the 'docs' subdirectory for documentation.
+See the 'docs' subdirectory for documentation.  In particular, the file
+'guide.txt' contains a brief guide to using Walrus (see also QUICK START
+below).
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
