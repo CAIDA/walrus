@@ -24,7 +24,7 @@ impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
 To run Walrus on a UNIX system (such as Solaris or Linux), enter the
-following at a shell prompt:
+following at a shell prompt from within the 'walrus-0.1' subdirectory:
 
    java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
