@@ -323,6 +323,9 @@ public class H3Main
 	m_pruneSubtreeMenuItem.setEnabled(false);
 	m_pruneToChildrenMenuItem.setEnabled(false);
 	m_pruneToNeighborhoodMenu.setEnabled(false);
+	m_zoomInMenuItem.setEnabled(false);
+	m_zoomOutMenuItem.setEnabled(false);
+	m_zoomResetMenuItem.setEnabled(false);
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
@@ -1546,6 +1549,9 @@ public class H3Main
 	m_pruneSubtreeMenuItem.setEnabled(false);
 	m_pruneToChildrenMenuItem.setEnabled(false);
 	m_pruneToNeighborhoodMenu.setEnabled(false);
+	m_zoomInMenuItem.setEnabled(false);
+	m_zoomOutMenuItem.setEnabled(false);
+	m_zoomResetMenuItem.setEnabled(false);
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
@@ -1576,6 +1582,9 @@ public class H3Main
 	m_pruneSubtreeMenuItem.setEnabled(true);
 	m_pruneToChildrenMenuItem.setEnabled(true);
 	m_pruneToNeighborhoodMenu.setEnabled(true);
+	m_zoomInMenuItem.setEnabled(true);
+	m_zoomOutMenuItem.setEnabled(true);
+	m_zoomResetMenuItem.setEnabled(true);
 	m_refreshDisplayMenuItem.setEnabled(true);
 	m_wobbleDisplayMenuItem.setEnabled(true);
 	m_showRootNodeMenuItem.setEnabled(true);
@@ -1851,6 +1860,36 @@ public class H3Main
 	m_pruneToNeighborhoodMenu.setEnabled(false);
 	addPruneToNeighborhoodSubmenus(m_pruneToNeighborhoodMenu);
 
+	m_zoomInMenuItem = new JMenuItem("Zoom In");
+	m_zoomInMenuItem.setMnemonic(KeyEvent.VK_I);
+	m_zoomInMenuItem.setEnabled(false);
+	m_zoomInMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.increaseMagnification();
+		}
+	    });
+
+	m_zoomOutMenuItem = new JMenuItem("Zoom Out");
+	m_zoomOutMenuItem.setMnemonic(KeyEvent.VK_O);
+	m_zoomOutMenuItem.setEnabled(false);
+	m_zoomOutMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.decreaseMagnification();
+		}
+	    });
+
+	m_zoomResetMenuItem = new JMenuItem("Zoom 1:1");
+	m_zoomResetMenuItem.setMnemonic(KeyEvent.VK_Z);
+	m_zoomResetMenuItem.setEnabled(false);
+	m_zoomResetMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.resetMagnification();
+		}
+	    });
+
 	m_refreshDisplayMenuItem = new JMenuItem("Refresh");
 	m_refreshDisplayMenuItem.setMnemonic(KeyEvent.VK_R);
 	m_refreshDisplayMenuItem.setEnabled(false);
@@ -1948,6 +1987,10 @@ public class H3Main
 	m_displayMenu.add(m_pruneSubtreeMenuItem);
 	m_displayMenu.add(m_pruneToChildrenMenuItem);
 	m_displayMenu.add(m_pruneToNeighborhoodMenu);
+	m_displayMenu.addSeparator();
+	m_displayMenu.add(m_zoomInMenuItem);
+	m_displayMenu.add(m_zoomOutMenuItem);
+	m_displayMenu.add(m_zoomResetMenuItem);
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_refreshDisplayMenuItem);
 	m_displayMenu.add(m_wobbleDisplayMenuItem);
@@ -2101,6 +2144,9 @@ public class H3Main
     private JMenuItem m_pruneSubtreeMenuItem;
     private JMenuItem m_pruneToChildrenMenuItem;
     private JMenu m_pruneToNeighborhoodMenu;
+    private JMenuItem m_zoomInMenuItem;
+    private JMenuItem m_zoomOutMenuItem;
+    private JMenuItem m_zoomResetMenuItem;
     private JMenuItem m_refreshDisplayMenuItem;
     private JMenuItem m_wobbleDisplayMenuItem;
     private JMenuItem m_showRootNodeMenuItem;
@@ -2358,6 +2404,38 @@ public class H3Main
 		m_renderLoop.setDisplayPosition(position);
 		shiftCenterNodes(position.getCenterNode());
 	    }
+	}
+
+	public void increaseMagnification()
+	{
+	    forceIdleState();
+	    m_parameters.increaseMagnification();
+	    m_renderLoop.resizeDisplay();
+	    refreshDisplay();
+
+	    // Java3D has a bug/feature in which updating the depth-cueing
+	    // distances often doesn't take effect until the *SECOND* display
+	    // refresh after the change.  Thus the need for this second call
+	    // here.
+	    refreshDisplay();
+	}
+
+	public void decreaseMagnification()
+	{
+	    forceIdleState();
+	    m_parameters.decreaseMagnification();
+	    m_renderLoop.resizeDisplay();
+	    refreshDisplay();
+	    refreshDisplay();  // See comments at increaseMagnification();
+	}
+
+	public void resetMagnification()
+	{
+	    forceIdleState();
+	    m_parameters.resetMagnification();
+	    m_renderLoop.resizeDisplay();
+	    refreshDisplay();
+	    refreshDisplay();  // See comments at increaseMagnification();
 	}
 
 	// MouseListener - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2781,31 +2859,15 @@ public class H3Main
 		}
 		else if (c == ',')
 		{
-		    Matrix4d scale = new Matrix4d();
-		    scale.set(0.8);
-
-		    forceIdleState();
-		    m_parameters.extendObjectTransform(scale);
-		    m_parameters.updateDepthCueing();
-		    m_renderLoop.resizeDisplay();
-		    refreshDisplay();
+		    decreaseMagnification();
 		}
 		else if (c == '.')
 		{
-		    Matrix4d scale = new Matrix4d();
-		    scale.set(1.25);
-
-		    forceIdleState();
-		    m_parameters.extendObjectTransform(scale);
-		    m_parameters.updateDepthCueing();
-		    m_renderLoop.resizeDisplay();
-		    refreshDisplay();
+		    increaseMagnification();
 		}
 		else if (c == '/')
 		{
-		    forceIdleState();
-		    m_parameters.updateDepthCueing();
-		    refreshDisplay();
+		    resetMagnification();
 		}
 	    }
 	}
