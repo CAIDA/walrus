@@ -149,26 +149,30 @@ Spanning Tree
 
 Color Scheme
    Predefined
-      --- Sets up a predefined color scheme.
-       Yellow-Green
+      --- Sets up a predefined color scheme.  The names follow a convention
+          for showing the colors in the scheme.  The color of nodes, tree
+          links, and non-tree links are shown in order and separated by
+          dashes, with transparent components enclosed in square brackets.
+
+       Yellow-Green-[Grey]
+           --- The color scheme active at startup.
        ...
-       Violet-Gold/Transparent
+       Beige-Gold-[Green]
 
    Node Color
       --- Specifies the coloring of nodes.
+       Transparent
+           --- Sets nodes to a transparent version of the currently active
+               color.  Only the predefined colors (the named colors rather
+               than an RGB-value derived from an attribute) can be made
+               transparent.
        Invisible
            --- Causes nodes not to be rendered.
-       Transparent
-           --- Sets nodes to a transparent version of the previously
-               activated color--the color that was last used to actually
-               render a display (by selecting 'Start' or 'Update' in the
-               'Rendering' menu).  (This is the currently implemented
-               behavior but not the intended behavior, and thus will change
-               in the future.)
-       Yellow
-           --- Sets nodes to a predefined color.
+       Magenta
+           --- Sets nodes to a predefined color.  All nodes are set to the
+               same color.
        ...
-       Red
+       White
 
        RGB
            --- Sets nodes to the color specified by an RGB value stored in
