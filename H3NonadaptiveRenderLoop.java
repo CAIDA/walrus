@@ -207,6 +207,15 @@ public class H3NonadaptiveRenderLoop
 	endRequest();
     }
 
+    public synchronized void shutdown()
+    {
+	startRequest();
+	{
+	    m_state = STATE_SHUTDOWN;
+	}
+	endRequest();
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // INTERFACE METHODS (Runnable)
     ////////////////////////////////////////////////////////////////////////
@@ -221,6 +230,10 @@ public class H3NonadaptiveRenderLoop
 
 	    switch (m_state)
 	    {
+	    case STATE_SHUTDOWN:
+		System.out.println("H3NonadaptiveRenderLoop exiting...");
+		return;
+
 	    case STATE_IDLE:
 		if (DEBUG_PRINT)
 		{
@@ -552,12 +565,14 @@ public class H3NonadaptiveRenderLoop
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private static final int STATE_IDLE = 0;
-    private static final int STATE_ROTATE = 1;
-    private static final int STATE_TRANSLATE = 2;
-    private static final int STATE_REFRESH = 3;
+    private static final int STATE_SHUTDOWN = 0;
+    private static final int STATE_IDLE = 1;
+    private static final int STATE_ROTATE = 2;
+    private static final int STATE_TRANSLATE = 3;
+    private static final int STATE_REFRESH = 4;
     private static final String[] STATE_NAMES = {
-	"STATE_IDLE", "STATE_ROTATE", "STATE_TRANSLATE", "STATE_REFRESH"
+	"STATE_SHUTDOWN", "STATE_IDLE", "STATE_ROTATE",
+	"STATE_TRANSLATE", "STATE_REFRESH"
     };
 
     private int m_state = STATE_IDLE;
