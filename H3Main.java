@@ -1429,6 +1429,7 @@ public class H3Main
     private static final boolean DEBUG_PRINT_LOAD_TIME = true;
     private static final boolean DEBUG_PRINT_LOAD_MEMORY = true;
     private static final boolean DEBUG_CHECK_ID_MAPPINGS = true;
+    private static final boolean DEBUG_EVENT_HANDLING = true;
 
     private static final int DEFAULT_FRAME_WIDTH = 900;
     private static final int DEFAULT_FRAME_HEIGHT = 1000;
@@ -1561,7 +1562,10 @@ public class H3Main
 
 	public void mousePressed(MouseEvent e)
 	{
-	    dumpMouseEvent("mousePressed", e);
+	    if (DEBUG_EVENT_HANDLING)
+	    {
+		dumpMouseEvent("mousePressed", e);
+	    }
 
 	    int x = e.getX();
 	    int y = e.getY();
@@ -1685,7 +1689,10 @@ public class H3Main
 
 	public void mouseReleased(MouseEvent e)
 	{
-	    dumpMouseEvent("mouseReleased", e);
+	    if (DEBUG_EVENT_HANDLING)
+	    {
+		dumpMouseEvent("mouseReleased", e);
+	    }
 
 	    int modifiers = e.getModifiers();
 	    switch (m_state)
@@ -1732,7 +1739,10 @@ public class H3Main
 
 	public void mouseDragged(MouseEvent e)
 	{
-	    dumpMouseEvent("mouseDragged", e);
+	    if (DEBUG_EVENT_HANDLING)
+	    {
+		dumpMouseEvent("mouseDragged", e);
+	    }
 
 	    int x = e.getX();
 	    int y = e.getY();
@@ -1788,7 +1798,10 @@ public class H3Main
 
 	public void mouseMoved(MouseEvent e)
 	{
-	    dumpMouseEvent("mouseMoved", e);
+	    if (DEBUG_EVENT_HANDLING)
+	    {
+		dumpMouseEvent("mouseMoved", e);
+	    }
 
 	    switch (m_state)
 	    {
