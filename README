@@ -157,9 +157,9 @@ with the left mouse button.
 As mentioned earlier, Walrus uses an adaptive rendering algorithm that
 tries to maintain a given framerate.  You may try out the nonadaptive
 rendering algorithm for comparison by de-selecting Rendering->Adaptive
-Rendering and then selecting Rendering->Update (the color scheme will
-change, and currently can't be overridden).  The nonadaptive algorithm can
-be smoother for smaller graphs.
+Rendering and then selecting Rendering->Update.  The nonadaptive
+algorithm can be more responsive and produce a smoother display for
+smaller graphs.
 
 See 'guide.txt' in the 'docs' subdirectory for information on additional
 commands and menus not covered here.
