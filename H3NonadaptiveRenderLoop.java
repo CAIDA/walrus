@@ -133,7 +133,7 @@ public class H3NonadaptiveRenderLoop
 	    if (m_state == STATE_IDLE)
 	    {
 		m_parameters.refresh(); // See comments for this elsewhere.
-		m_picker.highlightNode(x, y, true);
+		m_picker.highlightNode(x, y);
 	    }
 	}
 	endRequest();
@@ -146,7 +146,7 @@ public class H3NonadaptiveRenderLoop
 	    if (m_state == STATE_IDLE)
 	    {
 		m_parameters.refresh(); // See comments for this elsewhere.
-		m_picker.highlightNode(node, true);
+		m_picker.highlightNode(node);
 	    }
 	}
 	endRequest();
