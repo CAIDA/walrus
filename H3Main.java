@@ -1467,7 +1467,7 @@ public class H3Main
 	    });
 
 	m_captureScreenMenuItem = new JMenuItem("Capture Screen");
-	m_closeMenuItem.setMnemonic(KeyEvent.VK_T);
+	m_captureScreenMenuItem.setMnemonic(KeyEvent.VK_T);
 	m_captureScreenMenuItem.setEnabled(false);
 	m_captureScreenMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
