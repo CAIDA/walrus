@@ -66,6 +66,8 @@ Since 0.2, released Jan 25, 2002:
       If you had transparency enabled and then switched the coloring of
       links to RGB (that is, to colors stored in an attribute), then
       links would sometimes be drawn incorrectly as black lines.
+  * Fixed bug in which rotations would stop working when axes were
+    disabled while running the nonadaptive render loop.
 
 Since 0.1, released Dec 5, 2001:
 
