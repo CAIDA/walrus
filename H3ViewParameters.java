@@ -39,6 +39,7 @@ import java.util.*;
 import javax.media.j3d.*;
 import javax.vecmath.*;
 import java.awt.Font;
+import java.awt.Color;
 import com.sun.j3d.utils.geometry.Text2D;
 
 public class H3ViewParameters
@@ -64,11 +65,15 @@ public class H3ViewParameters
 
 	m_pickViewer = new H3PickViewer(m_pickRadius);
 
+	m_background = new Background(0.0f, 0.0f, 0.0f);
+
 	m_depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
 	m_depthCueing.setFrontDistance(DEPTH_CUEING_ENABLED_FRONT);
 	m_depthCueing.setBackDistance(DEPTH_CUEING_ENABLED_BACK);
 	m_depthCueing.setInfluencingBounds
 	    (new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
+
+	updateBackgroundRelatedColor();
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -175,10 +180,24 @@ public class H3ViewParameters
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-    public void installDepthCueing()
+    // NOTE: Fog and Background are installed on a GraphicsContext3D,
+    //       but a GraphicsContext3D is not available from a Canvas3D
+    //       until the Canvas3D has been displayed.  Thus the need for
+    //       this method to install these things later on in program
+    //       execution.  A good place to call this is in
+    //       H3RenderLoop.refreshDisplay(), which gets called at program
+    //       startup and doesn't get called too often afterwards.
+    public void installBackgroundRelatedAttributes()
     {
 	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
 	gc.setFog(m_depthCueing);
+	gc.setBackground(m_background);
+    }
+
+    public void setBackgroundColor(Color color)
+    {
+	m_backgroundColor = color;
+	updateBackgroundRelatedColor();
     }
 
     public void setDepthCueingEnabled(boolean enable)
@@ -366,6 +385,16 @@ public class H3ViewParameters
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
+
+    private void updateBackgroundRelatedColor()
+    {
+	float red = m_backgroundColor.getRed() / 255.0f;
+	float green = m_backgroundColor.getGreen() / 255.0f;
+	float blue = m_backgroundColor.getBlue() / 255.0f;
+
+	m_depthCueing.setColor(red, green, blue);
+	m_background.setColor(red, green, blue);
+    }
 
     private void refreshAll()
     {
@@ -583,6 +612,9 @@ public class H3ViewParameters
     private double m_pickEquivalenceRadius;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private Color m_backgroundColor = Color.black;
+    private Background m_background;
 
     // Some good combinations of front and back distances are
     // (1.0, 3.5), (1.25, 3.5), (1.0, 4.0), (1.25, 4.0), and (1.5, 4.0).
