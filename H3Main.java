@@ -1561,131 +1561,94 @@ public class H3Main
 
 	public void mousePressed(MouseEvent e)
 	{
-	    //System.out.println("mousePressed(): isRotating = " + m_isRotating);
+	    System.out.println("mousePressed");
 
-	    m_lastX = e.getX();
-	    m_lastY = e.getY();
-
-	    if (m_isRotating)
+	    int modifiers = e.getModifiers();
+	    switch (m_state)
 	    {
-		if (m_rotationKind == REPEATING_ROTATION)
-		{
-		    //System.out.println("stopping repeating rotations");
-		    m_isRotating = false;
-		    m_repeatingRequest.end();
-		}
-		else if (m_rotationKind == WOBBLING_ROTATION)
-		{
-		    //System.out.println("stopping wobbling rotations");
-		    m_isRotating = false;
-		    m_wobblingRequest.end();
-		}
-	    }
-	    else
-	    {
-		int modifiers = e.getModifiers();
-		if (checkModifiers(modifiers, InputEvent.BUTTON3_MASK))
+	    case STATE_IDLE:
+		if (checkModifiers(modifiers, InputEvent.BUTTON1_MASK))
 		{
 		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
 		    {
-			if (m_isCapturing)
-			{
-			    System.out.println("Replaying movements ...");
-
-			    m_isCapturing = false;
-			    m_renderLoop.stopCapturing();
-
-			    m_capturingManager.enable();
-			    m_renderLoop.replayMovements();
-			    m_capturingManager.disable();
-
-			    System.out.println("Finished replaying ...");
-			}
-			else
-			{
-			    System.out.println("Recording movements ...");
-
-			    m_isCapturing = true;
-			    m_renderLoop.startCapturing();
-			}
-
-			/*
-			if (m_savedDisplay)
-			{
-			    System.out.println("Restoring display ...");
-
-			    m_savedDisplay = false;
-			    m_renderLoop.restoreDisplayPosition();
-			}
-			else
-			{
-			    System.out.println("Saving display ...");
-
-			    m_savedDisplay = true;
-			    m_renderLoop.saveDisplayPosition();
-			}
-			*/
+			// Continuous rotations...
 		    }
 		    else
 		    {
-			System.out.println("Picking ...");
-			int node = m_renderLoop.pickNode(e.getX(), e.getY(),
-							 m_center);
-			if (node >= 0)
-			{
-			    System.out.println("Picked node " + node + ".");
-			    m_renderLoop.translate(node);
-			    shiftCenterNodes(node);
-			}
-			else
-			{
-			    System.out.println("No node picked.");
-			}
+			// Interactive rotation...
 		    }
 		}
 		else if (checkModifiers(modifiers, InputEvent.BUTTON2_MASK))
 		{
+		    // Attribute display...
+		}
+		else if (checkModifiers(modifiers, InputEvent.BUTTON3_MASK))
+		{
 		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
 		    {
-		        m_renderLoop.translate(swapCenterNodes());
+			// Attribute display...
 		    }
-		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
+		    else
 		    {
-			m_renderLoop.translate(m_rootNode);
-			shiftCenterNodes(m_rootNode);
-		    }
-		    else 
-		    {
-                        if (m_isCapturing)
-                        {
-			    System.out.println("Abandoning recording ...");
-
-			    m_isCapturing = false;
-			    m_renderLoop.abortCapturing();
-                        }
-                        else
-                        {
-			    highlightNode(e.getX(), e.getY());
-                        }
+			// Picking for translation...
 		    }
 		}
+		break;
+
+	    case STATE_WOBBLING:
+		// Stop wobbling...
+		break;
+
+	    case STATE_REPLAYING:
+		// Cancel replay...
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS:
+		// Stop rotations...
+		break;
+
+	    case STATE_DISPLAYING_ATTRIBUTES:
+		//FALLTHROUGH
+	    case STATE_ROTATING_INTERACTIVE:
+		//FALLTHROUGH
+	    default:
+		throw new RuntimeException
+		    ("Invalid state in EventHandler: mousePressed in state "
+		     + m_state);
 	    }
 	}
 
 	public void mouseReleased(MouseEvent e)
 	{
-	    //System.out.println("mouseReleased(): isRotating = " +m_isRotating);
+	    System.out.println("mouseReleased");
 
-	    // NOTE: The following will be true even if button 1 has not
-	    //       been actually released so long as some other button
-	    //       has been released.
-
-	    if (m_isRotating && m_rotationKind == INTERACTIVE_ROTATION
-		&& checkModifiers(e.getModifiers(), InputEvent.BUTTON1_MASK))
+	    int modifiers = e.getModifiers();
+	    switch (m_state)
 	    {
-		//System.out.println("stopping rotations ...");
-		m_isRotating = false;
-		m_interactiveRequest.end();
+	    case STATE_IDLE:
+		//IGNORE
+		break;
+
+	    case STATE_DISPLAYING_ATTRIBUTES:
+		// Stop displaying...
+		break;
+
+	    case STATE_ROTATING_INTERACTIVE:
+		// Stop rotating...
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS:
+		//IGNORE
+		break;
+
+	    case STATE_WOBBLING:
+		//FALLTHROUGH
+	    case STATE_REPLAYING:
+		//FALLTHROUGH
+	    default:
+		throw new RuntimeException
+		    ("Invalid state in EventHandler: mouseReleased in state "
+		     + m_state);
 	    }
 	}
 
@@ -1693,84 +1656,34 @@ public class H3Main
 
 	public void mouseDragged(MouseEvent e)
 	{
-	    int modifiers = e.getModifiers();
-	    if (checkModifiers(modifiers, InputEvent.BUTTON1_MASK))
+	    System.out.println("mouseDragged");
+
+	    switch (m_state)
 	    {
-		int dx = (e.getX() - m_lastX) / MOUSE_SENSITIVITY;
-		int dy = (e.getY() - m_lastY) / MOUSE_SENSITIVITY;
+	    case STATE_IDLE:
+		//IGNORE
+		break;
 
-		m_lastX = e.getX();
-		m_lastY = e.getY();
+	    case STATE_DISPLAYING_ATTRIBUTES:
+		// Display attributes...
+		break;
 
-		double dxRad = Math.toRadians(dx);
-		double dyRad = Math.toRadians(dy);
+	    case STATE_ROTATING_INTERACTIVE:
+		// Rotate display...
+		break;
 
-		//System.out.println("m_isRotating = " + m_isRotating);
-		//System.out.println("m_rotationKind = " + m_rotationKind);
+	    case STATE_ROTATING_CONTINUOUS:
+		// Adjust rotation parameters...
+		break;
 
-		if (!m_isRotating)
-		{
-		    m_isRotating = true;
-
-		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
-		    {
-			m_rotationKind = REPEATING_ROTATION;
-		    }
-		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
-		    {
-			m_rotationKind = WOBBLING_ROTATION;
-		    }
-		    else
-		    {
-			m_rotationKind = INTERACTIVE_ROTATION;
-		    }
-
-		    switch (m_rotationKind)
-		    {
-		    case INTERACTIVE_ROTATION:
-			m_interactiveRequest.start();
-			m_interactiveRequest.rotate(dxRad, dyRad);
-			m_renderLoop.rotateDisplay(m_interactiveRequest);
-			//System.out.println("started interactive rotations");
-			break;
-
-		    case REPEATING_ROTATION:
-			m_repeatingRequest.start();
-			m_repeatingRequest.rotate(dxRad, dyRad);
-			m_renderLoop.rotateDisplay(m_repeatingRequest);
-			//System.out.println("started repeating rotations");
-			break;
-
-		    case WOBBLING_ROTATION:
-			m_wobblingRequest.start();
-			m_renderLoop.rotateDisplay(m_wobblingRequest);
-			//System.out.println("started wobbling rotations");
-			break;
-		    }
-		}
-		else
-		{
-		    switch (m_rotationKind)
-		    {
-		    case INTERACTIVE_ROTATION:
-			m_interactiveRequest.rotate(dxRad, dyRad);
-			//System.out.println("cont'd interactive rotations");
-			break;
-
-		    case REPEATING_ROTATION:
-			m_repeatingRequest.rotate(dxRad, dyRad);
-			//System.out.println("cont'd repeating rotations");
-			break;
-
-		    case WOBBLING_ROTATION:
-			//System.out.println("cont'd wobbling rotations");
-			break;
-		    }
-		}
-	    }
-	    else if (checkModifiers(modifiers, InputEvent.BUTTON2_MASK))
-	    {
-		highlightNode(e.getX(), e.getY());
+	    case STATE_WOBBLING:
+		//FALLTHROUGH
+	    case STATE_REPLAYING:
+		//FALLTHROUGH
+	    default:
+		throw new RuntimeException
+		    ("Invalid state in EventHandler: mouseDragged in state "
+		     + m_state);
 	    }
 	}
 
@@ -1972,10 +1885,18 @@ public class H3Main
 
 	//---------------------------------------------------------------
 
+	private static final int STATE_IDLE = 0;
+	private static final int STATE_DISPLAYING_ATTRIBUTES = 1;
+	private static final int STATE_ROTATING_INTERACTIVE = 2;
+	private static final int STATE_ROTATING_CONTINUOUS = 3;
+	private static final int STATE_WOBBLING = 4;
+	private static final int STATE_REPLAYING = 5;
+
 	private static final char CTRL_R = 'r' - 'a' + 1;
 
 	private static final int MOUSE_SENSITIVITY = 2;
 
+	private int m_state;
 	private H3Canvas3D m_canvas;
 	private H3CapturingRenderLoop m_renderLoop;
 	private CapturingManager m_capturingManager;
