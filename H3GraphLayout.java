@@ -143,13 +143,13 @@ public class H3GraphLayout
     private void computeAngles(H3Graph graph, HyperbolicLayout layout)
     {
 	Children children = new Children();
-	computeAnglesSubtree(graph, layout, children, graph.getRootNode());
+	computeAnglesSubtree(graph, layout, children, graph.getRootNode(), 0);
     }
 
     private void computeAnglesSubtree(H3Graph graph,
 				      HyperbolicLayout layout,
 				      Children children,
-				      int node)
+				      int node, int level)
     {
 	int childIndex = graph.getNodeChildIndex(node);
 	int nontreeIndex = graph.getNodeNontreeIndex(node);
@@ -162,7 +162,8 @@ public class H3GraphLayout
 		for (int i = childIndex; i < nontreeIndex; i++)
 		{
 		    int child = graph.getLinkDestination(i);
-		    computeAnglesSubtree(graph, layout, children, child);
+		    computeAnglesSubtree
+			(graph, layout, children, child, level + 1);
 		}
 	    }
 
@@ -177,7 +178,7 @@ public class H3GraphLayout
 	    children.sort();
 
 	    //computeAnglesNode(graph, layout, children, node);
-	    computeAnglesNode2(graph, layout, children, node);
+	    computeAnglesNode2(graph, layout, children, node, level);
 	}
     }
 
@@ -241,7 +242,7 @@ public class H3GraphLayout
     private void computeAnglesNode2(H3Graph graph,
 				    HyperbolicLayout layout,
 				    Children children,
-				    int node)
+				    int node, int level)
     {
 	final boolean SUBTREE_3_AVG = false;
 	final boolean SUBTREE_3_CENTROID = true;
@@ -271,7 +272,10 @@ public class H3GraphLayout
 	    double totalPhi = firstPhi + secondPhi;
 	    layout.phi[first.node] = totalPhi - firstPhi;
 	    layout.phi[second.node] = totalPhi - secondPhi;
-	    layout.theta[second.node] = Math.PI;
+
+	    double twist = ((level % 2) == 0 ? 0.0 : Math.PI / 2.0);
+	    layout.theta[first.node] = twist;
+	    layout.theta[second.node] = Math.PI + twist;
 	}
 	else if (SUBTREE_3_AVG && numChildren == 3)
 	{
