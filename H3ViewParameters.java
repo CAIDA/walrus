@@ -97,11 +97,11 @@ public class H3ViewParameters
 	gc.setFrontBufferRendering(true);
 
 	Point3d eye = getEye();
-	double labelZ = zOffset * ON_SCREEN_LABEL_Z_OFFSET_SCALE
-	    + ON_SCREEN_LABEL_Z_SCALE * eye.z + ON_SCREEN_LABEL_Z_OFFSET;
+	double labelZ = zOffset * LABEL_Z_OFFSET_SCALE
+	    + LABEL_Z_SCALE * eye.z + LABEL_Z_OFFSET;
 
-	double xOffset = ON_SCREEN_LABEL_X_OFFSET * m_pixelToMeterScale;
-	double yOffset = ON_SCREEN_LABEL_Y_OFFSET * m_pixelToMeterScale;
+	double xOffset = LABEL_X_OFFSET * m_pixelToMeterScale;
+	double yOffset = LABEL_Y_OFFSET * m_pixelToMeterScale;
 	Point3d p = new Point3d(x + xOffset, y + yOffset, 0.0);
 	{
 	    // Project given (x, y) coordinates to the plane z=labelZ.
@@ -118,7 +118,7 @@ public class H3ViewParameters
 	}
 
 	Transform3D scale = new Transform3D();
-	scale.set(ON_SCREEN_LABEL_SCALE);
+	scale.set(LABEL_SCALE);
 
 	Vector3d t = new Vector3d(p.x, p.y, labelZ);
 	Transform3D translation = new Transform3D();
@@ -591,12 +591,12 @@ public class H3ViewParameters
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private static final double ON_SCREEN_LABEL_SCALE = 0.03;
-    private static final double ON_SCREEN_LABEL_Z_SCALE = 0.5;
-    private static final double ON_SCREEN_LABEL_Z_OFFSET = 0.0; // meters
-    private static final double ON_SCREEN_LABEL_Z_OFFSET_SCALE = 0.0001; // m
-    private static final double ON_SCREEN_LABEL_X_OFFSET = 10; // pixels
-    private static final double ON_SCREEN_LABEL_Y_OFFSET = 10; // pixels
+    private static final double LABEL_SCALE = 0.03;
+    private static final double LABEL_Z_SCALE = 0.5;
+    private static final double LABEL_Z_OFFSET = 0.0; // meters
+    private static final double LABEL_Z_OFFSET_SCALE = 0.0001; // meters
+    private static final double LABEL_X_OFFSET = 10; // pixels
+    private static final double LABEL_Y_OFFSET = 10; // pixels
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
