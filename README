@@ -77,6 +77,19 @@ CONTACT INFORMATION
 To report bugs, email walrus-bugs@caida.org.  For general inquiry, email
 walrus-info@caida.org.
 
+There is a mailing list available to discuss Walrus use and development.
+To subscribe, email walrus-dev-request@caida.org with
+
+   subscribe your-email-address
+
+in the body (for example, 'subscribe foo@bar.com').  To unsubscribe,
+email walrus-dev-request@caida.org with
+
+   unsubscribe your-email-address
+
+in the body.  All messages to the list itself should be sent to
+walrus-dev@caida.org.
+
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 QUICK START
