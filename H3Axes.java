@@ -52,26 +52,35 @@ public class H3Axes
 	createGeneralAppearances();
     }
 
-    public BranchGroup makeBranchGraph()
+    public BranchGroup makeBranchGraph(Transform3D transform, double lineScale)
     {
 	BranchGroup retval = new BranchGroup();
+
+	TransformGroup TG = new TransformGroup(transform);
+	retval.addChild(TG);
 
 	Appearance axisAppearance = cloneAppearance(m_axisAppearance);
 	Appearance circleAppearance = cloneAppearance(m_circleAppearance);
 
-	axisAppearance.getLineAttributes().setLineWidth(2.0f);
-	circleAppearance.getLineAttributes().setLineWidth(2.0f);
+	scaleLineWidth(axisAppearance, lineScale);
+	scaleLineWidth(circleAppearance, lineScale);
 
-	retval.addChild(new Shape3D(m_axes, axisAppearance));
-	retval.addChild(new Shape3D(m_xyCircle, circleAppearance));
-	retval.addChild(new Shape3D(m_yzCircle, circleAppearance));
-	retval.addChild(new Shape3D(m_xzCircle, circleAppearance));
+	TG.addChild(new Shape3D(m_axes, axisAppearance));
+	TG.addChild(new Shape3D(m_xyCircle, circleAppearance));
+	TG.addChild(new Shape3D(m_yzCircle, circleAppearance));
+	TG.addChild(new Shape3D(m_xzCircle, circleAppearance));
 
-	retval.addChild(makeLabelBranchGraph(m_xLabel, m_xT3D));
-	retval.addChild(makeLabelBranchGraph(m_yLabel, m_yT3D));
-	retval.addChild(makeLabelBranchGraph(m_zLabel, m_zT3D));
+	TG.addChild(makeLabelBranchGraph(m_xLabel, m_xT3D));
+	TG.addChild(makeLabelBranchGraph(m_yLabel, m_yT3D));
+	TG.addChild(makeLabelBranchGraph(m_zLabel, m_zT3D));
 
 	return retval;
+    }
+
+    private void scaleLineWidth(Appearance appearance, double scale)
+    {
+	double width = appearance.getLineAttributes().getLineWidth();
+	appearance.getLineAttributes().setLineWidth((float)(scale * width));
     }
 
     // NOTE: This doesn't clone all of the attributes of an Appearance.
