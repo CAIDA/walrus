@@ -56,6 +56,8 @@ public class H3ViewParameters
 
 	m_pixelToMeterScale = computePixelToMeterScale(canvas.getScreen3D());
 	m_pickRadius = PICK_RADIUS_PIXELS * m_pixelToMeterScale;
+	m_pickEquivalenceRadius =
+	    PICK_EQUIVALENCE_RADIUS_PIXELS * m_pixelToMeterScale;
 	m_nodeRadius = NODE_RADIUS_PIXELS * m_pixelToMeterScale;
 
 	m_pickViewer = new H3PickViewer(m_pickRadius);
@@ -277,6 +279,11 @@ public class H3ViewParameters
 	return m_pickRadius;
     }
 
+    public double getPickEquivalenceRadius()
+    {
+	return m_pickEquivalenceRadius;
+    }
+
     public double getPixelToMeterScale()
     {
 	return m_pixelToMeterScale;
@@ -491,9 +498,15 @@ public class H3ViewParameters
     private static final int NODE_RADIUS_PIXELS = 10;
     private double m_nodeRadius;
 
+    // PICK_EQUIVALENCE_RADIUS_PIXELS, which must be less than or equal
+    // to PICK_RADIUS_PIXELS, is the radius within which nodes are
+    // considered to overlap.  With this radius, we should pick the
+    // overlapping node that is closest to the eye along the line of sight.
     private static final int PICK_RADIUS_PIXELS = 10;
+    private static final int PICK_EQUIVALENCE_RADIUS_PIXELS = 2;
     private static final float PICK_POINT_SIZE = 10.0f;
     private double m_pickRadius;
+    private double m_pickEquivalenceRadius;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
