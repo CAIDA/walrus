@@ -42,18 +42,26 @@ import mpfun.*;
 public class H3GraphLayout
 {
     ////////////////////////////////////////////////////////////////////////
+    // PUBLIC CLASSES
+    ////////////////////////////////////////////////////////////////////////
+
+    public interface LayoutState {}
+
+    ////////////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
     ////////////////////////////////////////////////////////////////////////
 
-    public H3GraphLayout()
+    public H3GraphLayout(boolean attemptExtended)
     {
+	ATTEMPT_EXTENDED = attemptExtended;
     }
 
     ////////////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     ////////////////////////////////////////////////////////////////////////
 
-    public void layoutHyperbolic(H3Graph graph)
+    public LayoutState layoutHyperbolic
+	(H3Graph graph, boolean useExtendedPrecision)
     {
 	long startTime = 0;
 	if (DEBUG_PRINT)
@@ -62,14 +70,23 @@ public class H3GraphLayout
 	    System.out.println("layoutHyperbolic.begin[" + startTime +"]");
 	}
 
+	HyperbolicLayout retval = null;
+
 	int numNodes = graph.getNumNodes();
 	if (numNodes > 0)
 	{
-	    HyperbolicLayout layout = new HyperbolicLayout(numNodes);
-	    computeRadii(graph, layout);
-	    computeAngles(graph, layout);
-	    computeCoordinates(graph, layout);
-	    //computeCoordinatesMP(graph, layout);
+	    retval = new HyperbolicLayout(numNodes);
+	    computeRadii(graph, retval);
+	    computeAngles(graph, retval);
+
+	    if (useExtendedPrecision)
+	    {
+		computeCoordinatesMP(graph, retval);
+	    }
+	    else
+	    {
+		computeCoordinates(graph, retval);
+	    }
 	}
 
 	if (DEBUG_PRINT)
@@ -78,6 +95,34 @@ public class H3GraphLayout
 	    long duration = stopTime - startTime;
 	    System.out.println("layoutHyperbolic.end[" + stopTime + "]");
 	    System.out.println("layoutHyperbolic.time[" + duration + "]");
+	}
+
+	return retval;
+    }
+
+    // Try to calculate the coordinates of the nodes using extended precision.
+    // Assumes the radii and angles have been computed already.
+    public void retryHyperbolicLayout(H3Graph graph, LayoutState state)
+    {
+	long startTime = 0;
+	if (DEBUG_PRINT)
+	{
+	    startTime = System.currentTimeMillis();
+	    System.out.println("retryHyperbolicLayout.begin[" + startTime+"]");
+	}
+
+	if (graph.getNumNodes() > 0)
+	{
+	    HyperbolicLayout layout = (HyperbolicLayout)state;
+	    computeCoordinatesMP(graph, layout);
+	}
+
+	if (DEBUG_PRINT)
+	{
+	    long stopTime = System.currentTimeMillis();
+	    long duration = stopTime - startTime;
+	    System.out.println("retryHyperbolicLayout.end[" + stopTime + "]");
+	    System.out.println("retryHyperbolicLayout.time[" + duration + "]");
 	}
     }
 
@@ -673,8 +718,28 @@ public class H3GraphLayout
 		    .buildCanonicalOrientation(childCenterAbsolute,
 					       childPoleAbsolute);
 
-		computeCoordinatesSubtree(graph, layout,
-					  childTransform, child);
+		if (!ATTEMPT_EXTENDED || H3Math.isFinite(childTransform))
+		{
+		    computeCoordinatesSubtree(graph, layout,
+					      childTransform, child);
+		}
+		else
+		{
+		    System.out.println("Switching to extended precision"
+				       + " for subtree at child " + child);
+
+		    H3Point4d childCenterAbsoluteMP =
+			new H3Point4d(childCenterAbsolute);
+		    H3Point4d childPoleAbsoluteMP =
+			new H3Point4d(childPoleAbsolute);
+
+		    H3Matrix4d childTransformMP = H3Transform
+			.buildCanonicalOrientation(childCenterAbsoluteMP,
+						   childPoleAbsoluteMP);
+
+		    computeCoordinatesSubtreeMP(graph, layout,
+						childTransformMP, child);
+		}
 	    }
 	}
     }
@@ -799,6 +864,10 @@ public class H3GraphLayout
     ////////////////////////////////////////////////////////////////////////
 
     private static final boolean DEBUG_PRINT = true;
+
+    // Whether extended precision calculations should be tried automatically
+    // when needed.  This value is set in the constructor.
+    private final boolean ATTEMPT_EXTENDED;
 
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE FIELDS (hyperbolic layout)
@@ -991,6 +1060,7 @@ public class H3GraphLayout
     //======================================================================
 
     private class HyperbolicLayout
+	implements LayoutState
     {
 	public HyperbolicLayout(int numNodes)
 	{
