@@ -51,6 +51,44 @@ public class H3Math
     // PUBLIC METHODS
     ////////////////////////////////////////////////////////////////////////
 
+    public static boolean isFinite(double x)
+    {
+	return !Double.isNaN(x) && !Double.isInfinite(x);
+    }
+
+    public static boolean isFinite(Point4d p)
+    {
+	return isFinite(p.x) && isFinite(p.y)
+	    && isFinite(p.z) && isFinite(p.w);
+    }
+
+    public static boolean isFinite(Matrix4d m)
+    {
+	return isFinite(m.m00) && isFinite(m.m01) && isFinite(m.m02) && isFinite(m.m03)
+	    && isFinite(m.m10) && isFinite(m.m11) && isFinite(m.m12) && isFinite(m.m13)
+	    && isFinite(m.m20) && isFinite(m.m21) && isFinite(m.m22) && isFinite(m.m23)
+	    && isFinite(m.m30) && isFinite(m.m31) && isFinite(m.m32) && isFinite(m.m33);
+    }
+
+    public static void validateFinite(Point4d p)
+    {
+	if (!isFinite(p))
+	{
+	    String msg = "ERROR: invalid coordinates: [" + p.x + ", "
+		+ p.y + ", " + p.z + ", " + p.w + "]";
+	    throw new RuntimeException(msg);
+	}
+    }
+
+    public static void validateFinite(Matrix4d m)
+    {
+	if (!isFinite(m))
+	{
+	    String msg = "ERROR: invalid component(s) in matrix";
+	    throw new RuntimeException(msg);
+	}
+    }
+
     public static boolean epsilonZero(double x)
     {
 	return Math.abs(x) < EPSILON;
