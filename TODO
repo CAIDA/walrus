@@ -11,21 +11,11 @@ BUGS & ISSUES
 * With very large graphs (> ~500k nodes), the display may become
   corrupted during navigation.
 
-* After a user resizes the Walrus window by clicking the zoom
-  (or minimize/maximize) button on the window, picking may become
-  inaccurate, and depth cueing may disappear.  This is likely caused by
-  an apparent bug in Java3D in which a movement of the viewer's eye isn't
-  immediately reflected in internal transformation matrices.  Simply
-  navigating around the graph usually fixes this problem.
-
 * Owing to a AWT/Java3D/Swing bug, none of the keyboard accelerators for
   the menus work.
 
 * Owing to a Java3D bug, the display tends to flicker when a user interacts
   with the menus.
-
-* Owing to a Java3D bug, depth cueing can't be disabled with
-  Rendering->Depth Cueing.
 
 * Owing to a Java3D bug, antialiasing doesn't work in immediate mode,
   the mode used by Walrus.

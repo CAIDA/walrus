@@ -16,21 +16,21 @@ TABLE OF CONTENTS
 INSTALLATION
 ===========================================================================
 
-Extract 'walrus-0.5.tar.gz' or 'walrus-0.5.zip' anywhere you wish.  This
-will create a subdirectory named 'walrus-0.5' containing several JAR files,
+Extract 'walrus-0.6.tar.gz' or 'walrus-0.6.zip' anywhere you wish.  This
+will create a subdirectory named 'walrus-0.6' containing several JAR files,
 among other things.
 
  For UNIX users...
 
-   The file walrus-0.5.tar.gz was packaged with the standard TAR utility
+   The file walrus-0.6.tar.gz was packaged with the standard TAR utility
    and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
    it with the following command:
 
-       gzip -cd walrus-0.5.tar.gz | tar xvf -
+       gzip -cd walrus-0.6.tar.gz | tar xvf -
 
  For Windows users...
 
-   The file walrus-0.5.zip was packaged in the common ZIP format.  You
+   The file walrus-0.6.zip was packaged in the common ZIP format.  You
    can unpack it using a program like WinZip (http://www.winzip.com/).
 
 
@@ -48,7 +48,7 @@ impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
 To run Walrus on a UNIX system (such as Solaris or Linux), enter the
-following at a shell prompt from within the 'walrus-0.5' subdirectory:
+following at a shell prompt from within the 'walrus-0.6' subdirectory:
 
    java -cp mp.jar:antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
@@ -205,6 +205,19 @@ Display
           Pressing the keys '0' to '9' causes pruning to occur at the
           corresponding distance (for example, the '2' key prunes to a
           distance of 2, and so on).
+   Zoom In
+      --- Zooms toward the node at the center of the display.  Each time
+          this menu is selected the magnification of the display increases
+          by 25%.  Pressing the '.' key (the same key as for '>') has the
+          same effect.
+   Zoom Out
+      --- Zooms away from the node at the center of the display.  Each time
+          this menu is selected the magnification of the display decreases
+          to the previous step.  Pressing the ',' key (the same key as for
+          '<') has the same effect.
+   Zoom 1:1
+      --- Resets the display to normal magnification.  Pressing the '/'
+          key has the same effect.
    Refresh
       --- Clears and redraws the display.  This is particularly useful when
           'Automatic Refresh' (see above) is turned off.
@@ -441,6 +454,11 @@ Summary of Keyboard Controls:
    n          Display->Narrow To Subtree
    w          Display->Widen Subtree
    p          Display->Show Parent Node
+
+   .          Display->Zoom In
+   ,          Display->Zoom Out
+   /          Display->Zoom 1:1
+
    0          Temporarily hide all descendants of the current central node.
                 The current central node is preserved, however, unlike the
                 situation after Display->Prune Subtree.

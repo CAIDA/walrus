@@ -2,7 +2,7 @@
 
                    The Walrus Graph Visualization Tool
 
-                               version 0.5
+                               version 0.6
 
                                ___ __, 2002
 
@@ -50,6 +50,18 @@ region, the user can examine every part of the graph in detail.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 CHANGES
+
+Since 0.5, released Apr 19, 2002:
+
+  * Added support for zooming the display.
+       The user can zoom in toward the central node or zoom out from it
+       to an arbitrary degree.
+  * Added support for turning depth cueing off.
+  * Fixed bug in which picking would sometimes become temporarily 
+    inaccurate after the window is resized.
+  * Fixed bug in which the display would lock up if the user executed
+    a command through the keyboard while concurrently interacting with
+    the mouse.
 
 Since 0.4, released Apr 12, 2002:
 
@@ -160,30 +172,35 @@ email walrus-dev-request@caida.org with
 in the body.  All messages to the list itself should be sent to
 walrus-dev@caida.org.
 
+Alternatively, you may use the following web page to subscribe, unsubscribe,
+view the archives, and so on:
+
+   http://login.caida.org/mailman/listinfo/walrus-dev
+
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 QUICK START
 
 You can give Walrus a quick try by doing the following:
 
-1. Extract 'walrus-0.5.tar.gz' or 'walrus-0.5.zip' anywhere you wish.
-   This will create a subdirectory named 'walrus-0.5' containing several
+1. Extract 'walrus-0.6.tar.gz' or 'walrus-0.6.zip' anywhere you wish.
+   This will create a subdirectory named 'walrus-0.6' containing several
    JAR files, among other things.
 
     For UNIX users...
 
-      The file walrus-0.5.tar.gz was packaged with the standard TAR utility
+      The file walrus-0.6.tar.gz was packaged with the standard TAR utility
       and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
       it with the following command:
 
-          gzip -cd walrus-0.5.tar.gz | tar xvf -
+          gzip -cd walrus-0.6.tar.gz | tar xvf -
 
     For Windows users...
 
-      The file walrus-0.5.zip was packaged in the common ZIP format.  You
+      The file walrus-0.6.zip was packaged in the common ZIP format.  You
       can unpack it using a program like WinZip (http://www.winzip.com/).
 
-1. From the 'walrus-0.5' subdirectory, enter the following at a shell
+1. From the 'walrus-0.6' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
@@ -247,6 +264,15 @@ choosing an item from the menu Display->Prune To Neighborhood or by
 pressing one of the keys '0' to '9'.  Pressing '2', for example, would hide
 all but the descendants that lie within two hops of the root node.
 
+For examining a graph in greater detail, zooming is helpful.  Choosing
+Display->Zoom In (or pressing the key '.' [the same key as for '>']) will
+cause the display to zoom in toward the node at the center of the display.
+You can do this as many times as you want; each time increases the
+magnification of the display by 25%.  Conversely, you can zoom out one step
+with Display->Zoom Out (or by pressing the key ',' [the same key as for
+'<']), and reset the display to normal magnification with Display->Zoom 1:1
+(or by pressing the key '/').
+
 As mentioned earlier, Walrus uses an adaptive rendering algorithm that
 tries to maintain a given framerate.  You may try out the nonadaptive
 rendering algorithm for comparison by de-selecting Rendering->Adaptive
@@ -276,7 +302,7 @@ The directory 'samples' contains the following sample graphs.
 
      A graph file generated from the UNIX directory tree containing the
      Walrus source files.  This was generated using the perl scripts
-     included in 'walrus-0.5/docs/dirgraph'.
+     included in 'walrus-0.6/docs/dirgraph'.
 
      Many of the values shown in a directory listing are included in this
      graph file as attributes.  For example, the attribute 'full_name'
