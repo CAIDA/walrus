@@ -75,6 +75,10 @@ public class H3ViewParameters
 
 	m_pickViewer.setImageToVworldTransform(m_imageToVworld);
 	m_nodeImage.setImageToVworldTransform(m_imageToVworld);
+
+	// Assumes front clipping policy is PHYSICAL_EYE, the default.
+	m_frontClipDistance = 
+	    getEye().z - m_canvas.getView().getFrontClipDistance();
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -97,8 +101,8 @@ public class H3ViewParameters
 	gc.setFrontBufferRendering(true);
 
 	Point3d eye = getEye();
-	double labelZ = zOffset * LABEL_Z_OFFSET_SCALE
-	    + LABEL_Z_SCALE * eye.z + LABEL_Z_OFFSET;
+	double labelZ = m_frontClipDistance + LABEL_Z_OFFSET
+	    + zOffset * LABEL_Z_OFFSET_SCALE;
 
 	double xOffset = LABEL_X_OFFSET * m_pixelToMeterScale;
 	double yOffset = LABEL_Y_OFFSET * m_pixelToMeterScale;
@@ -558,6 +562,7 @@ public class H3ViewParameters
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+    private double m_frontClipDistance;  // +Z in meters in image plate coords
     private double m_pixelToMeterScale;
 
     private static final float GENERAL_POINT_SIZE = 4.0f;
@@ -591,9 +596,12 @@ public class H3ViewParameters
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private static final double LABEL_SCALE = 0.03;
-    private static final double LABEL_Z_SCALE = 0.5;
-    private static final double LABEL_Z_OFFSET = 0.0; // meters
+    // LABEL_SCALE is an arbitrarily chosen value that leads to a pleasing
+    // size for textual labels when displayed near the default front clipping
+    // distance of 0.1 meters (in PHYSICAL_EYE coordinates).  If the front
+    // clipping distance changes, then this scaling factor must also change.
+    private static final double LABEL_SCALE = 0.02;
+    private static final double LABEL_Z_OFFSET = 0.001; // meters
     private static final double LABEL_Z_OFFSET_SCALE = 0.0001; // meters
     private static final double LABEL_X_OFFSET = 10; // pixels
     private static final double LABEL_Y_OFFSET = 10; // pixels
