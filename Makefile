@@ -1,8 +1,15 @@
 #############################################################################
-# The Walrus Graph Visualization Tool.
+# The Walrus Graph Visualization Tool
 #
 # See Makefile.nodep for the real makefile rules and for additional
 # configuration options.
+#
+# This file is optional.  If you don't want to install or use jikes to build
+# dependency files, then you don't have to use this makefile at all--use
+# Makefile.nodep instead (either with "make -f Makefile.nodep" or by copying
+# Makefile.nodep over this file).  The caveat to using Makefile.nodep directly
+# is that some source files may not get properly recompiled when files are
+# modified.
 #
 # The only purpose of this file is to add rules for automatically generating
 # makefile dependency files (named *.u) with jikes.  These dependency files
@@ -14,7 +21,7 @@
 #
 #   Makefile:77: H3AdaptivePicker.u: No such file or directory
 #
-# $Id: Makefile,v 1.10 2005/03/25 00:22:51 youngh Exp $
+# $Id: Makefile,v 1.11 2005/03/25 00:38:49 youngh Exp $
 #############################################################################
 
 include Makefile.nodep
