@@ -193,8 +193,7 @@ public class H3ViewParameters
 	m_depthCueingEnabled = enable;
 	if (enable)
 	{
-	    m_depthCueing.setFrontDistance(DEPTH_CUEING_ENABLED_FRONT);
-	    m_depthCueing.setBackDistance(DEPTH_CUEING_ENABLED_BACK);
+	    updateDepthCueing();
 	}
 	else
 	{
@@ -207,42 +206,29 @@ public class H3ViewParameters
 	    m_depthCueing.setBackDistance(DEPTH_CUEING_DISABLED_BACK);
 	}
     }
-
-    public void updateDepthCueing()
+    public void resetMagnification()
     {
-	double scale = m_objectTransform.getScale();
-	System.out.println("scale=" + scale);
-
-	double frontComputed = 1.8 * Math.pow(scale, -1.2);
-	double backComputed = 3.8 * Math.pow(scale, -0.7);
-
-	double front = askForDistance("Front", frontComputed);
-	double back = askForDistance("Back", backComputed);
-
-	m_depthCueing.setFrontDistance(front);
-	m_depthCueing.setBackDistance(back);
+	m_magnification = 1.0;
+	updateObjectTransformScaling();
+	updateDepthCueing();
     }
 
-    private double askForDistance(String s, double value)
-    {
-	String response = (String)javax.swing.JOptionPane.showInputDialog
-	    (null, s + " Distance?", "Fog Parameter Request",
-	     javax.swing.JOptionPane.QUESTION_MESSAGE, null, null,
-	     Double.toString(value));
+    // NOTE: The multiplicative factors for increasing and decreasing the
+    //       magnification level should be reciprocals of each other.
+    //       For example, 1.25 = 1/0.8.
 
-	return parseDouble(response);
+    public void increaseMagnification()
+    {
+	m_magnification *= 1.25;
+	updateObjectTransformScaling();
+	updateDepthCueing();
     }
 
-    private double parseDouble(String s)
+    public void decreaseMagnification()
     {
-	try
-	{
-	    return Double.parseDouble(s);
-	}
-	catch (NumberFormatException e)
-	{
-	    throw new RuntimeException();
-	}
+	m_magnification *= 0.8;
+	updateObjectTransformScaling();
+	updateDepthCueing();
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -306,6 +292,7 @@ public class H3ViewParameters
 
     public void resetObjectTransform()
     {
+	m_magnification = 1.0;
 	m_objectTransform.setIdentity();
     }
 
@@ -416,6 +403,70 @@ public class H3ViewParameters
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
+
+    private void updateObjectTransformScaling()
+    {
+	Vector3d translation = new Vector3d(0.0, 0.0, 0.0);
+	Matrix3d rotation = new Matrix3d();
+	m_objectTransform.get(rotation);
+	m_objectTransform.set(rotation, translation, m_magnification);
+    }
+
+    // The front and back fog distances are computed using empirically
+    // derived formulas.  Other ways were tried but rejected for one
+    // reason or another.  The task of computing these values is less
+    // than straightforward because of the way Java3D seems to work.
+    //
+    // Zooming support is currently implemented by extending m_objectTransform
+    // with a scaling component.  This is a quick and natural way of
+    // implementing zooming.  However, because this extended transform
+    // is installed as the model transform of a GraphicsContext3D,
+    // this technique has the potential of altering the relationships
+    // between coordinate systems.  There are at least the following
+    // two coordinate systems involved: vworld and eye.  Objects are
+    // specified in vworld coordinates.  Fog parameters are specified in
+    // vworld coordinates but with the origin shifted to the location
+    // of the eye in vworld coordinates (+z extends along the line of sight).
+    // Ideally, the interpretation of fog parameters should be independent
+    // of any scaling done by the model transform of GraphicsContext3D.
+    // Unfortunately, this is not the case.  The exact interaction of
+    // scaling with fog parameters is still unclear.  Factoring out the
+    // scaling from the fog parameters doesn't work as expected for unknown
+    // reasons.  The upshot is that we are resorting to an empirically
+    // derived formula which sets the bounds to pleasing distances at
+    // each magnification level.
+    //
+    // UPDATE: It seems Java3D has a bug/feature in which updating the
+    //         depth-cueing distances often doesn't take effect until
+    //         the *SECOND* display refresh after the change.  This
+    //         bug may have caused me to think that things were more
+    //         complicated than they actually are.
+    private void updateDepthCueing()
+    {
+	if (m_depthCueingEnabled)
+	{
+	    double front =
+		DEPTH_CUEING_ENABLED_FRONT * Math.pow(m_magnification, -1.2);
+	    double back =
+		DEPTH_CUEING_ENABLED_BACK * Math.pow(m_magnification, -0.7);
+
+	    if (DEBUG_PRINT)
+	    {
+		System.out.println("magnification=" + m_magnification);
+		System.out.println("front=" + front);
+		System.out.println("back=" + back);
+	    }
+
+	    if (back <= front)
+	    {
+		front = DEPTH_CUEING_DISABLED_FRONT;
+		back = DEPTH_CUEING_DISABLED_BACK;
+	    }
+
+	    m_depthCueing.setFrontDistance(front);
+	    m_depthCueing.setBackDistance(back);
+	}
+    }
 
     private void refreshAll()
     {
@@ -637,7 +688,7 @@ public class H3ViewParameters
     // Some good combinations of front and back distances are
     // (1.0, 3.5), (1.25, 3.5), (1.0, 4.0), (1.25, 4.0), and (1.5, 4.0).
 
-    private static final double DEPTH_CUEING_ENABLED_FRONT = 2.0;
+    private static final double DEPTH_CUEING_ENABLED_FRONT = 1.8;
     private static final double DEPTH_CUEING_ENABLED_BACK = 3.5;
 
     private static final double DEPTH_CUEING_DISABLED_FRONT = 100.0;
@@ -645,6 +696,9 @@ public class H3ViewParameters
 
     private boolean m_depthCueingEnabled = true;
     private LinearFog m_depthCueing;
+
+    // The magnification level of the display.
+    private double m_magnification = 1.0;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
