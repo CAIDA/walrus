@@ -96,15 +96,22 @@ walrus-dev@caida.org.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 QUICK START
 
-Do the following to try out Walrus:
+You can give Walrus a quick try by doing the following:
 
-1. Execute (on UNIX systems with Sun's JDK):
+1. Extract 'walrus-0.1.tar.gz' or 'walrus-0.1.zip' anywhere you wish.  This
+   will create a subdirectory named 'walrus-0.1' containing several JAR
+   files among other things.
+
+1. From the 'walrus-0.1' subdirectory, enter the following at a shell
+   or command prompt:
+
+     * on UNIX systems with Sun's JDK:
 
          java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
          (Or execute the supplied script: ./walrus)
 
-   Execute (on Windows with Sun's JDK):
+     * on Windows with Sun's JDK:
 
          java -cp antlrall-mod.jar;libsea.jar;walrus.jar H3Main
 
@@ -112,8 +119,8 @@ Do the following to try out Walrus:
    and load the file 'champagne.graph' in the 'samples' subdirectory.
    The window will be blank while the file loads.  This graph has
    9175 nodes, 9174 tree links, and 6345 nontree links.  This should
-   load in a few seconds, but it can take several minutes to load some
-   graphs.
+   load in a few seconds, but it can take up to several minutes to load
+   larger graphs.
 
 3. Select Rendering->Start, once the Walrus logo reappears.
 
