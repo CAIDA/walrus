@@ -350,18 +350,13 @@ public class H3Main
 	System.out.print("(colorNodes) ");
 	configuration.print();
 
-	setNodeTransparencyEnabled
-	    (configuration.scheme == ColorConfiguration.TRANSPARENT);
+	setNodeTransparencyEnabled(configuration.isTransparent);
 
 	switch (configuration.scheme)
 	{
 	case ColorConfiguration.INVISIBLE:
 	    // No explicit coloring needed.
 	    // startRendering() will take care of setting things up.
-	    break;
-
-	case ColorConfiguration.TRANSPARENT:
-	    // No further work needed.
 	    break;
 
 	case ColorConfiguration.FIXED_COLOR:
@@ -380,14 +375,8 @@ public class H3Main
 	    }	    
 	    break;
 
-	case ColorConfiguration.HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.LOG_HOT_TO_COLD:
-	    break;
-
 	case ColorConfiguration.HUE:
-	    break;
+	    throw new RuntimeException("NOT IMPLEMENTED");
 
 	case ColorConfiguration.RGB:
 	    colorNodesRGB(configuration.colorAttribute);
@@ -431,18 +420,13 @@ public class H3Main
 	System.out.print("(colorTreeLinks) ");
 	configuration.print();
 
-	setTreeLinkTransparencyEnabled
-	    (configuration.scheme == ColorConfiguration.TRANSPARENT);
+	setTreeLinkTransparencyEnabled(configuration.isTransparent);
 
 	switch (configuration.scheme)
 	{
 	case ColorConfiguration.INVISIBLE:
 	    // No explicit coloring needed.
 	    // startRendering() will take care of setting things up.
-	    break;
-
-	case ColorConfiguration.TRANSPARENT:
-	    // Nothing further to do.
 	    break;
 
 	case ColorConfiguration.FIXED_COLOR:
@@ -454,14 +438,8 @@ public class H3Main
 	    }	    
 	    break;
 
-	case ColorConfiguration.HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.LOG_HOT_TO_COLD:
-	    break;
-
 	case ColorConfiguration.HUE:
-	    break;
+	    throw new RuntimeException("NOT IMPLEMENTED");
 
 	case ColorConfiguration.RGB:
 	    colorLinksRGB(configuration.colorAttribute, true);
@@ -493,18 +471,13 @@ public class H3Main
 	System.out.print("(colorNontreeLinks) ");
 	configuration.print();
 
-	setNontreeLinkTransparencyEnabled
-	    (configuration.scheme == ColorConfiguration.TRANSPARENT);
+	setNontreeLinkTransparencyEnabled(configuration.isTransparent);
 
 	switch (configuration.scheme)
 	{
 	case ColorConfiguration.INVISIBLE:
 	    // No explicit coloring needed.
 	    // startRendering() will take care of setting things up.
-	    break;
-
-	case ColorConfiguration.TRANSPARENT:
-	    // Nothing further to do.
 	    break;
 
 	case ColorConfiguration.FIXED_COLOR:
@@ -516,14 +489,8 @@ public class H3Main
 	    }	    
 	    break;
 
-	case ColorConfiguration.HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.LOG_HOT_TO_COLD:
-	    break;
-
 	case ColorConfiguration.HUE:
-	    break;
+	    throw new RuntimeException("NOT IMPLEMENTED");
 
 	case ColorConfiguration.RGB:
 	    colorLinksRGB(configuration.colorAttribute, false);
@@ -1031,7 +998,6 @@ public class H3Main
 	(ColorConfiguration configuration)
     {
 	return (configuration.scheme != ColorConfiguration.INVISIBLE
-		&& configuration.scheme != ColorConfiguration.TRANSPARENT
 		&& configuration.scheme != ColorConfiguration.FIXED_COLOR);
     }
 
@@ -2505,26 +2471,24 @@ public class H3Main
 	    m_nontreeLinkColorSelection.removeAttributeMenus();
 	}
 
-	// NOTE: Call this only after the menus are completely constructed
-	//       in this class (and aggregated classes).
+	// NOTE: Call this only after the menus are completely constructed,
+	//       since we're taking advantage of the ActionListener plumbing
+	//       already set up for the menus.
 	public void enableDefaultColorScheme()
 	{
 	    if (m_predefinedColorSchemes.size() > 0)
 	    {
-		// XXX: Preserve the default scheme in properties.
+		// XXX: We might want to preserve the default color scheme
+		//      in the system properties.
 		PredefinedColorScheme scheme =
 		    (PredefinedColorScheme)m_predefinedColorSchemes.get(0);
-		m_nodeColorSelection.enableDefaultSelection
-		    (scheme.nodeMenuItem);
-		m_treeLinkColorSelection.enableDefaultSelection
-		    (scheme.treeLinkMenuItem);
-		m_nontreeLinkColorSelection.enableDefaultSelection
-		    (scheme.nontreeLinkMenuItem);
+		scheme.activate();
 	    }
 	}
 
-	// NOTE: Call this only after the menus are completely constructed
-	//       in this class (and aggregated classes).
+	// NOTE: This may be called even before the menus are completely
+	//       constructed.  However, it's perhaps safer to call this
+	//       only after construction has finished.
 	public void enableReasonableColorScheme()
 	{
 	    m_nodeColorSelection.enableReasonableSelection();
@@ -2559,56 +2523,64 @@ public class H3Main
 		(nodeMenuMap, treeLinkMenuMap, nontreeLinkMenuMap);
 	    m_predefinedColorSchemes = new ArrayList();
 	    m_predefinedColorSchemes.add
-		(maker.make("Yellow-Green", "Yellow", "Green", "Green"));
+		(maker.make("Yellow-Green-[Grey]",
+			    "Yellow", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Green", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Grey", ColorSchemeMaker.ENABLE_TRANSPARENCY));
 	    m_predefinedColorSchemes.add
-		(maker.make("Yellow-Green/Invisible", "Yellow", "Green",
-			    ColorSelection.INVISIBLE));
+		(maker.make("Green-Olive-[Summer Sky]",
+			    "Green", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Olive", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Summer Sky",
+			    ColorSchemeMaker.ENABLE_TRANSPARENCY));
 	    m_predefinedColorSchemes.add
-		(maker.make("Yellow-Green/Transparent", "Yellow", "Green",
-			    ColorSelection.TRANSPARENT));
+		(maker.make("Invisible-Olive-[Summer Sky]",
+			    ColorSelection.INVISIBLE,
+			    ColorSchemeMaker.IGNORE_TRANSPARENCY,
+			    "Olive", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Summer Sky",
+			    ColorSchemeMaker.ENABLE_TRANSPARENCY));
 	    m_predefinedColorSchemes.add
-		(maker.make("Yellow-Violet", "Yellow", "Violet", "Violet"));
-	    m_predefinedColorSchemes.add
-		(maker.make("Grey-Violet", "Grey", "Violet", "Violet"));
-	    m_predefinedColorSchemes.add
-		(maker.make("Gold-Violet/Transparent", "Gold", "Violet",
-			    ColorSelection.TRANSPARENT));
-	    m_predefinedColorSchemes.add
-		(maker.make("Orange-Gold/Transparent", "Orange", "Gold",
-			    ColorSelection.TRANSPARENT));
-	    m_predefinedColorSchemes.add
-		(maker.make("Snow-Gold/Transparent", "Snow", "Gold",
-			    ColorSelection.TRANSPARENT));
-	    m_predefinedColorSchemes.add
-		(maker.make("Violet-Gold/Transparent", "Violet", "Gold",
-			    ColorSelection.TRANSPARENT));
+		(maker.make("Beige-Gold-[Green]",
+			    "Beige", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Gold", ColorSchemeMaker.DISABLE_TRANSPARENCY,
+			    "Green",
+			    ColorSchemeMaker.ENABLE_TRANSPARENCY));
 	}
 
 	private void createFixedColors()
 	{
 	    m_fixedColors = new ArrayList();
 	    m_fixedColors.add
-		(new FixedColor("Yellow", packRGB(255, 255, 0)));
+		(new FixedColor("Magenta", packRGB(199, 21, 133)));
 	    m_fixedColors.add
-		(new FixedColor("Green", packRGB(30, 150, 25)));
-	    m_fixedColors.add
-		(new FixedColor("Grey", packRGB(178, 178, 178)));
+		(new FixedColor("Red", packRGB(255, 0, 0)));
 	    m_fixedColors.add
 		(new FixedColor("Pink", packRGB(255, 48, 48)));
 	    m_fixedColors.add
-		(new FixedColor("Beige", packRGB(255, 246, 143)));
-	    m_fixedColors.add
-		(new FixedColor("Violet", packRGB(199, 21, 133)));
-	    m_fixedColors.add
-		(new FixedColor("Olive Green", packRGB(202, 255, 112)));
-	    m_fixedColors.add
 		(new FixedColor("Orange", packRGB(255, 140, 0)));
 	    m_fixedColors.add
-		(new FixedColor("Snow", packRGB(255, 225, 255)));
+		(new FixedColor("Brown", packRGB(205, 127, 50)));
 	    m_fixedColors.add
 		(new FixedColor("Gold", packRGB(255, 215, 0)));
 	    m_fixedColors.add
-		(new FixedColor("Red", packRGB(255, 0, 0)));
+		(new FixedColor("Yellow", packRGB(255, 255, 0)));
+	    m_fixedColors.add
+		(new FixedColor("Beige", packRGB(255, 255, 160)));
+	    m_fixedColors.add
+		(new FixedColor("Olive", packRGB(202, 255, 112)));
+	    m_fixedColors.add
+		(new FixedColor("Green", packRGB(30, 150, 25)));
+	    m_fixedColors.add
+		(new FixedColor("Aquamarine", packRGB(112, 219, 147)));
+	    m_fixedColors.add
+		(new FixedColor("Summer Sky", packRGB(56, 176, 222)));
+	    m_fixedColors.add
+		(new FixedColor("Turquoise", packRGB(173, 234, 234)));
+	    m_fixedColors.add
+		(new FixedColor("Grey", packRGB(178, 178, 178)));
+	    m_fixedColors.add
+		(new FixedColor("White", packRGB(255, 225, 255)));
 	}
 
 	private int packRGB(int r, int g, int b)
@@ -2642,44 +2614,98 @@ public class H3Main
 	private class PredefinedColorScheme
 	    implements ActionListener
 	{
-	    public PredefinedColorScheme(String name, JMenuItem nodeMenuItem,
-					 JMenuItem treeLinkMenuItem,
-					 JMenuItem nontreeLinkMenuItem)
+	    public PredefinedColorScheme
+		(String name, JMenuItem nodeMenuItem,
+		 JMenuItem nodeTransparencyMenuItem,
+		 boolean nodeTransparency,
+		 JMenuItem treeLinkMenuItem,
+		 JMenuItem treeLinkTransparencyMenuItem,
+		 boolean treeLinkTransparency,
+		 JMenuItem nontreeLinkMenuItem,
+		 JMenuItem nontreeLinkTransparencyMenuItem,
+		 boolean nontreeLinkTransparency)
 	    {
 		this.name = name;
 		this.nodeMenuItem = nodeMenuItem;
+		this.nodeTransparencyMenuItem = nodeTransparencyMenuItem;
+		this.nodeTransparency = nodeTransparency;
 		this.treeLinkMenuItem = treeLinkMenuItem;
+		this.treeLinkTransparencyMenuItem =
+		    treeLinkTransparencyMenuItem;
+		this.treeLinkTransparency = treeLinkTransparency;
 		this.nontreeLinkMenuItem = nontreeLinkMenuItem;
+		this.nontreeLinkTransparencyMenuItem =
+		    nontreeLinkTransparencyMenuItem;
+		this.nontreeLinkTransparency = nontreeLinkTransparency;
 	    }
 
 	    public void actionPerformed(ActionEvent e)
 	    {
+		activate();
+	    }
+
+	    public void activate()
+	    {
 		nodeMenuItem.doClick();
+		if (nodeTransparencyMenuItem != null)
+		{
+		    nodeTransparencyMenuItem.setSelected(nodeTransparency);
+		}
+
 		treeLinkMenuItem.doClick();
+		if (treeLinkTransparencyMenuItem != null)
+		{
+		    treeLinkTransparencyMenuItem.setSelected
+			(treeLinkTransparency);
+		}
+
 		nontreeLinkMenuItem.doClick();
+		if (nontreeLinkTransparencyMenuItem != null)
+		{
+		    nontreeLinkTransparencyMenuItem.setSelected
+			(nontreeLinkTransparency);
+		}
 	    }
 
 	    public String name;
 	    public JMenuItem nodeMenuItem;
+	    public JMenuItem nodeTransparencyMenuItem;
+	    public boolean nodeTransparency;
 	    public JMenuItem treeLinkMenuItem;
+	    public JMenuItem treeLinkTransparencyMenuItem;
+	    public boolean treeLinkTransparency;
 	    public JMenuItem nontreeLinkMenuItem;
+	    public JMenuItem nontreeLinkTransparencyMenuItem;
+	    public boolean nontreeLinkTransparency;
 	}
 
 	////////////////////////////////////////////////////////////////////
 
 	private class ColorSchemeMaker
 	{
+	    public static final int IGNORE_TRANSPARENCY = 0;
+	    public static final int ENABLE_TRANSPARENCY = 1;
+	    public static final int DISABLE_TRANSPARENCY = 2;
+
 	    public ColorSchemeMaker
 		(Map nodeMenuMap, Map treeLinkMenuMap, Map nontreeLinkMenuMap)
 	    {
 		m_nodeMenuMap = nodeMenuMap;
 		m_treeLinkMenuMap = treeLinkMenuMap;
 		m_nontreeLinkMenuMap = nontreeLinkMenuMap;
+
+		m_nodeTransparencyMenuItem =
+		    findColor(nodeMenuMap, ColorSelection.TRANSPARENT);
+		m_treeLinkTransparencyMenuItem =
+		    findColor(treeLinkMenuMap, ColorSelection.TRANSPARENT);
+		m_nontreeLinkTransparencyMenuItem =
+		    findColor(nontreeLinkMenuMap, ColorSelection.TRANSPARENT);
 	    }
 
 	    public PredefinedColorScheme make
-		(String name, String nodeColor, String treeLinkColor,
-		 String nontreeLinkColor)
+		(String name, String nodeColor, int nodeTransparencyType,
+		 String treeLinkColor, int treeLinkTransparencyType,
+		 String nontreeLinkColor, int nontreeLinkTransparencyType)
 	    {
 		JMenuItem nodeMenuItem = findColor(m_nodeMenuMap, nodeColor);
 		JMenuItem treeLinkMenuItem =
@@ -2687,9 +2713,29 @@ public class H3Main
 		JMenuItem nontreeLinkMenuItem =
 		    findColor(m_nontreeLinkMenuMap, nontreeLinkColor);
 
+		JMenuItem nodeTransparencyMenuItem =
+		    (nodeTransparencyType == IGNORE_TRANSPARENCY
+		     ? null : m_nodeTransparencyMenuItem);
+		JMenuItem treeLinkTransparencyMenuItem =
+		    (treeLinkTransparencyType == IGNORE_TRANSPARENCY
+		     ? null : m_treeLinkTransparencyMenuItem);
+		JMenuItem nontreeLinkTransparencyMenuItem =
+		    (nontreeLinkTransparencyType == IGNORE_TRANSPARENCY
+		     ? null : m_nontreeLinkTransparencyMenuItem);
+
+		boolean nodeTransparency =
+		    (nodeTransparencyType == ENABLE_TRANSPARENCY);
+		boolean treeLinkTransparency =
+		    (treeLinkTransparencyType == ENABLE_TRANSPARENCY);
+		boolean nontreeLinkTransparency =
+		    (nontreeLinkTransparencyType == ENABLE_TRANSPARENCY);
+
 		return new PredefinedColorScheme
-		    (name, nodeMenuItem, treeLinkMenuItem,
-		     nontreeLinkMenuItem);
+		    (name, nodeMenuItem, nodeTransparencyMenuItem,
+		     nodeTransparency, treeLinkMenuItem,
+		     treeLinkTransparencyMenuItem, treeLinkTransparency,
+		     nontreeLinkMenuItem, nontreeLinkTransparencyMenuItem,
+		     nontreeLinkTransparency);
 	    }
 
 	    private JMenuItem findColor(Map map, String color)
@@ -2707,6 +2753,10 @@ public class H3Main
 	    private Map m_nodeMenuMap;
 	    private Map m_treeLinkMenuMap;
 	    private Map m_nontreeLinkMenuMap;
+
+	    private JMenuItem m_nodeTransparencyMenuItem;
+	    private JMenuItem m_treeLinkTransparencyMenuItem;
+	    private JMenuItem m_nontreeLinkTransparencyMenuItem;
 	}
     }
 
@@ -2728,16 +2778,15 @@ public class H3Main
 
     private static class ColorSelection
     {
+	// Compile out the HUE color choice for now.
 	private static final boolean COLOR_SCALES = false;
 
 	////////////////////////////////////////////////////////////////////
 	// PUBLIC CONSTANTS
 	////////////////////////////////////////////////////////////////////
 
-	public static final String INVISIBLE = "Invisible";
 	public static final String TRANSPARENT = "Transparent";
-	public static final String HOT_TO_COLD = "Hot to Cold";
-	public static final String LOG_HOT_TO_COLD = "Logarithmic HtoC";
+	public static final String INVISIBLE = "Invisible";
 	public static final String HUE = "Hue";
 	public static final String RGB = "RGB";
 
@@ -2748,41 +2797,21 @@ public class H3Main
 	// List<FixedColor> fixedColors
 	public ColorSelection(JMenu menu, Map map, List fixedColors)
 	{
+	    // NOTE: In the following, we arbitrarily choose the invisible
+	    //       color to be the default selection.  As a result, all
+	    //       menu items excluded by this choice are manually disabled
+	    //       in the following initialization.
+
+	    m_transparentMenuItem = new JCheckBoxMenuItem(TRANSPARENT);
+	    m_transparentMenuItem.setEnabled(false);
+	    m_transparentMenuItem.setMnemonic(KeyEvent.VK_T);
+
 	    m_invisibleMenuItem = new JRadioButtonMenuItem(INVISIBLE);
 	    m_invisibleMenuItem.setMnemonic(KeyEvent.VK_I);
 	    m_invisibleMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
 		    {
 			handleInvisibleColorRequest();
-		    }
-		});
-
-	    m_transparentMenuItem = new JRadioButtonMenuItem(TRANSPARENT);
-	    m_transparentMenuItem.setMnemonic(KeyEvent.VK_T);
-	    m_transparentMenuItem.addActionListener(new ActionListener() {
-		    public void actionPerformed(ActionEvent e)
-		    {
-			handleTransparentColorRequest();
-		    }
-		});
-
-	    m_hotToColdMenuItem = new JRadioButtonMenuItem(HOT_TO_COLD);
-	    m_hotToColdMenuItem.setMnemonic(KeyEvent.VK_H);
-	    m_hotToColdMenuItem.setEnabled(false);
-	    m_hotToColdMenuItem.addActionListener(new ActionListener() {
-		    public void actionPerformed(ActionEvent e)
-		    {
-			handleHotToColdColorRequest();
-		    }
-		});
-
-	    m_logHotToColdMenuItem = new JRadioButtonMenuItem(LOG_HOT_TO_COLD);
-	    m_logHotToColdMenuItem.setMnemonic(KeyEvent.VK_L);
-	    m_logHotToColdMenuItem.setEnabled(false);
-	    m_logHotToColdMenuItem.addActionListener(new ActionListener() {
-		    public void actionPerformed(ActionEvent e)
-		    {
-			handleLogHotToColdColorRequest();
 		    }
 		});
 
@@ -2816,28 +2845,23 @@ public class H3Main
 
 	    m_colorSchemeButtonGroup = new ButtonGroup();
 	    m_colorSchemeButtonGroup.add(m_invisibleMenuItem);
-	    m_colorSchemeButtonGroup.add(m_transparentMenuItem);
 	    if (COLOR_SCALES)
 	    {
-	    m_colorSchemeButtonGroup.add(m_hotToColdMenuItem);
-	    m_colorSchemeButtonGroup.add(m_logHotToColdMenuItem);
 	    m_colorSchemeButtonGroup.add(m_hueMenuItem);
 	    }
 	    m_colorSchemeButtonGroup.add(m_RGBMenuItem);
 
-	    putChecked(map, INVISIBLE, m_invisibleMenuItem);
 	    putChecked(map, TRANSPARENT, m_transparentMenuItem);
+	    putChecked(map, INVISIBLE, m_invisibleMenuItem);
 	    if (COLOR_SCALES)
 	    {
-	    putChecked(map, HOT_TO_COLD, m_hotToColdMenuItem);
-	    putChecked(map, LOG_HOT_TO_COLD, m_logHotToColdMenuItem);
 	    putChecked(map, HUE, m_hueMenuItem);
 	    }
 	    putChecked(map, RGB, m_RGBMenuItem);
 
-	    menu.add(m_invisibleMenuItem);
 	    menu.add(m_transparentMenuItem);
 	    menu.addSeparator();
+	    menu.add(m_invisibleMenuItem);
 	    {
 		int numFixedColors = fixedColors.size();
 		m_fixedColors = new int[numFixedColors];
@@ -2866,8 +2890,6 @@ public class H3Main
 	    menu.addSeparator();
 	    if (COLOR_SCALES)
 	    {
-	    menu.add(m_hotToColdMenuItem);
-	    menu.add(m_logHotToColdMenuItem);
 	    menu.add(m_hueMenuItem);
 	    }
 	    menu.add(m_RGBMenuItem);
@@ -2910,20 +2932,15 @@ public class H3Main
 	    updateMenuInterdependencies();
 	}
 
-	public void enableDefaultSelection(JMenuItem menuItem)
-	{
-	    m_defaultSelection = menuItem;
-	    m_defaultSelection.setSelected(true);
-	    updateSelectedFixedColorIndex(m_defaultSelection);
-	    updateMenuInterdependencies();
-	}
-
+	// Set the color selection to one that is independent of the content
+	// of a graph.  One of the fixed colors or the invisible choice will
+	// be selected.
+	// 
+	// This step is necessary after unloading a graph so that the color
+	// selection doesn't refer to nonexistent attribute data.
 	public void enableReasonableSelection()
 	{
-	    if (m_hotToColdMenuItem.isSelected()
-		|| m_logHotToColdMenuItem.isSelected()
-		|| m_hueMenuItem.isSelected()
-		|| m_RGBMenuItem.isSelected())
+	    if (m_hueMenuItem.isSelected() || m_RGBMenuItem.isSelected())
 	    {
 		m_defaultSelection.setSelected(true);
 		updateSelectedFixedColorIndex(m_defaultSelection);
@@ -2935,25 +2952,11 @@ public class H3Main
 	{
 	    ColorConfiguration retval = new ColorConfiguration();
 
+	    retval.isTransparent = m_transparentMenuItem.isSelected();
+
 	    if (m_invisibleMenuItem.isSelected())
 	    {
 		retval.scheme = ColorConfiguration.INVISIBLE;
-	    }
-	    else if (m_transparentMenuItem.isSelected())
-	    {
-		retval.scheme = ColorConfiguration.TRANSPARENT;
-	    }
-	    else if (m_hotToColdMenuItem.isSelected())
-	    {
-		retval.scheme = ColorConfiguration.HOT_TO_COLD;
-		retval.colorAttribute =
-		    findSelectedMenuItem(m_colorAttributeMenu).getText();
-	    }
-	    else if (m_logHotToColdMenuItem.isSelected())
-	    {
-		retval.scheme = ColorConfiguration.LOG_HOT_TO_COLD;
-		retval.colorAttribute =
-		    findSelectedMenuItem(m_colorAttributeMenu).getText();
 	    }
 	    else if (m_hueMenuItem.isSelected())
 	    {
@@ -2997,23 +3000,6 @@ public class H3Main
 	    setupForMinimalColorChoice();
 	}
 
-	private void handleTransparentColorRequest()
-	{
-	    setupForMinimalColorChoice();
-	}
-
-	private void handleHotToColdColorRequest()
-	{
-	    installScalarAttributeMenu();
-	    setupForArbitraryColorChoice();
-	}
-
-	private void handleLogHotToColdColorRequest()
-	{
-	    installScalarAttributeMenu();
-	    setupForArbitraryColorChoice();
-	}
-
 	private void handleHueColorRequest()
 	{
 	    installScalarAttributeMenu();
@@ -3034,12 +3020,14 @@ public class H3Main
 
 	private void setupForMinimalColorChoice()
 	{
+	    m_transparentMenuItem.setEnabled(false);
 	    m_colorAttributeMenu.setEnabled(false);
 	    m_selectionAttributeMenu.setEnabled(false);
 	}
 
 	private void setupForFixedColorChoice()
 	{
+	    m_transparentMenuItem.setEnabled(true);
 	    m_colorAttributeMenu.setEnabled(false);
 	    if (m_selectionAttributeMenu.getItemCount() > 0)
 	    {
@@ -3049,6 +3037,7 @@ public class H3Main
 
 	private void setupForArbitraryColorChoice()
 	{
+	    m_transparentMenuItem.setEnabled(false);
 	    m_colorAttributeMenu.setEnabled(true);
 	    if (m_selectionAttributeMenu.getItemCount() > 0)
 	    {
@@ -3123,73 +3112,66 @@ public class H3Main
 	    m_selectionAttributeButtonGroup = null;
 	}
 
+	// The color menu items aren't independent of each other.  Thus,
+	// when some of the items change, others are affected.  The purpose
+	// of this method is to make the menus consistent with each other
+	// after some prior change.  It does so by enabling or disabling,
+	// or by selecting or de-selecting, any affected menu items.
+	//
+	// The most common initiating change is the addition or removal
+	// of the various menus listing the available color attributes
+	// in a loaded graph.  This typically happens when a graph is
+	// loaded or unloaded.  However, other lesser changes can initiate
+	// this method, which indeed makes no assumptions about the cause.
+	//
+	// Currently, there are three types of inconsistencies that need
+	// to be addressed.  The first concerns the color attribute menus,
+	// such as m_scalarColorAttributeMenus and m_RGBMenuItem.  These
+	// should be enabled or selected if, and only if, there are suitable
+	// attributes in the loaded graph.  For example, if there are no
+	// attributes that could possibly hold RGB values, then m_RGBMenuItem
+	// should be disabled.  The second type of inconsistency concerns
+	// the selection attribute menu.  This menu should be enabled if,
+	// and only if, there are suitable attributes, and the current
+	// color choice is not "invisible."  The final consistency concerns
+	// the transparency checkbox.  This checkbox is only applicable when
+	// one of the fixed colors is selected.
 	private void updateMenuInterdependencies()
 	{
-	    if (m_scalarColorAttributeMenus == null
-		&& m_RGBColorAttributeMenus == null)
+	    boolean enableColorAttributes = false;
+
+	    m_hueMenuItem.setEnabled(m_scalarColorAttributeMenus != null);
+	    if (m_hueMenuItem.isEnabled() && m_hueMenuItem.isSelected())
 	    {
-		if (m_hotToColdMenuItem.isSelected()
-		    || m_logHotToColdMenuItem.isSelected()
-		    || m_hueMenuItem.isSelected()
-		    || m_RGBMenuItem.isSelected())
-		{
-		    m_defaultSelection.setEnabled(true);
-		}
-		setColorAttributesRelatedEnabled(false, false);
-		m_colorAttributeMenu.setEnabled(false);
+		enableColorAttributes = true;
+		installScalarAttributeMenu();
 	    }
-	    else if (m_scalarColorAttributeMenus != null)
+
+	    m_RGBMenuItem.setEnabled(m_RGBColorAttributeMenus != null);
+	    if (m_RGBMenuItem.isEnabled() && m_RGBMenuItem.isSelected())
 	    {
-		// By necessity, we must have m_RGBColorAttributeMenus != null.
-
-		if (m_hotToColdMenuItem.isSelected()
-		    || m_logHotToColdMenuItem.isSelected()
-		    || m_hueMenuItem.isSelected())
-		{
-		    installScalarAttributeMenu();
-		    m_colorAttributeMenu.setEnabled(true);
-		}
-		else if (m_RGBMenuItem.isSelected())
-		{
-		    installRGBAttributeMenu();
-		    m_colorAttributeMenu.setEnabled(true);
-		}
-		else
-		{
-		    m_colorAttributeMenu.setEnabled(false);
-		}
-		setColorAttributesRelatedEnabled(true, true);
-
+		enableColorAttributes = true;
+		installRGBAttributeMenu();
 	    }
-	    else
-	    {
-		// We must have m_scalarColorAttributesMenus == null
-		//               && m_RGBColorAttributeMenus != null.
 
-		if (m_hotToColdMenuItem.isSelected()
-		    || m_logHotToColdMenuItem.isSelected()
-		    || m_hueMenuItem.isSelected())
-		{
-		    m_defaultSelection.setEnabled(true);
-		    m_colorAttributeMenu.setEnabled(false);
-		}
-		else if (m_RGBMenuItem.isSelected())
-		{
-		    installRGBAttributeMenu();
-		    m_colorAttributeMenu.setEnabled(true);
-		}	
-		else
-		{
-		    m_colorAttributeMenu.setEnabled(false);
-		}
-		setColorAttributesRelatedEnabled(false, true);
+	    m_colorAttributeMenu.setEnabled(enableColorAttributes);
+
+	    if ((m_hueMenuItem.isSelected() && !m_hueMenuItem.isEnabled())
+		|| (m_RGBMenuItem.isSelected() && !m_RGBMenuItem.isEnabled()))
+	    {
+		m_defaultSelection.setSelected(true);		
 	    }
 
 	    boolean enableSelection = 
 		m_selectionAttributeMenu.getItemCount() > 0
-		&& !m_invisibleMenuItem.isSelected()
-		&& !m_transparentMenuItem.isSelected();
+		&& !m_invisibleMenuItem.isSelected();
 	    m_selectionAttributeMenu.setEnabled(enableSelection);
+
+	    boolean enableTransparency =
+		!m_invisibleMenuItem.isSelected()
+		&& !m_hueMenuItem.isSelected()
+		&& !m_RGBMenuItem.isSelected();
+	    m_transparentMenuItem.setEnabled(enableTransparency);
 	}
 
 	// NOTE: The caller should enable m_colorAttributeMenu.
@@ -3210,15 +3192,6 @@ public class H3Main
 	    {
 		m_colorAttributeMenu.add(m_RGBColorAttributeMenus[i]);
 	    }
-	}
-
-	private void setColorAttributesRelatedEnabled(boolean scalar,
-						      boolean RGB)
-	{
-	    m_hotToColdMenuItem.setEnabled(scalar);
-	    m_logHotToColdMenuItem.setEnabled(scalar);
-	    m_hueMenuItem.setEnabled(scalar);
-	    m_RGBMenuItem.setEnabled(RGB);
 	}
 
 	/**
@@ -3289,10 +3262,8 @@ public class H3Main
 	////////////////////////////////////////////////////////////////////
 
 	private ButtonGroup m_colorSchemeButtonGroup;
+	private JCheckBoxMenuItem m_transparentMenuItem;
 	private JRadioButtonMenuItem m_invisibleMenuItem;
-	private JRadioButtonMenuItem m_transparentMenuItem;
-	private JRadioButtonMenuItem m_hotToColdMenuItem;
-	private JRadioButtonMenuItem m_logHotToColdMenuItem;
 	private JRadioButtonMenuItem m_hueMenuItem;
 	private JRadioButtonMenuItem m_RGBMenuItem;
 	private JMenu m_colorAttributeMenu;
@@ -3303,11 +3274,18 @@ public class H3Main
 	// no menu item has yet been selected by the user or when the
 	// currently selected menu item must be disabled (as a result of
 	// removing all color attributes, for example).  This must point
-	// to a menu item for a fixed color or to one of the invisible
-	// or transparent choices.  By doing so, we ensure that this menu
-	// item is selectable in all situations.
+	// to a menu item for a fixed color or the invisible choice.
+	// By doing so, we ensure that this menu item is selectable in
+        // all situations (such as just after a graph is unloaded).
 	private JMenuItem m_defaultSelection;
 
+	// The following ButtonGroup and JRadioButtonMenuItem instances
+	// only serve as a cache (or as a backing store).  Depending on
+	// the current menu selection, either m_scalarColorAttributeMenus or
+	// m_RGBColorAttributeMenus will be installed in m_colorAttributeMenu
+	// (above).  For example, if m_RGBMenuItem is selected, then the
+	// latter set of menu items will be so installed.  If m_hueMenuItem
+	// is selected, then the former set is installed.
 	private ButtonGroup m_scalarColorAttributeButtonGroup;
 	private ButtonGroup m_RGBColorAttributeButtonGroup;
 	private JRadioButtonMenuItem[] m_scalarColorAttributeMenus;
@@ -3385,15 +3363,13 @@ public class H3Main
     private static class ColorConfiguration
     {
 	public static final int INVISIBLE = 0;
-	public static final int TRANSPARENT = 1;
-	public static final int FIXED_COLOR = 2;
-	public static final int HOT_TO_COLD = 3;
-	public static final int LOG_HOT_TO_COLD = 4;
-	public static final int HUE = 5;
-	public static final int RGB = 6;
+	public static final int FIXED_COLOR = 1;
+	public static final int HUE = 2;
+	public static final int RGB = 3;
 
 	public int scheme;
 	public int fixedColor;
+	public boolean isTransparent;  // Only applies to FIXED_COLOR.
 	public String colorAttribute;
 	public String selectionAttribute;
 
@@ -3404,10 +3380,10 @@ public class H3Main
 	    {
 		if (scheme == FIXED_COLOR)
 		{
-		    retval = (rhs.fixedColor == fixedColor);
+		    retval = (rhs.fixedColor == fixedColor
+			      && rhs.isTransparent == isTransparent);
 		}
-		else if (scheme == HOT_TO_COLD || scheme == LOG_HOT_TO_COLD
-			 || scheme == HUE || scheme == RGB)
+		else if (scheme == HUE || scheme == RGB)
 		{
 		    retval = (rhs.colorAttribute.equals(colorAttribute));
 		}
@@ -3415,21 +3391,19 @@ public class H3Main
 
 	    if (retval)
 	    {
-		boolean lhsIsNull = (selectionAttribute == null);
-		boolean rhsIsNull = (rhs.selectionAttribute == null);
-		if (!lhsIsNull || !rhsIsNull)
+		boolean hasLHS = (selectionAttribute != null);
+		boolean hasRHS = (rhs.selectionAttribute != null);
+		if (hasLHS && hasRHS)
 		{
-		    if (!lhsIsNull && !rhsIsNull)
-		    {
-			retval = (rhs.selectionAttribute
-				  .equals(selectionAttribute));
-		    }
-		    else
-		    {
-			retval = false;
-		    }
+		    retval =
+			(rhs.selectionAttribute.equals(selectionAttribute));
+		}
+		else
+		{
+		    retval = (!hasLHS && !hasRHS);
 		}
 	    }
+
 	    return retval;
 	}
 
@@ -3438,6 +3412,7 @@ public class H3Main
 	    System.out.println("ColorConfiguration:");
 	    System.out.println("\tscheme = " + getSchemeName());
 	    System.out.println("\tfixedColor = " + fixedColor);
+	    System.out.println("\tisTransparent = " + isTransparent);
 	    System.out.println("\tcolorAttribute = " + colorAttribute);
 	    System.out.println("\tselectionAttribute = " + selectionAttribute);
 	}
@@ -3448,8 +3423,7 @@ public class H3Main
 	}
 
 	private static final String[] m_schemeNames = {
-	    "INVISIBLE", "TRANSPARENT", "FIXED_COLOR", "HOT_TO_COLD",
-	    "LOG_HOT_TO_COLD", "HUE", "RGB"
+	    "INVISIBLE", "FIXED_COLOR", "HUE", "RGB"
 	};
     }
 
