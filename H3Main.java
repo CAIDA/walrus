@@ -88,6 +88,7 @@ public class H3Main
 	m_frame.getContentPane().add(m_statusBar, BorderLayout.SOUTH);
 
 	m_frame.setJMenuBar(createInitialMenuBar());
+	m_colorSchemeMenu.enableDefaultColorScheme();
 
 	m_frame.show();
     }
@@ -118,25 +119,29 @@ public class H3Main
 		    m_memoryUsage.printUsage();
 		}
 
-		populateMenus(backingGraph);
+		if (backingGraph != null)
+		{
+		    populateMenus(backingGraph);
 
-		m_file = file;
-		m_backingGraph = backingGraph;
+		    m_file = file;
+		    m_backingGraph = backingGraph;
 
-		m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
-		m_statusBar.setText(MSG_GRAPH_LOADED);
-		m_closeMenuItem.setEnabled(true);
+		    m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
+		    m_statusBar.setText(MSG_GRAPH_LOADED);
+		    m_closeMenuItem.setEnabled(true);
+		    m_startMenuItem.setEnabled(true);
 
-		/*
-		m_frame.getContentPane().remove(m_splashLabel);
-		m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
-		m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
-		m_statusBar.setText(MSG_GRAPH_LOADED);
-		m_closeMenuItem.setEnabled(true);
-		m_frame.validate();
+		    /*
+		      m_frame.getContentPane().remove(m_splashLabel);
+		      m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
+		      m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
+		      m_statusBar.setText(MSG_GRAPH_LOADED);
+		      m_closeMenuItem.setEnabled(true);
+		      m_frame.validate();
 
-		startRendering();
-		*/
+		      startRendering();
+		    */
+		}
 	    }
 	    catch (FileNotFoundException e)
 	    {
@@ -169,7 +174,38 @@ public class H3Main
 
     private void populateMenus(Graph graph)
     {
+	m_spanningTreeQualifiers =
+	    m_graphLoader.loadSpanningTreeQualifiers(graph);
+	{
+	    m_spanningTreeButtonGroup = new ButtonGroup();
+	    ListIterator iterator = m_spanningTreeQualifiers.listIterator();
+	    while (iterator.hasNext())
+	    {
+		String name = (String)iterator.next();
+		JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem(name);
+		m_spanningTreeMenu.add(menuItem);
+		m_spanningTreeButtonGroup.add(menuItem);
+	    }
 
+	    if (m_spanningTreeMenu.getItemCount() > 0)
+	    {
+		m_spanningTreeMenu.getItem(0).setSelected(true);
+	    }
+	}
+
+	m_nodeLabelAttributes = m_graphLoader.loadAttributes
+	    (graph, m_allAttributeTypeMatcher);
+	{
+	    ListIterator iterator = m_nodeLabelAttributes.listIterator();
+	    while (iterator.hasNext())
+	    {
+		String name = (String)iterator.next();
+		JCheckBoxMenuItem menuItem = new JCheckBoxMenuItem(name);
+		m_nodeLabelMenu.add(menuItem);
+	    }
+	}
+
+	m_colorSchemeMenu.populateAttributeMenus(m_graphLoader, graph);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -188,8 +224,21 @@ public class H3Main
 	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 	m_statusBar.setText(MSG_NO_GRAPH_LOADED);
 
+	m_saveWithLayoutMenuItem.setEnabled(false);
+	m_saveWithLayoutAsMenuItem.setEnabled(false);
+	m_closeMenuItem.setEnabled(false);
+	m_startMenuItem.setEnabled(false);
+	m_stopMenuItem.setEnabled(false);
+	m_updateMenuItem.setEnabled(false);
+
 	m_spanningTreeMenu.removeAll();
-	m_nodeLabelFromAttributesMenu.removeAll();
+	m_nodeLabelMenu.removeAll();
+	m_colorSchemeMenu.removeAttributeMenus();
+	m_colorSchemeMenu.enableReasonableColorScheme();
+
+	m_spanningTreeButtonGroup = null;
+	m_spanningTreeQualifiers = null;
+	m_nodeLabelAttributes = null;
 
 	m_frame.getContentPane().validate();
 	System.out.println("Finished handleCloseFileRequest()");
@@ -379,8 +428,9 @@ public class H3Main
 	}
 	catch (antlr.ANTLRException e)
 	{
+	    // NOTE: ANTLRException.toMessage() doesn't include position.
 	    String msg = "Error parsing file `" + file.getPath() + "': "
-		+ e.getMessage();
+		+ e.toString();
 	    JOptionPane dialog = new JOptionPane();
 	    dialog.showMessageDialog(null, msg, "Open Failed",
 				     JOptionPane.ERROR_MESSAGE);
@@ -554,6 +604,9 @@ public class H3Main
     }
 
     ///////////////////////////////////////////////////////////////////////
+
+
+    ///////////////////////////////////////////////////////////////////////
     // PRIVATE FIELDS
     ///////////////////////////////////////////////////////////////////////
 
@@ -578,6 +631,7 @@ public class H3Main
     private H3RenderLoop m_renderLoop;
     private EventHandler m_eventHandler;
     private MemoryUsage m_memoryUsage = new MemoryUsage();
+    private H3GraphLoader m_graphLoader = new H3GraphLoader();
 
     private JFrame m_frame;
     private JTextField m_statusBar;
@@ -595,9 +649,16 @@ public class H3Main
     private JMenuItem m_updateMenuItem;
 
     private JMenu m_spanningTreeMenu;
+    private ButtonGroup m_spanningTreeButtonGroup;
+    private List m_spanningTreeQualifiers;
+
     private ColorSchemeMenu m_colorSchemeMenu;
+
     private JMenu m_nodeLabelMenu;
-    private JMenu m_nodeLabelFromAttributesMenu;
+    private List m_nodeLabelAttributes;
+
+    private H3GraphLoader.AttributeTypeMatcher
+	m_allAttributeTypeMatcher = new AllAttributeTypeMatcher();
 
     ///////////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
@@ -998,6 +1059,10 @@ public class H3Main
 
     private static class ColorSchemeMenu
     {
+	////////////////////////////////////////////////////////////////////
+	// CONSTRUCTORS
+	////////////////////////////////////////////////////////////////////
+
 	public ColorSchemeMenu()
 	{
 	    createFixedColors();
@@ -1041,10 +1106,63 @@ public class H3Main
 	    m_colorSchemeMenu.add(m_nontreeLinkColorMenu);
 	}
 
+	////////////////////////////////////////////////////////////////////
+	// PUBLIC METHODS
+	////////////////////////////////////////////////////////////////////
+
 	public JMenu getColorSchemeMenu()
 	{
 	    return m_colorSchemeMenu;
 	}
+
+	public void populateAttributeMenus(H3GraphLoader graphLoader,
+					   Graph graph)
+	{
+	    m_attributeCache = new AttributeCache(graphLoader, graph);
+	    m_nodeColorSelection.populateAttributeMenus(m_attributeCache);
+	    m_treeLinkColorSelection.populateAttributeMenus(m_attributeCache);
+	    m_nontreeLinkColorSelection.populateAttributeMenus
+		(m_attributeCache);
+	}
+
+	public void removeAttributeMenus()
+	{
+	    m_attributeCache = null;
+	    m_nodeColorSelection.removeAttributeMenus();
+	    m_treeLinkColorSelection.removeAttributeMenus();
+	    m_nontreeLinkColorSelection.removeAttributeMenus();
+	}
+
+	// NOTE: Call this only after the menus are completely constructed
+	//       in this class (and aggregated classes).
+	public void enableDefaultColorScheme()
+	{
+	    if (m_predefinedColorSchemes.size() > 0)
+	    {
+		// XXX: Preserve the default scheme in properties.
+		PredefinedColorScheme scheme =
+		    (PredefinedColorScheme)m_predefinedColorSchemes.get(0);
+		m_nodeColorSelection.enableDefaultSelection
+		    (scheme.nodeMenuItem);
+		m_treeLinkColorSelection.enableDefaultSelection
+		    (scheme.treeLinkMenuItem);
+		m_nontreeLinkColorSelection.enableDefaultSelection
+		    (scheme.nontreeLinkMenuItem);
+	    }
+	}
+
+	// NOTE: Call this only after the menus are completely constructed
+	//       in this class (and aggregated classes).
+	public void enableReasonableColorScheme()
+	{
+	    m_nodeColorSelection.enableReasonableSelection();
+	    m_treeLinkColorSelection.enableReasonableSelection();
+	    m_nontreeLinkColorSelection.enableReasonableSelection();
+	}
+
+	////////////////////////////////////////////////////////////////////
+	// PRIVATE METHODS
+	////////////////////////////////////////////////////////////////////
 
 	private void createPredefinedColorSchemes
 	    (Map nodeMenuMap, Map treeLinkMenuMap, Map nontreeLinkMenuMap)
@@ -1110,6 +1228,10 @@ public class H3Main
 	    return (r << 16) | (g << 8) | b;
 	}
 
+	////////////////////////////////////////////////////////////////////
+	// PRIVATE FIELDS
+	////////////////////////////////////////////////////////////////////
+
 	private JMenu m_colorSchemeMenu;
 	private JMenu m_nodeColorMenu;
 	private JMenu m_treeLinkColorMenu;
@@ -1122,6 +1244,40 @@ public class H3Main
 	private List m_fixedColors; // ArrayList<FixedColor>
 	// ArrayList<PredefinedColorScheme>
 	private List m_predefinedColorSchemes;
+
+	private AttributeCache m_attributeCache;
+
+	////////////////////////////////////////////////////////////////////
+	// PRIVATE INNER CLASSES
+	////////////////////////////////////////////////////////////////////
+
+	private class PredefinedColorScheme
+	    implements ActionListener
+	{
+	    public PredefinedColorScheme(String name, JMenuItem nodeMenuItem,
+					 JMenuItem treeLinkMenuItem,
+					 JMenuItem nontreeLinkMenuItem)
+	    {
+		this.name = name;
+		this.nodeMenuItem = nodeMenuItem;
+		this.treeLinkMenuItem = treeLinkMenuItem;
+		this.nontreeLinkMenuItem = nontreeLinkMenuItem;
+	    }
+
+	    public void actionPerformed(ActionEvent e)
+	    {
+		nodeMenuItem.doClick();
+		treeLinkMenuItem.doClick();
+		nontreeLinkMenuItem.doClick();
+	    }
+
+	    public String name;
+	    public JMenuItem nodeMenuItem;
+	    public JMenuItem treeLinkMenuItem;
+	    public JMenuItem nontreeLinkMenuItem;
+	}
+
+	////////////////////////////////////////////////////////////////////
 
 	private class ColorSchemeMaker
 	{
@@ -1166,16 +1322,38 @@ public class H3Main
 	}
     }
 
+    ////////////////////////////////////////////////////////////////////
+
+    private static class FixedColor
+    {
+	public FixedColor(String name, int color)
+	{
+	    this.name = name;
+	    this.color = color;
+	}
+
+	public String name;
+	public int color;   // packed RGB
+    }
+
     ///////////////////////////////////////////////////////////////////////
 
     private static class ColorSelection
     {
+	////////////////////////////////////////////////////////////////////
+	// PUBLIC CONSTANTS
+	////////////////////////////////////////////////////////////////////
+
 	public static final String INVISIBLE = "Invisible";
 	public static final String TRANSPARENT = "Transparent";
 	public static final String HOT_TO_COLD = "Hot to Cold";
 	public static final String LOG_HOT_TO_COLD = "Logarithmic HtoC";
 	public static final String HUE = "Hue";
 	public static final String RGB = "RGB";
+
+	////////////////////////////////////////////////////////////////////
+	// CONSTRUCTORS
+	////////////////////////////////////////////////////////////////////
 
 	// List<FixedColor> fixedColors
 	public ColorSelection(JMenu menu, Map map, List fixedColors)
@@ -1235,10 +1413,6 @@ public class H3Main
 	    m_colorAttributeMenu = new JMenu("Color Attribute");
 	    m_colorAttributeMenu.setEnabled(false);
 
-	    m_selectiveVisibilityMenuItem =
-		new JCheckBoxMenuItem("Selective Visibility");
-	    m_selectiveVisibilityMenuItem.setEnabled(false);
-
 	    m_selectionAttributeMenu = new JMenu("Selection Attribute");
 	    m_selectionAttributeMenu.setEnabled(false);
 
@@ -1292,11 +1466,15 @@ public class H3Main
 	    menu.add(m_RGBMenuItem);
 	    menu.add(m_colorAttributeMenu);
 	    menu.addSeparator();
-	    menu.add(m_selectiveVisibilityMenuItem);
 	    menu.add(m_selectionAttributeMenu);
 
-	    m_invisibleMenuItem.setSelected(true);
+	    m_defaultSelection = m_invisibleMenuItem;
+	    m_defaultSelection.setSelected(true);
 	}
+
+	////////////////////////////////////////////////////////////////////
+	// PUBLIC METHODS
+	////////////////////////////////////////////////////////////////////
 
 	public void colorGraph(H3Graph graph, Graph backingGraph,
 			       H3ViewParameters parameters)
@@ -1304,83 +1482,55 @@ public class H3Main
 
 	}
 
-	// List<String> attributes
-	//
-	// NOTE: If {attributes} is empty, then this removes all attributes,
-	//       and makes m_invisibleMenuItem the current selection.
-	public void setColorAttributes(List attributes)
+	public void populateAttributeMenus(AttributeCache attributeCache)
 	{
-	    if (attributes.size() == 0)
-	    {
-		removeColorAttributes();
-	    }
-	    else
-	    {
-		m_colorAttributeButtonGroup = new ButtonGroup();
+	    removeColorAttributeMenu();
+	    removeSelectionAttributeMenu();
 
-		ListIterator iterator = attributes.listIterator();
-		while (iterator.hasNext())
-		{
-		    String name = (String)iterator.next();
-		    JRadioButtonMenuItem menuItem =
-			new JRadioButtonMenuItem(name);
-		    m_colorAttributeButtonGroup.add(menuItem);
-		    m_colorAttributeMenu.add(menuItem);
-		}
-		m_colorAttributeMenu.getItem(0).setSelected(true);
+	    m_scalarColorAttributeButtonGroup = new ButtonGroup();
+	    m_scalarColorAttributeMenus = createColorAttributeMenuCache
+		(attributeCache.getScalarColorAttributes(),
+		 m_scalarColorAttributeButtonGroup);
 
-		setColorAttributesRelatedEnabled(true);
-	    }
+	    m_allColorAttributeButtonGroup = new ButtonGroup();
+	    m_allColorAttributeMenus = createColorAttributeMenuCache
+		(attributeCache.getAllColorAttributes(),
+		 m_allColorAttributeButtonGroup);
+
+	    populateSelectionAttributeMenu
+		(attributeCache.getSelectionAttributes());
+	    updateMenuInterdependencies();
 	}
 
-	// List<String> attributes
-	public void setSelectionAttributes(List attributes)
+	public void removeAttributeMenus()
 	{
-	    if (attributes.size() == 0)
-	    {
-		removeSelectionAttributes();
-	    }
-	    else
-	    {
-		m_selectionAttributeButtonGroup = new ButtonGroup();
+	    removeColorAttributeMenu();
+	    removeSelectionAttributeMenu();
+	    updateMenuInterdependencies();
+	}
 
-		ListIterator iterator = attributes.listIterator();
-		while (iterator.hasNext())
-		{
-		    String name = (String)iterator.next();
-		    JRadioButtonMenuItem menuItem =
-			new JRadioButtonMenuItem(name);
-		    m_selectionAttributeButtonGroup.add(menuItem);
-		    m_selectionAttributeMenu.add(menuItem);
-		}
-		m_selectionAttributeMenu.getItem(0).setSelected(true);
+	public void enableDefaultSelection(JMenuItem menuItem)
+	{
+	    m_defaultSelection = menuItem;
+	    m_defaultSelection.setSelected(true);
+	    updateMenuInterdependencies();
+	}
 
-		setSelectionAttributesRelatedEnabled(true);
+	public void enableReasonableSelection()
+	{
+	    if (m_hotToColdMenuItem.isSelected()
+		|| m_logHotToColdMenuItem.isSelected()
+		|| m_hueMenuItem.isSelected()
+		|| m_RGBMenuItem.isSelected())
+	    {
+		m_defaultSelection.setSelected(true);
+		updateMenuInterdependencies();
 	    }
 	}
 
-	// NOTE: This makes m_invisibleMenuItem the current selection.
-	public void removeColorAttributes()
-	{
-	    m_invisibleMenuItem.setSelected(true);
-	    setColorAttributesRelatedEnabled(false);
-
-	    m_colorAttributeMenu.removeAll();
-	    m_colorAttributeButtonGroup = null;
-	}
-
-	public void removeSelectionAttributes()
-	{
-	    setSelectionAttributesRelatedEnabled(false);
-
-	    // Clear selected status so that the user is not surprised
-	    // when selective visibility is re-enabled (when selection
-	    // attributes are added).
-	    m_selectiveVisibilityMenuItem.setSelected(false);
-
-	    m_selectionAttributeMenu.removeAll();
-	    m_selectionAttributeButtonGroup = null;
-	}
+	////////////////////////////////////////////////////////////////////
+	// PRIVATE METHODS
+	////////////////////////////////////////////////////////////////////
 
 	private void handleInvisibleColorRequest()
 	{
@@ -1394,21 +1544,25 @@ public class H3Main
 
 	private void handleHotToColdColorRequest()
 	{
+	    installScalarAttributeMenu();
 	    setupForArbitraryColorChoice();
 	}
 
 	private void handleLogHotToColdColorRequest()
 	{
+	    installScalarAttributeMenu();
 	    setupForArbitraryColorChoice();
 	}
 
 	private void handleHueColorRequest()
 	{
+	    installScalarAttributeMenu();
 	    setupForArbitraryColorChoice();
 	}
 
 	private void handleRGBColorRequest()
 	{
+	    installAllAttributeMenu();
 	    setupForArbitraryColorChoice();
 	}
 
@@ -1420,53 +1574,190 @@ public class H3Main
 	private void setupForMinimalColorChoice()
 	{
 	    m_colorAttributeMenu.setEnabled(false);
-	    m_selectiveVisibilityMenuItem.setEnabled(false);
 	    m_selectionAttributeMenu.setEnabled(false);
 	}
 
 	private void setupForFixedColorChoice()
 	{
 	    m_colorAttributeMenu.setEnabled(false);
-
 	    if (m_selectionAttributeMenu.getItemCount() > 0)
 	    {
-		m_selectiveVisibilityMenuItem.setEnabled(true);
-		boolean isSelected =
-		    m_selectiveVisibilityMenuItem.isSelected();
-		m_selectionAttributeMenu.setEnabled(isSelected);
+		m_selectionAttributeMenu.setEnabled(true);
 	    }
 	}
 
 	private void setupForArbitraryColorChoice()
 	{
 	    m_colorAttributeMenu.setEnabled(true);
-
 	    if (m_selectionAttributeMenu.getItemCount() > 0)
 	    {
-		m_selectiveVisibilityMenuItem.setEnabled(true);
-		boolean isSelected =
-		    m_selectiveVisibilityMenuItem.isSelected();
-		m_selectionAttributeMenu.setEnabled(isSelected);
+		m_selectionAttributeMenu.setEnabled(true);
 	    }
 	}
 
-	private void setColorAttributesRelatedEnabled(boolean value)
+	// List<String> attributes
+	private JRadioButtonMenuItem[] createColorAttributeMenuCache
+	    (List attributes, ButtonGroup buttonGroup)
 	{
-	    m_hotToColdMenuItem.setEnabled(value);
-	    m_logHotToColdMenuItem.setEnabled(value);
-	    m_hueMenuItem.setEnabled(value);
-	    m_RGBMenuItem.setEnabled(value);
-	    m_colorAttributeMenu.setEnabled(value);
+	    JRadioButtonMenuItem[] retval = null;
+	    int numAttributes = attributes.size();
+	    if (numAttributes > 0)
+	    {
+		retval = new JRadioButtonMenuItem[numAttributes];
+
+		int i = 0;
+		ListIterator iterator = attributes.listIterator();
+		while (iterator.hasNext())
+		{
+		    String name = (String)iterator.next();
+		    JRadioButtonMenuItem menuItem =
+			new JRadioButtonMenuItem(name);
+		    retval[i++] = menuItem;
+		    buttonGroup.add(menuItem);
+		}
+
+		retval[0].setSelected(true);
+	    }
+	    return retval;
 	}
 
-	private void setSelectionAttributesRelatedEnabled(boolean value)
+	// List<String> attributes
+	private void populateSelectionAttributeMenu(List attributes)
 	{
-	    m_selectiveVisibilityMenuItem.setEnabled(value);
+	    if (attributes.size() > 0)
+	    {
+		m_selectionAttributeButtonGroup = new ButtonGroup();
 
-	    // Show menu only if selective visibility is enabled and selected.
-	    boolean enableMenu =
-		value && m_selectiveVisibilityMenuItem.isSelected();
-	    m_selectionAttributeMenu.setEnabled(enableMenu);
+		JRadioButtonMenuItem noneMenuItem =
+		    new JRadioButtonMenuItem("None");
+		noneMenuItem.setSelected(true);
+		m_selectionAttributeButtonGroup.add(noneMenuItem);
+		m_selectionAttributeMenu.add(noneMenuItem);
+		m_selectionAttributeMenu.addSeparator();
+
+		ListIterator iterator = attributes.listIterator();
+		while (iterator.hasNext())
+		{
+		    String name = (String)iterator.next();
+		    JRadioButtonMenuItem menuItem =
+			new JRadioButtonMenuItem(name);
+		    m_selectionAttributeButtonGroup.add(menuItem);
+		    m_selectionAttributeMenu.add(menuItem);
+		}
+	    }
+	}
+
+	private void removeColorAttributeMenu()
+	{
+	    m_colorAttributeMenu.removeAll();
+	    m_scalarColorAttributeButtonGroup = null;
+	    m_allColorAttributeButtonGroup = null;
+	    m_scalarColorAttributeMenus = null;
+	    m_allColorAttributeMenus = null;
+	}
+
+	private void removeSelectionAttributeMenu()
+	{
+	    m_selectionAttributeMenu.removeAll();
+	    m_selectionAttributeButtonGroup = null;
+	}
+
+	private void updateMenuInterdependencies()
+	{
+	    if (m_scalarColorAttributeMenus == null
+		&& m_allColorAttributeMenus == null)
+	    {
+		if (m_hotToColdMenuItem.isSelected()
+		    || m_logHotToColdMenuItem.isSelected()
+		    || m_hueMenuItem.isSelected()
+		    || m_RGBMenuItem.isSelected())
+		{
+		    m_defaultSelection.setEnabled(true);
+		}
+		setColorAttributesRelatedEnabled(false, false);
+		m_colorAttributeMenu.setEnabled(false);
+	    }
+	    else if (m_scalarColorAttributeMenus != null)
+	    {
+		// By necessity, we must have m_allColorAttributeMenus != null.
+
+		if (m_hotToColdMenuItem.isSelected()
+		    || m_logHotToColdMenuItem.isSelected()
+		    || m_hueMenuItem.isSelected())
+		{
+		    installScalarAttributeMenu();
+		    m_colorAttributeMenu.setEnabled(true);
+		}
+		else if (m_RGBMenuItem.isSelected())
+		{
+		    installAllAttributeMenu();
+		    m_colorAttributeMenu.setEnabled(true);
+		}
+		else
+		{
+		    m_colorAttributeMenu.setEnabled(false);
+		}
+		setColorAttributesRelatedEnabled(true, true);
+
+	    }
+	    else
+	    {
+		// We must have m_scalarColorAttributesMenus == null
+		//               && m_allColorAttributeMenus != null.
+
+		if (m_hotToColdMenuItem.isSelected()
+		    || m_logHotToColdMenuItem.isSelected()
+		    || m_hueMenuItem.isSelected())
+		{
+		    m_defaultSelection.setEnabled(true);
+		    m_colorAttributeMenu.setEnabled(false);
+		}
+		else if (m_RGBMenuItem.isSelected())
+		{
+		    installAllAttributeMenu();
+		    m_colorAttributeMenu.setEnabled(true);
+		}	
+		else
+		{
+		    m_colorAttributeMenu.setEnabled(false);
+		}
+		setColorAttributesRelatedEnabled(false, true);
+	    }
+
+	    boolean enableSelection = 
+		m_selectionAttributeMenu.getItemCount() > 0
+		&& !m_invisibleMenuItem.isSelected()
+		&& !m_transparentMenuItem.isSelected();
+	    m_selectionAttributeMenu.setEnabled(enableSelection);
+	}
+
+	// NOTE: The caller should enable m_colorAttributeMenu.
+	private void installScalarAttributeMenu()
+	{
+	    m_colorAttributeMenu.removeAll();
+	    for (int i = 0; i < m_scalarColorAttributeMenus.length; i++)
+	    {
+		m_colorAttributeMenu.add(m_scalarColorAttributeMenus[i]);
+	    }
+	}
+
+	// NOTE: The caller should enable m_colorAttributeMenu.
+	private void installAllAttributeMenu()
+	{
+	    m_colorAttributeMenu.removeAll();
+	    for (int i = 0; i < m_allColorAttributeMenus.length; i++)
+	    {
+		m_colorAttributeMenu.add(m_allColorAttributeMenus[i]);
+	    }
+	}
+
+	private void setColorAttributesRelatedEnabled(boolean scalar,
+						      boolean RGB)
+	{
+	    m_hotToColdMenuItem.setEnabled(scalar);
+	    m_logHotToColdMenuItem.setEnabled(scalar);
+	    m_hueMenuItem.setEnabled(scalar);
+	    m_RGBMenuItem.setEnabled(RGB);
 	}
 
 	private void putChecked(Map map, String name, Object data)
@@ -1479,9 +1770,11 @@ public class H3Main
 	    }
 	}
 
+	////////////////////////////////////////////////////////////////////
+	// PRIVATE FIELDS
+	////////////////////////////////////////////////////////////////////
+
 	private ButtonGroup m_colorSchemeButtonGroup;
-	private ButtonGroup m_colorAttributeButtonGroup;
-	private ButtonGroup m_selectionAttributeButtonGroup;
 	private JRadioButtonMenuItem m_invisibleMenuItem;
 	private JRadioButtonMenuItem m_transparentMenuItem;
 	private JRadioButtonMenuItem m_hotToColdMenuItem;
@@ -1489,11 +1782,28 @@ public class H3Main
 	private JRadioButtonMenuItem m_hueMenuItem;
 	private JRadioButtonMenuItem m_RGBMenuItem;
 	private JMenu m_colorAttributeMenu;
-	private JCheckBoxMenuItem m_selectiveVisibilityMenuItem;
+	private ButtonGroup m_selectionAttributeButtonGroup;
 	private JMenu m_selectionAttributeMenu;
 
+	// This is the menu item which will be in the selected state when
+	// no menu item has yet been selected by the user or when the
+	// currently selected menu item must cease to be enabled (such as
+	// when removing all color attributes).  This must point to a menu
+	// item for a fixed color or to a menu item for either the invisible
+	// or transparent choices.  By doing so, we ensure that this menu
+	// item is selectable in all situations.
+	private JMenuItem m_defaultSelection;
+
+	private ButtonGroup m_scalarColorAttributeButtonGroup;
+	private ButtonGroup m_allColorAttributeButtonGroup;
+	private JRadioButtonMenuItem[] m_scalarColorAttributeMenus;
+	private JRadioButtonMenuItem[] m_allColorAttributeMenus;
 	private int[] m_fixedColors;
 	private JRadioButtonMenuItem[] m_fixedColorMenuItems;
+
+	////////////////////////////////////////////////////////////////////
+	// PRIVATE INNER CLASSES
+	////////////////////////////////////////////////////////////////////
 
 	private class FixedColorListener
 	    implements ActionListener
@@ -1514,44 +1824,91 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private static class PredefinedColorScheme
-	implements ActionListener
+    private static class AttributeCache
     {
-	public PredefinedColorScheme(String name, JMenuItem nodeMenuItem,
-				     JMenuItem treeLinkMenuItem,
-				     JMenuItem nontreeLinkMenuItem)
+	public AttributeCache(H3GraphLoader graphLoader, Graph graph)
 	{
-	    this.name = name;
-	    this.nodeMenuItem = nodeMenuItem;
-	    this.treeLinkMenuItem = treeLinkMenuItem;
-	    this.nontreeLinkMenuItem = nontreeLinkMenuItem;
+	    m_scalarColorAttributes = graphLoader.loadAttributes
+		(graph, m_scalarColorAttributeTypeMatcher);
+	    m_allColorAttributes = graphLoader.loadAttributes
+		(graph, m_allColorAttributeTypeMatcher);
+	    m_selectionAttributes = graphLoader.loadAttributes
+		(graph, m_selectionAttributeTypeMatcher);
 	}
 
-	public void actionPerformed(ActionEvent e)
+	public List getScalarColorAttributes()
 	{
-	    nodeMenuItem.doClick();
-	    treeLinkMenuItem.doClick();
-	    nontreeLinkMenuItem.doClick();
+	    return m_scalarColorAttributes;
 	}
 
-	public String name;
-	public JMenuItem nodeMenuItem;
-	public JMenuItem treeLinkMenuItem;
-	public JMenuItem nontreeLinkMenuItem;
+	public List getAllColorAttributes()
+	{
+	    return m_allColorAttributes;
+	}
+
+	public List getSelectionAttributes()
+	{
+	    return m_selectionAttributes;
+	}
+
+	private List m_scalarColorAttributes;
+	private List m_allColorAttributes;
+	private List m_selectionAttributes;
+
+	private H3GraphLoader.AttributeTypeMatcher
+	    m_scalarColorAttributeTypeMatcher =
+	    new ScalarColorAttributeTypeMatcher();
+
+	private H3GraphLoader.AttributeTypeMatcher
+	    m_allColorAttributeTypeMatcher =
+	    new AllColorAttributeTypeMatcher();
+
+	private H3GraphLoader.AttributeTypeMatcher
+	    m_selectionAttributeTypeMatcher =
+	    new SelectionAttributeTypeMatcher();
+
+	////////////////////////////////////////////////////////////////////
+
+	private class ScalarColorAttributeTypeMatcher
+	    implements H3GraphLoader.AttributeTypeMatcher
+	{
+	    public boolean match(ValueType type)
+	    {
+		return type == ValueType.INTEGER || type == ValueType.FLOAT
+		    || type == ValueType.DOUBLE;
+	    }
+	}
+
+	private class AllColorAttributeTypeMatcher
+	    implements H3GraphLoader.AttributeTypeMatcher
+	{
+	    public boolean match(ValueType type)
+	    {
+		return type == ValueType.INTEGER || type == ValueType.FLOAT
+		    || type == ValueType.DOUBLE || type == ValueType.FLOAT3
+		    || type == ValueType.DOUBLE3;
+	    }
+	}
+
+	private class SelectionAttributeTypeMatcher
+	    implements H3GraphLoader.AttributeTypeMatcher
+	{
+	    public boolean match(ValueType type)
+	    {
+		return type == ValueType.BOOLEAN;
+	    }
+	}
     }
 
     ///////////////////////////////////////////////////////////////////////
 
-    private static class FixedColor
+    private class AllAttributeTypeMatcher
+	implements H3GraphLoader.AttributeTypeMatcher
     {
-	public FixedColor(String name, int color)
+	public boolean match(ValueType type)
 	{
-	    this.name = name;
-	    this.color = color;
+	    return true;
 	}
-
-	public String name;
-	public int color;   // packed RGB
     }
 
     ///////////////////////////////////////////////////////////////////////
