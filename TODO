@@ -28,6 +28,9 @@ BUGS & ISSUES
 * It can be slow loading large (50-80MB) graphs, and Walrus provides no
   feedback during the load (such as with a progress bar).
 
+* With the nonadaptive rendering algorithm, links are always drawn
+  opaquely, even when transparency is requested.
+
 
 =========================================================================
 FEATURES
