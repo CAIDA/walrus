@@ -2,18 +2,22 @@
                                Feb 20, 2003
 
 
-To build Walrus, you'll need JDK1.3.0 (or later), GNU Make, and the IBM
-Jikes compiler.  Jikes is used to automatically generate dependency files
-(*.u files) for Make.  You can get Jikes from
-
-  http://oss.software.ibm.com/developerworks/opensource/jikes/
-
 All the classes of Walrus are in the top-level anonymous package, so you
-can unpack the archive wherever you wish.
+can unpack the source distribution wherever you wish.
 
 To build and run Walrus, you'll need to add to your CLASSPATH the files
 libsea.jar, antlrall-mod.jar, and mp.jar.  Also, you'll need to modify,
 if needed, the symbol JAVA_INSTALL in the makefile.
+
+Also, you'll need JDK1.3.0 (or later), GNU Make, and the IBM Jikes
+compiler.  Jikes is used to automatically generate dependency files (*.u
+files) for Make.  You can get Jikes from
+
+  http://oss.software.ibm.com/developerworks/opensource/jikes/
+
+You do not need to install Jikes if you simply want to build Walrus from
+the source.  The source distribution contains a copy of the dependency
+files that can be used so long as no source file is modified.
 
 When everything is set, you can simply do 'make' to build Walrus.
 
