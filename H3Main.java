@@ -2839,35 +2839,39 @@ public class H3Main
 	    }
 	    else
 	    {
-		if (c == 'w')
+		if (m_state == STATE_IDLE
+		    || m_state == STATE_ROTATING_INTERACTIVE_START)
 		{
-		    m_narrowingHandler.widenSubtree(m_currentNode);
-		}
-		else if (c == 'n')
-		{
-		    m_narrowingHandler.narrowToSubtree(m_currentNode);
-		}
-		else if (c == 'p')
-		{
-		    showParentNode();
-		}
-		else if (c >= '0' && c <= '9')
-		{
-		    int distance = c - '0';
-		    m_narrowingHandler.pruneToNeighborhood
-			(m_currentNode, distance);
-		}
-		else if (c == ',')
-		{
-		    decreaseMagnification();
-		}
-		else if (c == '.')
-		{
-		    increaseMagnification();
-		}
-		else if (c == '/')
-		{
-		    resetMagnification();
+		    if (c == 'w')
+		    {
+			m_narrowingHandler.widenSubtree(m_currentNode);
+		    }
+		    else if (c == 'n')
+		    {
+			m_narrowingHandler.narrowToSubtree(m_currentNode);
+		    }
+		    else if (c == 'p')
+		    {
+			showParentNode();
+		    }
+		    else if (c >= '0' && c <= '9')
+		    {
+			int distance = c - '0';
+			m_narrowingHandler.pruneToNeighborhood
+			    (m_currentNode, distance);
+		    }
+		    else if (c == ',')
+		    {
+			decreaseMagnification();
+		    }
+		    else if (c == '.')
+		    {
+			increaseMagnification();
+		    }
+		    else if (c == '/')
+		    {
+			resetMagnification();
+		    }
 		}
 	    }
 	}
