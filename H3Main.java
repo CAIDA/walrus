@@ -39,255 +39,160 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
 import java.io.*;
-import com.sun.j3d.utils.geometry.Text2D;
-import com.sun.j3d.utils.geometry.*;
+import java.util.Observer;
+import java.util.Observable;
+import javax.swing.*;
 import com.sun.j3d.utils.universe.*;
-import org.caida.libsea.ASCIIInputStreamReader;
+import org.caida.libsea.*;
 
 public class H3Main
 {
+    ///////////////////////////////////////////////////////////////////////
+    // MAIN
+    ///////////////////////////////////////////////////////////////////////
+
     public static void main(String[] args)
     {
-	Frame frame = new Frame();
-	frame.setSize(900, 1000);
-	frame.setLayout(new BorderLayout());
-	frame.addWindowListener(new WindowAdapter() {
-	    public void windowClosing(WindowEvent e)
+	new H3Main();
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    // CONSTRUCTORS
+    ///////////////////////////////////////////////////////////////////////
+
+    public H3Main()
+    {
+	initializeCanvas3D();
+
+	m_frame = new JFrame(WALRUS_TITLE);
+	m_frame.setBackground(Color.black);
+	m_frame.getContentPane().setBackground(Color.black);
+
+	// XXX: Preserve frame dimensions in properties across sessions.
+	m_frame.setSize(DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT);
+	m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+	ImageIcon splashIcon = new ImageIcon(SPLASH_ICON_PATH);
+	m_splashLabel = new JLabel(splashIcon);
+	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
+
+	m_statusBar = new JTextField();
+	m_statusBar.setEditable(false);
+	m_statusBar.setText(MSG_NO_GRAPH_LOADED);
+	m_frame.getContentPane().add(m_statusBar, BorderLayout.SOUTH);
+
+	m_frame.setJMenuBar(createInitialMenuBar());
+
+	m_frame.show();
+    }
+
+    /////////////////////////////////////////////////////////////////////
+    // PRIVATE METHODS
+    /////////////////////////////////////////////////////////////////////
+
+    private void handleOpenFileRequest()
+    {
+	File file = askUserForFile();
+	if (file != null)
+	{
+	    handleCloseFileRequest();
+	    m_statusBar.setText(MSG_LOADING_GRAPH);
+
+	    try
 	    {
-		System.exit(0);
+		ASCIIInputStreamReader reader =
+		    new ASCIIInputStreamReader(new FileInputStream(file));
+
+		Graph backingGraph = loadGraph(file, reader);
+		m_graph = new H3GraphLoader().load(backingGraph);
+
+		if (DEBUG_PRINT_LOAD_MEMORY) { m_memoryUsage.gatherAtPeak(); }
+		if (DEBUG_PRINT_LOAD_MEMORY)
+		{
+		    m_memoryUsage.gatherAtFinal();
+		    m_memoryUsage.printUsage();
+		}
+
+		m_file = file;
+		m_backingGraph = backingGraph;
+
+		m_frame.getContentPane().remove(m_splashLabel);
+		m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
+		m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
+		m_statusBar.setText(MSG_GRAPH_LOADED);
+		m_closeMenuItem.setEnabled(true);
+		m_frame.validate();
+
+		startRendering();
 	    }
-	});
+	    catch (FileNotFoundException e)
+	    {
+		String msg =  "File not found: " + file.getPath();
+		JOptionPane dialog = new JOptionPane();
+		dialog.showMessageDialog(null, msg, "File Not Found",
+					 JOptionPane.ERROR_MESSAGE);
+	    }
+	    catch (H3GraphLoader.InvalidGraphDataException e)
+	    {
+		String msg = "Graph file lacks needed data: "
+		    + e.getMessage();
+		JOptionPane dialog = new JOptionPane();
+		dialog.showMessageDialog(null, msg, "Open Failed",
+					 JOptionPane.ERROR_MESSAGE);
+	    }
 
-	GraphicsConfiguration config =
-	    SimpleUniverse.getPreferredConfiguration();
+	    if (m_backingGraph == null)
+	    {
+		m_statusBar.setText(MSG_NO_GRAPH_LOADED);
+	    }
+	}
 
-	H3Canvas3D canvas = new H3Canvas3D(config);
-	canvas.stopRenderer();
+	System.out.println("Finished handleOpenFileRequest()");
+    }
 
-	EventHandler handler = new EventHandler();
-	handler.setCanvas(canvas);
+    ///////////////////////////////////////////////////////////////////////
 
-	canvas.addMouseListener(handler);
-	canvas.addMouseMotionListener(handler);
+    private void handleCloseFileRequest()
+    {
+	m_backingGraph = null;
+	m_graph = null;
+	if (m_renderLoop != null)
+	{
+	    stopRendering();
+	}
 
-	frame.add("Center", canvas);
+	m_frame.setTitle(WALRUS_TITLE);
+	m_frame.getContentPane().remove(m_canvas);
+	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
+	m_statusBar.setText(MSG_NO_GRAPH_LOADED);
 
-	SimpleUniverse univ = new SimpleUniverse(canvas);
-	univ.getViewingPlatform().setNominalViewingTransform();
+	// XXX: Clear menu items here.
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	m_frame.getContentPane().validate();
+	System.out.println("Finished handleCloseFileRequest()");
+    }
 
+    ///////////////////////////////////////////////////////////////////////
+
+    private void startRendering()
+    {
 	final boolean ENABLE_ADAPTIVE_DRAWING = true;
 	final boolean PROCESS_NONTREE_LINKS = false;
 	final boolean ENABLE_SCREEN_CAPTURE = false;
 
-	H3Graph graph = null;
+	System.out.println("numNodes = " + m_graph.getNumNodes());
+	System.out.println("numTreeLinks = " + m_graph.getNumTreeLinks());
+	System.out.println("numNontreeLinks = " + m_graph.getNumNontreeLinks());
 
-	if (args.length > 0)
-	{
-	    try
-	    {
-		System.out.println("Loading graph from \""
-				   + args[0] + "\" ...");
-
-		// Class java.io.FileReader could have been used here, but
-		// it has performance problems.  See ASCIIInputStreamReader.
-		ASCIIInputStreamReader reader =
-		    new ASCIIInputStreamReader(new FileInputStream(args[0]));
-
-		H3GraphLoader loader = new H3GraphLoader(reader);
-		graph = loader.load();
-
-		reader.close();
-
-		if (graph == null)
-		{
-		    System.err.println("ERROR: Graph couldn't be loaded.\n");
-		    System.exit(1);
-		}
-
-		//graph.checkTreeReachability();
-		//graph.dumpForTesting2();
-	    }
-	    catch (FileNotFoundException e)
-	    {
-		System.err.println("File \"" + args[0] + "\" not found.\n");
-		System.exit(1);
-	    }
-	    catch (IOException e)
-	    {
-		System.err.println("While reading/closing \""
-				   + args[0] + "\": " + e);
-		System.exit(1);
-	    }
-
-	    if (true)
-	    {
-		int nodeColor = Color.yellow.getRGB();
-		//int nodeColor = (0xff << 16) | (0xff << 8) | 0xff;
-
-		//int linkColor = Color.green.getRGB();
-		//int linkColor = (64 << 16) | (192 << 8) | 64;
-		int linkColor = (30 << 16) | (150 << 8) | 0;
-
-		graph.setNodeDefaultColor(nodeColor);
-		graph.setLinkDefaultColor(linkColor);
-
-		if (false)
-		{
-		    float[] color = Color.yellow.getRGBColorComponents(null);
-		    System.out.println("Node color: " + color[0] + ", "
-				       + color[1] + ", "
-				       + color[2]);
-		 
-		    color = new Color(linkColor).getRGBColorComponents(null);
-		    System.out.println("Link color: " + color[0] + ", "
-				       + color[1] + ", "
-				       + color[2]);
-		}
-
-		if (PROCESS_NONTREE_LINKS)
-		{
-		    colorNontreeLinks(graph, Color.darkGray.getRGB());
-		}
-	    }
-	}
-	else
-	{
-	    H3GraphBuffer buffer = new H3GraphBuffer();
-
-	    //H3GraphGenerator.createTernaryTreeSet(buffer);
-
-	    //H3GraphGenerator.createLinearIncreasingTree(buffer, 1, 25, 30);
-	    //H3GraphGenerator.createQuadraticIncreasingTree(buffer, 1, 1, 30);
-	    //H3GraphGenerator.createCubicIncreasingTree(buffer, 1, 1, 10);
-
-	    //H3GraphGenerator.createGraph(buffer, 2, 3);       // 15 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 4);       // 31 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 5);       // 63 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 6);      // 127 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 7);      // 255 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 8);      // 511 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 9);    // 1,023 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 10);   // 2,047 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 11);   // 4,095 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 12);   // 8,191 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 13);  // 16,383 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 14);  // 32,767 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 15);  // 65,535 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 16); // 131,071 nodes
-	    //H3GraphGenerator.createGraph(buffer, 2, 17); // 262,143 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 3, 3);       // 40 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 4);      // 121 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 5);      // 364 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 6);    // 1,093 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 7);    // 3,280 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 8);    // 9,841 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 9);   // 29,524 nodes
-	    //H3GraphGenerator.createGraph(buffer, 3, 10);  // 88,573 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 4, 3);       // 85 nodes
-	    //H3GraphGenerator.createGraph(buffer, 4, 4);      // 341 nodes
-	    //H3GraphGenerator.createGraph(buffer, 4, 5);    // 1,365 nodes
-	    //H3GraphGenerator.createGraph(buffer, 4, 6);    // 5,461 nodes
-	    //H3GraphGenerator.createGraph(buffer, 4, 7);   // 21,845 nodes
-	    //H3GraphGenerator.createGraph(buffer, 4, 8);   // 87,381 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 5, 3);      // 156 nodes
-	    //H3GraphGenerator.createGraph(buffer, 5, 4);      // 781 nodes
-	    //H3GraphGenerator.createGraph(buffer, 5, 5);    // 3,906 nodes
-	    //H3GraphGenerator.createGraph(buffer, 5, 6);   // 19,531 nodes
-	    //H3GraphGenerator.createGraph(buffer, 5, 7);   // 97,655 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 6, 3);      // 259 nodes
-	    //H3GraphGenerator.createGraph(buffer, 6, 4);    // 1,555 nodes
-	    //H3GraphGenerator.createGraph(buffer, 6, 5);    // 9,331 nodes
-	    //H3GraphGenerator.createGraph(buffer, 6, 6);   // 55,986 nodes
-	    //H3GraphGenerator.createGraph(buffer, 6, 7);  // 335,923 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 7, 3);      // 400 nodes
-	    //H3GraphGenerator.createGraph(buffer, 7, 4);    // 2,801 nodes
-	    H3GraphGenerator.createGraph(buffer, 7, 5);   // 19,608 nodes
-	    //H3GraphGenerator.createGraph(buffer, 7, 6);  // 137,257 nodes
-	    //H3GraphGenerator.createGraph(buffer, 7, 7);  // 960,800 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 8, 3);      // 585 nodes
-	    //H3GraphGenerator.createGraph(buffer, 8, 4);    // 4,681 nodes
-	    //H3GraphGenerator.createGraph(buffer, 8, 5);   // 37,449 nodes
-	    //H3GraphGenerator.createGraph(buffer, 8, 6);  // 299,593 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 9, 3);      // 820 nodes
-	    //H3GraphGenerator.createGraph(buffer, 9, 4);    // 7,381 nodes
-	    //H3GraphGenerator.createGraph(buffer, 9, 5);   // 66,430 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 10, 2);     // 111 nodes
-	    //H3GraphGenerator.createGraph(buffer, 10, 3);   // 1,111 nodes
-	    //H3GraphGenerator.createGraph(buffer, 10, 4);  // 11,111 nodes
-	    //H3GraphGenerator.createGraph(buffer, 10, 5); // 111,111 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 17, 2);     // 307 nodes
-	    //H3GraphGenerator.createGraph(buffer, 17, 3);   // 5,220 nodes
-	    //H3GraphGenerator.createGraph(buffer, 17, 4);  // 88,741 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 34, 2);   // 1,191 nodes
-	    //H3GraphGenerator.createGraph(buffer, 34, 3);  // 40,495 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 56, 2);   // 3,193 nodes
-	    //H3GraphGenerator.createGraph(buffer, 56, 3); // 178,809 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 82, 2);   // 6,807 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 152, 2); // 23,257 nodes
-
-	    //H3GraphGenerator.createGraph(buffer, 297, 2); // 88,507 nodes
-
-	    graph = buffer.toGraph();
-	    //graph.checkTreeReachability();
-
-	    if (true)
-	    {
-		//int nodeColor = (0xff << 16) | (0xff << 8) | 0xff;
-		//int linkColor = (64 << 16) | (192 << 8) | 64;
-		int linkColor = (30 << 16) | (150 << 8) | 0;
-
-		int nodeColor = Color.yellow.getRGB();
-		//int linkColor = Color.green.getRGB();
-
-		graph.setNodeDefaultColor(nodeColor);
-		graph.setLinkDefaultColor(linkColor);
-	    }
-	    else if (false)
-	    {
-		int linkColor = (64 << 16) | (192 << 8) | 64;
-		graph.setLinkDefaultColor(linkColor);
-		colorLeafNodes(graph);
-	    }
-	    else
-	    {
-		graph.setNodeDefaultColor(Color.lightGray.getRGB());
-		colorRootSubtrees(graph);
-	    }
-	}
-
-	System.out.println("numNodes = " + graph.getNumNodes());
-	System.out.println("numTreeLinks = " + graph.getNumTreeLinks());
-	System.out.println("numNontreeLinks = " + graph.getNumNontreeLinks());
-
-	handler.setRootNode(graph.getRootNode());
-
-	//dumpOutdegreeHistogram(graph);
-        //System.exit(0);
+	//dumpOutdegreeHistogram(m_graph);
 
 	H3GraphLayout layout = new H3GraphLayout();
-	//layout.layoutRandom(graph);
-	layout.layoutHyperbolic(graph);
+	layout.layoutHyperbolic(m_graph);
 
 	System.out.println("Finished graph layout.");
 
-	H3ViewParameters parameters = new H3ViewParameters(canvas);
+	H3ViewParameters parameters = new H3ViewParameters(m_canvas);
 
 	H3ScreenCapturer capturer = null;
 	if (ENABLE_SCREEN_CAPTURE)
@@ -297,14 +202,13 @@ public class H3Main
 
 	CapturingManager manager = new NullCapturingManager();
 
-	H3RenderLoop loop = null;
 	if (ENABLE_ADAPTIVE_DRAWING)
 	{
-	    int queueSize = graph.getNumNodes() + graph.getTotalNumLinks();
+	    int queueSize = m_graph.getNumNodes() + m_graph.getTotalNumLinks();
 	    H3RenderQueue queue = new H3RenderQueue(queueSize);
 
 	    H3Transformer transformer =
-		new H3Transformer(graph, queue, PROCESS_NONTREE_LINKS);
+		new H3Transformer(m_graph, queue, PROCESS_NONTREE_LINKS);
 
 	    new Thread(transformer).start();
 
@@ -312,7 +216,7 @@ public class H3Main
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-	    H3PointRenderList list = new H3PointRenderList(graph, true,
+	    H3PointRenderList list = new H3PointRenderList(m_graph, true,
 				             /* nodes */   true, false,
 				        /* tree links */   true, false,
 				    /* non-tree links */  false, false);
@@ -335,23 +239,23 @@ public class H3Main
 
 	    if (true)
 	    {
-		renderer = new H3LineRenderer(graph, queue, list);
+		renderer = new H3LineRenderer(m_graph, queue, list);
 	    }
 	    else
 	    {
-		renderer = new H3CircleRenderer(graph, parameters,
+		renderer = new H3CircleRenderer(m_graph, parameters,
 						queue, list);
 	    }
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	    H3AdaptiveRenderLoop adaptive =
-		new H3AdaptiveRenderLoop(graph, canvas, parameters,
+		new H3AdaptiveRenderLoop(m_graph, m_canvas, parameters,
 					 transformer, queue,
 					 renderer, capturer);
 
 	    new Thread(adaptive).start();
-	    loop = adaptive;
+	    m_renderLoop = adaptive;
 
             final int DURATION = 50;
 	    adaptive.setMaxRotationDuration(DURATION);
@@ -367,224 +271,376 @@ public class H3Main
 	}
 	else
 	{
-	    graph.transformNodes(H3Transform.I4);
+	    m_graph.transformNodes(H3Transform.I4);
 
 	    H3NonadaptiveRenderLoop nonadaptive =
-		new H3NonadaptiveRenderLoop(graph, canvas, parameters,
+		new H3NonadaptiveRenderLoop(m_graph, m_canvas, parameters,
 					    capturer, PROCESS_NONTREE_LINKS);
 	    new Thread(nonadaptive).start();
-	    loop = nonadaptive;
+	    m_renderLoop = nonadaptive;
 
 	    if (ENABLE_SCREEN_CAPTURE)
 	    {
 		manager = new NonadaptiveCapturingManager(capturer,
-							   nonadaptive);
+							  nonadaptive);
 	    }
 
 	    System.out.println("Started H3NonadaptiveRenderLoop.");
 	}
 
-	handler.setRenderLoop(loop);
-	handler.setCapturingManager(manager);
+	int rootNode = m_graph.getRootNode();
+	m_eventHandler = new EventHandler
+	    (m_canvas, m_renderLoop, manager, rootNode);
 
-	System.out.println("Finished initialization in Main.");
-
-	frame.show();
+	System.out.println("Rendering started.");
     }
 
-    /////////////////////////////////////////////////////////////////////
-    // PRIVATE METHODS
-    /////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
 
-    private static void dumpOutdegreeHistogram(H3Graph graph)
+    private void stopRendering()
     {
-	int[] histogram = computeOutdegreeHistogram(graph);
-	
-	for (int i = 0; i < histogram.length; i++)
+	m_renderLoop.shutdown();
+	m_renderLoop = null;
+
+	m_eventHandler.dispose();
+	m_eventHandler = null;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private Graph loadGraph(File file, Reader reader)
+    {
+	Graph retval = null;
+
+	if (DEBUG_PRINT_LOAD_MEMORY) { m_memoryUsage.startGathering(); }
+
+	long startTime = 0;
+	if (DEBUG_PRINT_LOAD_TIME)
 	{
-	    if (histogram[i] != 0)
-	    {
-		System.out.println(i + " " + histogram[i]);
-	    }
+	    startTime = System.currentTimeMillis();
+	    System.out.println("load.begin[" + startTime +"]");
 	}
-    }
 
-    private static int[] computeOutdegreeHistogram(H3Graph graph)
-    {
-	int maxOutdegree = computeMaxOutdegree(graph, graph.getRootNode());
-	int[] retval = new int[maxOutdegree + 1];
+	try
+	{
+	    GraphBuilder builder = GraphFactory.makeImmutableGraph();
 
-	computeOutdegree(graph, retval, graph.getRootNode());
+	    GraphFileLexer lexer = new GraphFileLexer(reader);
+	    GraphFileParser parser = new GraphFileParser(lexer);
+	    parser.file(builder);
+
+	    retval = builder.endConstruction();
+
+	    if (DEBUG_PRINT_LOAD_MEMORY)
+	    { m_memoryUsage.gatherAfterBufferLoaded(); }
+	}
+	catch (antlr.ANTLRException e)
+	{
+	    String msg = "Error parsing file `" + file.getPath() + "': "
+		+ e.getMessage();
+	    JOptionPane dialog = new JOptionPane();
+	    dialog.showMessageDialog(null, msg, "Open Failed",
+				     JOptionPane.ERROR_MESSAGE);
+	}
+
+	if (DEBUG_PRINT_LOAD_TIME)
+	{
+	    long stopTime = System.currentTimeMillis();
+	    long duration = stopTime - startTime;
+	    System.out.println("load.end[" + stopTime + "]");
+	    System.out.println("load.time[" + duration + "]");
+	}
+
 	return retval;
     }
 
-    private static int computeMaxOutdegree(H3Graph graph, int node)
+    ///////////////////////////////////////////////////////////////////////
+
+    private File askUserForFile()
     {
-	int childIndex = graph.getNodeChildIndex(node);
-	int nontreeIndex = graph.getNodeNontreeIndex(node);
-	int endIndex = graph.getNodeLinksEndIndex(node);
-
-	int retval = endIndex - childIndex;
-
-	for (int i = childIndex; i < nontreeIndex; i++)
+	File retval = null;
+	int result = m_fileChooser.showOpenDialog(m_frame);
+	if (result == JFileChooser.APPROVE_OPTION)
 	{
-	    int child = graph.getLinkDestination(i);
-	    retval = Math.max(retval, computeMaxOutdegree(graph, child));
+	    retval = m_fileChooser.getSelectedFile();
+	    if (!retval.isFile())
+	    {
+		if (retval.exists())
+		{
+		    String msg =  "Path is not that of an ordinary file: "
+			+ retval.getPath();
+		    JOptionPane dialog = new JOptionPane();
+		    dialog.showMessageDialog(null, msg, "Invalid Path",
+					     JOptionPane.ERROR_MESSAGE);
+		}
+		else
+		{
+		    String msg =  "File not found: " + retval.getPath();
+		    JOptionPane dialog = new JOptionPane();
+		    dialog.showMessageDialog(null, msg, "File Not Found",
+					     JOptionPane.ERROR_MESSAGE);
+		}
+	    }
 	}
-
 	return retval;
     }
 
-    private static void computeOutdegree(H3Graph graph, int[] histogram,
-					 int node)
+    ///////////////////////////////////////////////////////////////////////
+
+    private void initializeCanvas3D()
     {
-	int childIndex = graph.getNodeChildIndex(node);
-	int nontreeIndex = graph.getNodeNontreeIndex(node);
-	int endIndex = graph.getNodeLinksEndIndex(node);
+	GraphicsConfiguration config =
+	    SimpleUniverse.getPreferredConfiguration();
 
-	int outdegree = endIndex - childIndex;
-	++histogram[outdegree];
+	m_canvas = new H3Canvas3D(config);
+	m_canvas.stopRenderer();
 
-	for (int i = childIndex; i < nontreeIndex; i++)
-	{
-	    int child = graph.getLinkDestination(i);
-	    computeOutdegree(graph, histogram, child);
-	}
+	SimpleUniverse univ = new SimpleUniverse(m_canvas);
+	univ.getViewingPlatform().setNominalViewingTransform();
     }
 
-    /////////////////////////////////////////////////////////////////////
-    // PRIVATE METHODS
-    /////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
 
-    private static void colorLeafNodes(H3Graph graph)
+    private JMenuBar createInitialMenuBar()
     {
-	colorLeafNodesAux(graph, graph.getRootNode());
+	// Cause menus to be rendered as heavyweight objects.
+	JPopupMenu.setDefaultLightWeightPopupEnabled(false);
+
+	// Create "File" menu. --------------------------------------------
+
+	JMenuItem openMenuItem = new JMenuItem("Open");
+	openMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleOpenFileRequest();
+		}
+	    });
+
+	m_saveWithLayoutMenuItem = new JMenuItem("Save With Layout");
+	m_saveWithLayoutMenuItem.setEnabled(false);
+
+	m_saveWithLayoutAsMenuItem = new JMenuItem("Save With Layout As");
+	m_saveWithLayoutAsMenuItem.setEnabled(false);
+
+	m_closeMenuItem = new JMenuItem("Close");
+	m_closeMenuItem.setEnabled(false);
+	m_closeMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_closeMenuItem.setEnabled(false);
+		    handleCloseFileRequest();
+		}
+	    });
+
+	JMenuItem preferencesMenuItem = new JMenuItem("Preferences");
+	preferencesMenuItem.setEnabled(false);
+
+	JMenuItem exitMenuItem = new JMenuItem("Exit");
+	exitMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    System.exit(0);
+		}
+	    });
+
+	m_fileMenu = new JMenu("File");
+	m_fileMenu.add(openMenuItem);
+	m_fileMenu.add(m_saveWithLayoutMenuItem);
+	m_fileMenu.add(m_saveWithLayoutAsMenuItem);
+	m_fileMenu.add(m_closeMenuItem);
+	m_fileMenu.addSeparator();
+	m_fileMenu.add(preferencesMenuItem);
+	m_fileMenu.addSeparator();
+	m_fileMenu.add(exitMenuItem);
+
+	// Create "Spanning Tree" menu. ------------------------------------
+
+	m_spanningTreeMenu = new JMenu("Spanning Tree");
+
+	// Create "Color Scheme" menu. -------------------------------------
+
+	m_colorSchemeMenu = new JMenu("Color Scheme");
+
+	// Create "Color Scheme" menu. -------------------------------------
+
+	m_nodeLabelMenu = new JMenu("Node Label");
+
+	// Create menu bar. ------------------------------------------------
+
+	JMenuBar retval = new JMenuBar();
+	retval.add(m_fileMenu);
+	retval.add(m_spanningTreeMenu);
+	retval.add(m_colorSchemeMenu);
+	retval.add(m_nodeLabelMenu);
+	return retval;
     }
 
-    private static void colorLeafNodesAux(H3Graph graph, int parent)
-    {
-	int childIndex = graph.getNodeChildIndex(parent);
-	int nontreeIndex = graph.getNodeNontreeIndex(parent);
+    ///////////////////////////////////////////////////////////////////////
+    // PRIVATE FIELDS
+    ///////////////////////////////////////////////////////////////////////
 
-	if (childIndex < nontreeIndex)
-	{
-	    graph.setNodeColor(parent, Color.darkGray.getRGB());
-	    for (int i = childIndex; i < nontreeIndex; i++)
-	    {
-		int child = graph.getLinkDestination(i);
-		colorLeafNodesAux(graph, child);
-	    }
-	}
-	else
-	{
-	    graph.setNodeColor(parent, Color.pink.getRGB());
-	}
-    }
+    private static final boolean DEBUG_PRINT_LOAD_TIME = true;
+    private static final boolean DEBUG_PRINT_LOAD_MEMORY = true;
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    private static final int DEFAULT_FRAME_WIDTH = 900;
+    private static final int DEFAULT_FRAME_HEIGHT = 1000;
 
-    private static void colorRootSubtrees(H3Graph graph)
-    {
-	int colors[] = {
-	    Color.blue.getRGB(), Color.green.getRGB(),
-	    Color.magenta.getRGB(), Color.orange.getRGB(),
-	    Color.pink.getRGB(), Color.red.getRGB(),
-	    Color.yellow.getRGB()
-	};
+    private static final String WALRUS_TITLE = "Walrus";
+    private static final String SPLASH_ICON_PATH = "walrus-splash.jpg";
+    private static final String MSG_NO_GRAPH_LOADED = "No graph loaded.";
+    private static final String MSG_GRAPH_LOADED = "Graph loaded.";
+    private static final String MSG_LOADING_GRAPH = "Loading graph...";
 
-	int rootNode = graph.getRootNode();
-	int childIndex = graph.getNodeChildIndex(rootNode);
-	int nontreeIndex = graph.getNodeNontreeIndex(rootNode);
+    ///////////////////////////////////////////////////////////////////////
 
-	for (int i = childIndex; i < nontreeIndex; i++)
-	{
-	    int child = graph.getLinkDestination(i);
+    private File m_file;  // Will be non-null when a graph is open.
+    private Graph m_backingGraph;  // Will be non-null when a graph is open.
+    private H3Graph m_graph;  // Will be non-null when a graph is open.
+    private H3Canvas3D m_canvas;
+    private H3RenderLoop m_renderLoop;
+    private EventHandler m_eventHandler;
+    private MemoryUsage m_memoryUsage = new MemoryUsage();
 
-	    int color = colors[i % colors.length]; 
-	    graph.setLinkColor(i, color);
-	    graph.setNodeColor(child, color);
+    private JFrame m_frame;
+    private JTextField m_statusBar;
+    private JLabel m_splashLabel;
+    private JFileChooser m_fileChooser = new JFileChooser();
 
-	    colorRootSubtreesAux(graph, child, color);
-	}
-    }
+    private JMenu m_fileMenu;
+    private JMenuItem m_saveWithLayoutMenuItem;
+    private JMenuItem m_saveWithLayoutAsMenuItem;
+    private JMenuItem m_closeMenuItem;
+    private JMenu m_spanningTreeMenu;
+    private JMenu m_colorSchemeMenu;
+    private JMenu m_nodeLabelMenu;
 
-    private static void colorRootSubtreesAux(H3Graph graph, int parent,
-					     int color)
-    {
-	int childIndex = graph.getNodeChildIndex(parent);
-	int nontreeIndex = graph.getNodeNontreeIndex(parent);
-
-	for (int i = childIndex; i < nontreeIndex; i++)
-	{
-	    int child = graph.getLinkDestination(i);
-
-	    graph.setLinkColor(i, color);
-	    graph.setNodeColor(child, color);
-
-	    colorRootSubtreesAux(graph, child, color);
-	}
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    private static void colorNontreeLinks(H3Graph graph, int color)
-    {
-	colorNontreeLinksAux(graph, graph.getRootNode(), color);
-    }
-
-    private static void colorNontreeLinksAux(H3Graph graph, int parent,
-					     int color)
-    {
-	int childIndex = graph.getNodeChildIndex(parent);
-	int nontreeIndex = graph.getNodeNontreeIndex(parent);
-	int linksEndIndex = graph.getNodeLinksEndIndex(parent);
-
-	for (int i = childIndex; i < nontreeIndex; i++)
-	{
-	    int child = graph.getLinkDestination(i);
-	    colorNontreeLinksAux(graph, child, color);
-	}
-
-	for (int i = nontreeIndex; i < linksEndIndex; i++)
-	{
-	    graph.setLinkColor(i, color);
-	}
-    }
-
-    /////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
-    /////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
 
-    private static class EventHandler extends H3MouseInputAdapter
+    private static class MemoryUsage
     {
-	public void setRootNode(int rootNode)
+	public MemoryUsage()
 	{
+	}
+
+	public void startGathering()
+	{
+	    System.gc();
+	    m_baseTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_baseFreeMemory = Runtime.getRuntime().freeMemory();
+
+	    m_bufferTotalMemory = 0;
+	    m_bufferFreeMemory = 0;
+	    m_peakTotalMemory = 0;
+	    m_peakFreeMemory = 0;
+	    m_finalTotalMemory = 0;
+	    m_finalFreeMemory = 0;
+	}
+
+	public void gatherAfterBufferLoaded()
+	{
+	    System.gc();
+	    m_bufferTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_bufferFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
+	public void gatherAtPeak()
+	{
+	    System.gc();
+	    m_peakTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_peakFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
+	public void gatherAtFinal()
+	{
+	    System.gc();
+	    m_finalTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_finalFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
+	public void printUsage()
+	{
+	    long baseUsed = m_baseTotalMemory - m_baseFreeMemory;
+	    long bufferUsed = m_bufferTotalMemory - m_bufferFreeMemory;
+	    long peakUsed = m_peakTotalMemory - m_peakFreeMemory;
+	    long finalUsed = m_finalTotalMemory - m_finalFreeMemory;
+
+	    System.out.println("===========================================");
+	    System.out.println("baseTotalMemory = " + M(m_baseTotalMemory));
+	    System.out.println("baseFreeMemory = " + M(m_baseFreeMemory));
+	    System.out.println("baseUsed = " + M(baseUsed));
+	    System.out.println("bufferTotalMemory = " +M(m_bufferTotalMemory));
+	    System.out.println("bufferFreeMemory = " + M(m_bufferFreeMemory));
+	    System.out.println("bufferUsed = " + M(bufferUsed));
+	    System.out.println("peakTotalMemory = " + M(m_peakTotalMemory));
+	    System.out.println("peakFreeMemory = " + M(m_peakFreeMemory));
+	    System.out.println("peakUsed = " + M(peakUsed));
+	    System.out.println("finalTotalMemory = " + M(m_finalTotalMemory));
+	    System.out.println("finalFreeMemory = " + M(m_finalFreeMemory));
+	    System.out.println("finalUsed = " + M(finalUsed));
+	    System.out.println();
+	    System.out.println("bufferUsed - baseUsed = "
+			       + M(bufferUsed - baseUsed));
+	    System.out.println("peakUsed - baseUsed = "
+			       + M(peakUsed - baseUsed));
+	    System.out.println("peakUsed - bufferUsed = "
+			       + M(peakUsed - bufferUsed));
+	    System.out.println("finalUsed - baseUsed = "
+			       + M(finalUsed - baseUsed));
+	    System.out.println("finalUsed - peakUsed = "
+			       + M(finalUsed - peakUsed));
+	    System.out.println("===========================================");
+	}
+
+	private String M(long n)
+	{
+	    long x = n / 100000;
+	    long mega = x / 10;
+	    long kilo = Math.abs(x % 10);
+	    return "" + n + " (" + mega + "." + kilo + "e6)";
+	}
+
+	// At start.
+	private long m_baseTotalMemory;
+	private long m_baseFreeMemory;
+
+	// After loading into graph buffer.
+	private long m_bufferTotalMemory;
+	private long m_bufferFreeMemory;
+
+	// After populating graph, but before freeing the graph buffer.
+	private long m_peakTotalMemory;  
+	private long m_peakFreeMemory;
+
+	// After freeing graph buffer, and leaving only graph.
+	private long m_finalTotalMemory;
+	private long m_finalFreeMemory;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class EventHandler
+	extends H3MouseInputAdapter
+    {
+	public EventHandler(H3Canvas3D canvas, H3RenderLoop renderLoop,
+			    CapturingManager manager, int rootNode)
+	{
+	    m_canvas = canvas;
+	    m_canvas.addMouseListener(this);
+	    m_canvas.addMouseMotionListener(this);
+	    m_canvas.addPaintObserver(m_paintObserver);
+
+	    m_renderLoop = new H3CapturingRenderLoop(renderLoop);
+	    m_capturingManager = manager;
 	    m_rootNode = m_currentNode = m_previousNode = rootNode;
 	}
 
-	public void setRenderLoop(H3RenderLoop renderLoop)
+	public void dispose()
 	{
-	    m_renderLoop = new H3CapturingRenderLoop(renderLoop);
-	}
-
-	public void setCapturingManager(CapturingManager manager)
-	{
-	    m_capturingManager = manager;
-	}
-
-	public void setCanvas(H3Canvas3D canvas)
-	{
-	    m_canvas = canvas;
-
-	    m_canvas.addPaintObserver(new Observer() {
-		public void update(Observable o, Object arg)
-		    {
-			if (!m_isRotating)
-			{
-			    m_renderLoop.refreshDisplay();
-			}
-		    }
-	    });
+	    m_canvas.removeMouseListener(this);
+	    m_canvas.removeMouseMotionListener(this);
+	    m_canvas.removePaintObserver(m_paintObserver);
 	}
 
 	public void mousePressed(MouseEvent e)
@@ -827,18 +883,18 @@ public class H3Main
 
 	private static final int MOUSE_SENSITIVITY = 2;
 
-	private CapturingManager m_capturingManager;
-	private H3CapturingRenderLoop m_renderLoop;
 	private H3Canvas3D m_canvas;
+	private H3CapturingRenderLoop m_renderLoop;
+	private CapturingManager m_capturingManager;
+
+	private int m_rootNode;
+	private int m_currentNode;
+	private int m_previousNode;
 
 	private Point2d m_center = new Point2d();
 
 	private int m_lastX = 0;
 	private int m_lastY = 0;
-
-	private int m_rootNode;
-	private int m_currentNode;
-	private int m_previousNode;
 
 	private boolean m_isRotating = false;
 	private boolean m_isCapturing = false;
@@ -857,6 +913,20 @@ public class H3Main
 
 	private H3WobblingRotationRequest m_wobblingRequest
 	    = new H3WobblingRotationRequest();
+
+	private PaintObserver m_paintObserver = new PaintObserver();
+
+	private class PaintObserver
+	    implements Observer
+	{
+	    public void update(Observable o, Object arg)
+	    {
+		if (!m_isRotating)
+		{
+		    m_renderLoop.refreshDisplay();
+		}
+	    }
+	}
     }
 
     private interface CapturingManager
