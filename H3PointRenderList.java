@@ -71,8 +71,10 @@ public class H3PointRenderList
 	INCLUDE_NODE_COLOR = includeNodeColor;
 	INCLUDE_TREE_LINKS = includeTreeLinks;
 	INCLUDE_TREE_LINK_COLOR = includeTreeLinkColor;
-	INCLUDE_NONTREE_LINKS = includeNontreeLinks;
-	INCLUDE_NONTREE_LINK_COLOR = includeNontreeLinkColor;
+	INCLUDE_NONTREE_LINKS =
+	    includeNontreeLinks && graph.getNumNontreeLinks() > 0;
+	INCLUDE_NONTREE_LINK_COLOR =
+	    includeNontreeLinks && includeNontreeLinkColor;
 
 	// Node data. - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -127,7 +129,7 @@ public class H3PointRenderList
 	if (INCLUDE_TREE_LINKS)
 	{
 	    int lineFormat = LineArray.COORDINATES | LineArray.BY_REFERENCE;
-	    if (INCLUDE_NODE_COLOR)
+	    if (INCLUDE_TREE_LINK_COLOR)
 	    {
 		lineFormat |= LineArray.COLOR_3;
 	    }
@@ -138,7 +140,7 @@ public class H3PointRenderList
 	    m_treeLinks.setCoordRefDouble(m_treeLinkCoordinates);
 	    m_treeLinks.setValidVertexCount(0);
 
-	    if (INCLUDE_NODE_COLOR)
+	    if (INCLUDE_TREE_LINK_COLOR)
 	    {
 		m_treeLinkColors = new byte[numLinks * 3 * 2];
 		m_treeLinks.setColorRefByte(m_treeLinkColors);
@@ -148,7 +150,7 @@ public class H3PointRenderList
 	if (INCLUDE_NONTREE_LINKS)
 	{
 	    int lineFormat = LineArray.COORDINATES | LineArray.BY_REFERENCE;
-	    if (INCLUDE_NODE_COLOR)
+	    if (INCLUDE_NONTREE_LINK_COLOR)
 	    {
 		lineFormat |= LineArray.COLOR_3;
 	    }
@@ -159,7 +161,7 @@ public class H3PointRenderList
 	    m_nontreeLinks.setCoordRefDouble(m_nontreeLinkCoordinates);
 	    m_nontreeLinks.setValidVertexCount(0);
 
-	    if (INCLUDE_NODE_COLOR)
+	    if (INCLUDE_NONTREE_LINK_COLOR)
 	    {
 		m_nontreeLinkColors = new byte[numLinks * 3 * 2];
 		m_nontreeLinks.setColorRefByte(m_nontreeLinkColors);
