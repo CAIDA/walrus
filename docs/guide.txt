@@ -1,0 +1,237 @@
+===========================================================================
+USAGE
+===========================================================================
+
+Walrus is used in the following basic pattern: 1) load a graph, 2) adjust
+colors and other configuration items, and 3) start the rendering.  Step 3
+may be slightly unintuitive, but it fits the general design of Walrus.  In
+Walrus, configuration changes do not take effect until the rendering is
+explicitly started or "updated" by the user.  The alternative design of
+immediately updating the rendering upon each configuration change is
+impracticable since some changes have dramatic and expensive effects on the
+rendering.
+
+
+===========================================================================
+MENUS
+===========================================================================
+
+File
+   Open
+      --- Loads a graph for viewing.  This unloads the previously opened graph.
+   Save With Layout
+   Save With Layout As
+   Close
+      --- Unloads a graph from memory, and resets menus.
+   Preferences
+   Exit
+      --- Quits program.
+
+Rendering
+   Start
+      --- Starts rendering based on current configuration.
+   Stop
+      --- Stops rendering.
+   Update
+      --- Updates rendering to current configuration.  You must select
+          this menu item to make configuration changes (such as changing
+          the color of nodes) take effect.
+   Refresh Display
+      --- Clears and redraws the display.  This is most useful when
+          Automatic Refresh (see below) is turned off.
+
+   Adaptive Rendering
+      --- Selects whether the adaptive rendering algorithm is used.
+          The adaptive rendering algorithm tries to maintain a given
+          framerate (currently hardcoded in the source) by rendering
+          only as much as it can within each time slot.  This trades
+          display completeness for interaction speed.
+   Multiple Node Sizes
+      --- Selects whether nodes are drawn at three different sizes based
+          on their distance from the center.  Enabling this reduces the
+          size of the nodes near the periphery, where they are most likely
+          to cause occlusion, and increases the size of the nodes near
+          the center, the position of greatest interest in many cases.
+          This also mirrors the distortions inherent in hyperbolic space,
+          in which the apparent size decreases along the radial direction
+          from the center.
+   Depth Cueing
+      --- Selects whether depth cueing (the progressive darkening of the
+          display away from the viewer) is enabled.  Depth cueing helps
+          the user to disambiguate the near from the far.
+   Coordinate Axes
+      --- Selects whether the coordinate axes and labels, and spherical
+          outline, are drawn.  These provide a valuable cue to the orientation
+          and movement of the display.
+   Screen Capture Support
+      --- Selects whether the playback of recorded movements is written out
+          to JPEG files.  The files with names of the form 'h3-cap#####.jpg'
+          are saved in the directory from which Walrus was launched.  This
+          is only meant to be a quick-and-dirty way of creating animations.
+          See below for information about recording movements.
+   Automatic Refresh
+      --- Selects whether the display is redrawn whenever Walrus receives a
+          refresh event from Java3D/AWT.  There appears to be a bug in
+          Java3D/AWT that causes an excessive number of refresh events,
+          especially when the user interacts with the menus.  With this
+          option enabled, these refresh events can cause the display to
+          flicker annoyingly.  By disabling this option and by manually
+          refreshing when needed (see 'Refresh Display' above), you can
+          reduce these distracting flickers.
+Spanning Tree
+      --- Presents a list of spanning trees found in the loaded graph.
+          Walrus uses the selected spanning tree to calculate the layout
+          of the entire graph.
+   ...
+
+Color Scheme
+   Predefined
+      --- Sets up a predefined color scheme.
+       Yellow-Green
+       ...
+       Violet-Gold/Transparent
+
+   Node Color
+      --- Sets the coloring of nodes.
+       Invisible
+           --- Causes nodes not to be rendered.
+       Transparent
+           --- Sets nodes to a transparent version of the previously
+               selected color.  (This is the currently implemented behavior
+               but not the intended behavior, and thus will change in the
+               future.)
+       Yellow
+           --- Sets nodes to a predefined color.
+       ...
+       Red
+
+       RGB
+           --- Sets nodes to a color defined by an RGB value stored in an
+               attribute.  Each node is colored by its RGB value of an
+               attribute selected in the 'Color Attribute' menu (see next).
+       Color Attribute
+           --- Presents a list of attributes that may contain color values
+               in the loaded graph.  Any attributes of type int, float3, or
+               double3 are included, although it is up to the user to judge
+               whether any given attribute really contains color information.
+               Int values should have 8-bit color components arranged in the
+               lower three bytes in the order red, green, and blue, with
+               blue in the lowest byte.  Float3 and double3 values should
+               have color components in the order red, green, and blue,
+               with each component in the range [0.0, 1.0].
+
+               You must select the 'RGB' menu item to enable this menu.
+            ...
+       Selection Attribute
+             --- Does nothing currently.  This is intended to be a way of
+                 restricting the coloring to a set of nodes that have a
+                 true value for a selected boolean attribute.  All other
+                 nodes would be assigned the default color.
+            ...
+
+   Tree Link Color
+      --- Sets the coloring of links in the current spanning tree.
+       ...
+   Nontree Link Color
+      --- Sets the coloring of links not in the current spanning tree.
+       ...
+
+Node Label
+      --- Presents a list of attributes found in the loaded graph.
+          The set of attributes selected in this menu determines which
+          attribute values are shown in the status bar when the user
+          highlights a node with the middle mouse button (see the table
+          of mouse controls below).
+   ...
+
+===========================================================================
+MOUSE CONTROLS
+===========================================================================
+
+Summary of Mouse Controls:
+
+  modifier  button  meaning
+  --------  ------  ------------------------------------------------------
+              L     drag to rotate display about the origin
+              M     click or drag to examine attribute values and to
+                       get visual feedback on picking
+              R     click on a node to bring it to the origin
+    
+   shift      L     drag to continuously rotate the display
+                      (only the initial drag amount and direction matters)
+  control     L     drag to wobble the display
+                      (only the initial drag matters)
+
+   shift      M     click to bring back previous node at origin
+  control     M     click to bring root node to origin
+
+   shift      R     click to begin recording movements for playback
+   shift      R     click to stop recording and replay movements
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Detailed Description:
+
+L:
+    Drag the mouse anywhere on the display to rotate the display about
+    the origin in the direction of the drag.  Only the relative motion
+    of the drag matters.  The interaction model is that of the world in
+    your hands (or the sphere in your hands), which you can turn about
+    while remaining stationary yourself.
+
+    It is normal for parts of the graph to disappear during rotations.
+    Walrus uses an adaptive rendering algorithm that tries to maintain
+    a given framerate (currently hard coded in the source) by rendering
+    only as much as it can within each time slot.  This trades display
+    completeness for interaction speed.
+
+M:
+    Click on a node, or drag over nodes, to examine attribute values and
+    to get visual feedback on the picking algorithm.  To provide feedback
+    on picking, Walrus displays grey cross hairs at the location of a
+    mouse click and highlights the picked node, if any, with a red box.
+    The picking algorithm chooses the node closest to the eye, along the
+    line of sight, that lies within the circle enclosing the cross hairs.
+    This can sometimes lead to behavior that seems unintuitive.  This also
+    has the slight drawback of making it difficult to pick the more distant
+    of two nearby nodes.  Drag the display with the left mouse button to
+    clear the display of cross hairs and other artifacts.
+
+    If any attributes are selected in the 'Node Label' menu, Walrus also
+    displays the attribute values of the currently picked node in the
+    status bar at the bottom of the display.
+
+R:
+    Click on a node to bring it to the center of the display.  The entire
+    graph shifts in an animated sequence.
+
+    It is normal for parts of the graph to disappear during this operation,
+    owing to the adaptive rendering algorithm (see the comments for 'L').
+
+shift L: 
+    Hold down the shift key and briefly drag with the left mouse button
+    to continuously rotate the display.  The location of the drag doesn't
+    matter, and the rotation starts when the drag ends.  The display will
+    continously rotate in the direction of the drag and at a velocity
+    roughly proportional to the drag velocity.  Click anywhere with the
+    left mouse button to stop the rotation.
+
+control L:
+    Hold down the control key and briefly drag with the left mouse button
+    to continuously wobble the display.  The location and direction of the
+    drag don't matter, and the display will wobble after you end the drag
+    and release the control key.  Click anywhere with the left mouse button
+    to stop the wobbling.
+
+    A wobbling display exploits our remarkable ability to deduce the
+    three-dimensional shape of objects in motion.
+
+shift M:
+    Click anywhere to bring back the node previously at the center of the
+    display.  You can bounce back and forth between the current node and
+    the previous node by clicking 'shift M' multiple times.
+
+control M:
+    Click anywhere to bring the root of the current spanning tree to the
+    center of the display.  This is a good way to start over if you ever
+    get lost.
+
