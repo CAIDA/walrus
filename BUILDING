@@ -1,6 +1,37 @@
-                         Walrus 0.6.2 Source Code
-                               Feb 20, 2003
+=============================================================================
+BUILDING WALRUS
+=============================================================================
 
+
+REQUIREMENTS
+
+At a minimum, you'll need Java3D v1.2.1 (or later), JDK1.3.0 (or later),
+and GNU Make.
+
+  Java3D:  http://java.sun.com/products/java-media/3D/index.html
+  JDK:     http://java.sun.com/j2se/
+
+* Mac users:
+
+    You'll need at least a 2-button mouse (3 buttons are preferred).
+    Download Java3D from
+
+    http://www.apple.com/downloads/macosx/apple/java3dandjavaadvancedimagingupdate.html
+
+* Windows users:
+
+    Be sure to use the OpenGL version of Java3D and not the DirectX version,
+    which has problems.
+
+* Linux users:
+
+    We, as well as others, have had problems running Java3D on an NVIDIA card.
+    Using JDK 1.4 and Java3D 1.3.1beta seems to help, but you may still
+    experience instability.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+COMPILING
 
 Walrus classes are declared in the top-level anonymous package, so you
 can unpack the source distribution anywhere.
@@ -11,41 +42,54 @@ Walrus source files.  For example, if the Walrus source distribution
 has been unpacked into the directory /home/me, then the items to add
 to your CLASSPATH are
 
-   /home/me/walrus-0.6.2-src/libsea.jar
-   /home/me/walrus-0.6.2-src/antlrall-mod.jar
-   /home/me/walrus-0.6.2-src/mp.jar
+   /home/me/walrus-0.6.3-src/libsea.jar
+   /home/me/walrus-0.6.3-src/antlrall-mod.jar
+   /home/me/walrus-0.6.3-src/mp.jar
    .    [a period, representing the 'current directory']
 
 Under UNIX, you would do something like the following (the exact
 syntax is dependent on your shell):
 
-  CLASSPATH=$CLASSPATH:/home/me/walrus-0.6.2-src/libsea.jar:/home/me/walrus-0.6.2-src/antlrall-mod.jar:/home/me/walrus-0.6.2-src/mp.jar:.
+  CLASSPATH=$CLASSPATH:/home/me/walrus-0.6.3-src/libsea.jar:/home/me/walrus-0.6.3-src/antlrall-mod.jar:/home/me/walrus-0.6.3-src/mp.jar:.
   export CLASSPATH
 
 The '.' at the end of the above CLASSPATH ensures that Java can find
 the Walrus source/class files.
 
-Besides the above changes to CLASSPATH, you may need to modify the
-symbol JAVA_INSTALL in the makefile (walrus-0.6.2-src/Walrus/Makefile).
+Now, update the configuration options in Makefile.nodep, if necessary,
+and execute
 
-You'll need JDK1.3.0 (or later), GNU Make, and the IBM Jikes compiler.
-Jikes is used to automatically generate dependency files (*.u files)
-for Make.  You can get Jikes from
+   $ make -f Makefile.nodep
 
-  http://oss.software.ibm.com/developerworks/opensource/jikes/
+The above procedure will compile all the Walrus classes, and Walrus will be
+ready for use.
 
-You do not need to install Jikes if you simply want to build Walrus from
-the source, since the source distribution contains a copy of the dependency
-files that can be used so long as no source file is modified.
+When actually doing development work, it's more convenient and less
+error-prone to have makefile dependencies automatically generated for you.
+This mechanism is implemented in 'Makefile' using the IBM Jikes compiler
+(however, the actual compilation of source files to bytecode is done with
+your platform's Java compiler rather than with Jikes, although nothing
+prevents you from using Jikes for both tasks).
 
-When everything is set, you can simply do 'make' in the 'Walrus' directory
-to build Walrus.
+You can download Jikes from
 
- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   http://jikes.sourceforge.net/
 
-See classdiagram.jpg for the relationships between key classes in the
+You do not need to install Jikes if you simply want to build Walrus
+from the source, since the source distribution contains a copy of the
+dependency files (*.u) that can be used so long as no source file is
+ever modified.
+
+After installing Jikes, update the configuration options in Makefile,
+if necessary, and build Walrus with 
+
+   $ make
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+DOCUMENTATION
+
+See docs/classdiagram.jpg for the relationships between key classes in the
 implementation.
-
- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 For runninng Walrus, see README.
