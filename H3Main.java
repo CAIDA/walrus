@@ -101,8 +101,15 @@ public class H3Main
 	m_frame.setSize(DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT);
 	m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-	ImageIcon splashIcon = new ImageIcon(SPLASH_ICON_PATH);
-	m_splashLabel = new JLabel(splashIcon);
+        java.net.URL url = H3Main.class.getResource(SPLASH_ICON_PATH);
+	if (url != null)
+	{
+	    m_splashLabel = new JLabel(new ImageIcon(url));
+	}
+	else
+	{
+	    m_splashLabel = new JLabel(SPLASH_HTML_LABEL, JLabel.CENTER);
+	}
 	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 
 	m_statusBar = new JTextField();
@@ -1389,6 +1396,7 @@ public class H3Main
     private static final String MSG_NO_GRAPH_LOADED = "No graph loaded.";
     private static final String MSG_GRAPH_LOADED = "Graph loaded.";
     private static final String MSG_LOADING_GRAPH = "Loading graph...";
+    private static final String SPLASH_HTML_LABEL = "<html><table border=0><tr><td align=center><b><i><font color=#CAFF70 size=+4>Walrus 0.1 -- Graph Visualization</font></i></b></td></tr><tr><td align=center><font color=#1E9619 size=+2>Copyright 2001 CAIDA/UCSD</font></td></tr></table></html>";
 
     ///////////////////////////////////////////////////////////////////////
 
