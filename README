@@ -2,9 +2,9 @@
 
                    The Walrus Graph Visualization Tool
 
-                              version 0.6.2
+                              version 0.6.3
 
-                               Feb 20, 2003
+                               Mar 28, 2005
 
                       (c) 2000,2001,2002 CAIDA/UCSD
 
@@ -50,6 +50,10 @@ region, the user can examine every part of the graph in detail.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 CHANGES
+
+Since 0.6.2, released Feb 20, 2003:
+
+  * No changes to any functionality; just a licensing change to the GPL.
 
 Since 0.6.1, released Nov 4, 2002:
 
@@ -193,24 +197,24 @@ QUICK START
 
 You can give Walrus a quick try by doing the following:
 
-1. Extract 'walrus-0.6.2.tar.gz' or 'walrus-0.6.2.zip' anywhere you wish.
-   This will create a subdirectory named 'walrus-0.6.2' containing several
+1. Extract 'walrus-0.6.3.tar.gz' or 'walrus-0.6.3.zip' anywhere you wish.
+   This will create a subdirectory named 'walrus-0.6.3' containing several
    JAR files, among other things.
 
     For UNIX users...
 
-      The file walrus-0.6.2.tar.gz was packaged with the standard TAR utility
+      The file walrus-0.6.3.tar.gz was packaged with the standard TAR utility
       and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
       it with the following command:
 
-          gzip -cd walrus-0.6.2.tar.gz | tar xvf -
+          gzip -cd walrus-0.6.3.tar.gz | tar xvf -
 
     For Windows users...
 
-      The file walrus-0.6.2.zip was packaged in the common ZIP format.  You
+      The file walrus-0.6.3.zip was packaged in the common ZIP format.  You
       can unpack it using a program like WinZip (http://www.winzip.com/).
 
-1. From the 'walrus-0.6.2' subdirectory, enter the following at a shell
+1. From the 'walrus-0.6.3' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
@@ -312,7 +316,7 @@ The directory 'samples' contains the following sample graphs.
 
      A graph file generated from the UNIX directory tree containing the
      Walrus source files.  This was generated using the perl scripts
-     included in 'walrus-0.6.2/docs/dirgraph'.
+     included in 'walrus-0.6.3/docs/dirgraph'.
 
      Many of the values shown in a directory listing are included in this
      graph file as attributes.  For example, the attribute 'full_name'
