@@ -886,13 +886,6 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handleChangeBackgroundColorRequest(Color color)
-    {
-	m_viewParameters.setBackgroundColor(color);
-    }
-
-    ///////////////////////////////////////////////////////////////////////
-
     private void handleNarrowToSubtreeRequest(int node)
     {
 	m_graph.narrowVisibility(node);
@@ -1767,22 +1760,6 @@ public class H3Main
 	m_automaticExtendedPrecisionMenuItem.setMnemonic(KeyEvent.VK_E);
 	m_automaticExtendedPrecisionMenuItem.setSelected(true);
 
-	m_backgroundColorMenu = new JMenu("Background Color");
-	m_backgroundColorMenu.setMnemonic(KeyEvent.VK_B);
-	m_backgroundColorMenu.setEnabled(true);
-
-	ButtonGroup backgroundColorGroup = new ButtonGroup();
-	addBackgroundColorSubmenu(m_backgroundColorMenu, backgroundColorGroup,
-				  "Black", Color.black, true);
-	addBackgroundColorSubmenu(m_backgroundColorMenu, backgroundColorGroup,
-				  "Dark Grey", Color.darkGray, false);
-	addBackgroundColorSubmenu(m_backgroundColorMenu, backgroundColorGroup,
-				  "Grey", Color.gray, false);
-	addBackgroundColorSubmenu(m_backgroundColorMenu, backgroundColorGroup,
-				  "Light Grey", Color.lightGray, false);
-	addBackgroundColorSubmenu(m_backgroundColorMenu, backgroundColorGroup,
-				  "White", Color.white, false);
-
 	m_renderingMenu = new JMenu("Rendering");
 	m_renderingMenu.setMnemonic(KeyEvent.VK_R);
 	m_renderingMenu.add(m_startMenuItem);
@@ -1791,8 +1768,6 @@ public class H3Main
 	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_resetRenderingMenuItem);
 	m_renderingMenu.add(m_recomputeLayoutExtendedMenuItem);
-	m_renderingMenu.addSeparator();
-	m_renderingMenu.add(m_backgroundColorMenu);
 	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
@@ -2038,24 +2013,6 @@ public class H3Main
 	}
     }
 
-    private void addBackgroundColorSubmenu
-	(JMenu menu, ButtonGroup group, String label,
-	 final Color color, boolean selected)
-    {
-	JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem(label);
-	menuItem.setSelected(selected);
-	menuItem.addActionListener
-	    (new ActionListener() {
-		public void actionPerformed(ActionEvent e)
-		{
-		    handleChangeBackgroundColorRequest(color);
-		}
-	    });
-
-	group.add(menuItem);
-	menu.add(menuItem);
-    }
-
     ///////////////////////////////////////////////////////////////////////
 
     private int countNumSelectedItems(JMenu menu)
@@ -2135,7 +2092,6 @@ public class H3Main
     private JCheckBoxMenuItem m_onScreenLabelsMenuItem;
     private JCheckBoxMenuItem m_automaticRefreshMenuItem;
     private JCheckBoxMenuItem m_automaticExtendedPrecisionMenuItem;
-    private JMenu m_backgroundColorMenu;
 
     private JMenu m_displayMenu;
     private JMenuItem m_narrowToSubtreeMenuItem;
