@@ -929,6 +929,18 @@ public class H3Main
 	    }
 	    else
 	    {
+		// H3CircleRenderer draws circles (lying on the plane of
+		// the screen) around each node.  Every node has a radius
+		// which is inversely proportional to the distance between
+		// the node and the center of the screen.  Currently, this
+		// radius is used primarily as a sorting key by which the
+		// adaptive rendering algorithm tries to render the display
+		// from the center of the screen outward (since the nodes
+		// with the greatest interest lie near the center).
+		//
+		// This renderer is mainly a debugging aid, but it also
+		// serves as an example of how the architecture supports
+		// variation in the rendering of nodes.
 		renderer = new H3CircleRenderer
 		    (m_graph, m_viewParameters, queue, renderList);
 	    }
@@ -942,7 +954,16 @@ public class H3Main
 	    new Thread(adaptive).start();
 	    m_renderLoop = adaptive;
 
-            final int DURATION = 50;
+	    // This duration is not a hard upper limit but only a strong
+	    // suggestion to the renderer.  The frame rate will be
+	    // approximately 1000/DURATION, under ideal conditions, but
+	    // in practice, the frame rate is usually only a quarter to
+	    // a half this calculation.
+	    //
+	    // There is no upper bound on the frame rate given a sufficiently
+	    // powerful computer.  The following only specifies the lower
+	    // bound.
+            final int DURATION = 50; // in milliseconds
 	    adaptive.setMaxRotationDuration(DURATION);
 	    adaptive.setMaxTranslationDuration(DURATION);
 	    adaptive.setMaxCompletionDuration(DURATION);
