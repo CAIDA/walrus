@@ -317,6 +317,7 @@ public class H3Graph
 
     public void setRootNode(int node)
     {
+	m_nodes.parent[node] = -1;
 	m_rootNode = node;
     }
 
@@ -621,6 +622,7 @@ public class H3Graph
 	// The parent value of a node gives the index of the link that
 	// connects the parent to that node.  Hence the source of the parent
 	// link gives the parent node and the destination gives the child node.
+	// The root node of the graph has a parent link value of -1.
 	public int[] parent;
 
 	// The following arrays give indices into the array of links where
