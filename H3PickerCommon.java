@@ -169,6 +169,7 @@ public abstract class H3PickerCommon
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
 
+    // (x, y) should be in image plate, rather than AWT, coordinates.
     private int pick(double x, double y, Point2d center)
     {
 	long startTime = 0;
@@ -183,6 +184,26 @@ public abstract class H3PickerCommon
 	int closestIndex = -1;
 	double closestPickDistance = Double.MAX_VALUE;
 	double closestEyeDistanceSq = Double.MAX_VALUE;
+
+	// The basic approach of the picking algorithm is as follows.
+	// Shoot a pick ray from the eye through the screen at the location
+	// where the user clicked [the (x, y) parameters to this method],
+	// and compute the intersection of the ray to the z-plane in which
+	// a node lies.  Then compute the distance between the node
+	// and the pick ray on that z-plane.  Of all nodes which lie
+	// within some radius of the pick point, choose the node that
+	// is closest to the eye along the line of sight.
+	//
+	// The reason for shooting the ray out to the node rather than
+	// projecting the node to the screen is that each node has a
+	// radius which is proportional to the distance of the node from
+	// the center of the hyperbolic space.  We would have to project
+	// this radius, as well as the node, onto the screen.  Because
+	// the screen and the node are specified in different coordinate
+	// systems, it requires extra work to project the radius (presuming
+	// the nodes themselves are projected with a perspective-projection
+	// matrix).  Hence, it seemed just as easy, if not easier, to shoot
+	// the ray out than take this approach.
 
 	computePointsInEye();
 	int numComputedPointsInEye = getNumComputedPointsInEye();
