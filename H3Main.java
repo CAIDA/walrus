@@ -159,7 +159,10 @@ public class H3Main
 		    m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
 		    m_statusBar.setText(MSG_GRAPH_LOADED);
 
+		    // File menu.
 		    m_closeMenuItem.setEnabled(true);
+
+		    // Rendering menu.
 		    m_startMenuItem.setEnabled(true);
 		}
 	    }
@@ -281,8 +284,11 @@ public class H3Main
 	m_backingGraph = null;
 	m_graph = null;
 	m_displayPosition = null;
+	m_savedDisplayPosition = null;
+
 	if (m_renderLoop != null)
 	{
+	    m_eventHandler.forceIdleState();
 	    stopRendering();
 	}
 
@@ -300,7 +306,17 @@ public class H3Main
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
-	m_refreshMenuItem.setEnabled(false);
+
+	// Display menu.
+	m_refreshDisplayMenuItem.setEnabled(false);
+	m_wobbleDisplayMenuItem.setEnabled(false);
+	m_savePositionMenuItem.setEnabled(false);
+	m_restorePositionMenuItem.setEnabled(false);
+	m_startRecordingMenuItem.setEnabled(false);
+	m_stopRecordingMenuItem.setEnabled(false);
+	m_abortRecordingMenuItem.setEnabled(false);
+	m_recordMovementsMenu.setEnabled(false);
+	m_replayRecordingMenuItem.setEnabled(false);
 
 	// Spanning Tree menu.
 	m_spanningTreeMenu.removeAll();
@@ -736,6 +752,7 @@ public class H3Main
 
     private void handleStopRenderingRequest()
     {
+	m_eventHandler.forceIdleState();
 	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
 
@@ -747,6 +764,7 @@ public class H3Main
 
     private void handleUpdateRenderingRequest()
     {
+	m_eventHandler.forceIdleState();
 	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
 
@@ -778,6 +796,8 @@ public class H3Main
 		(m_renderingConfiguration.spanningTree))
 	    {
 		m_displayPosition = null;
+		m_savedDisplayPosition = null;
+
 		m_graph = m_graphLoader.load
 		    (m_backingGraph, renderingConfiguration.spanningTree);
 
@@ -1175,26 +1195,45 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    // Changes the enabled state of the items in the Rendering menu to
-    // reflect an idle rendering state (when the splash screen is being shown).
+    // Changes the enabled state of various menu items to reflect an idle
+    // rendering state (when the splash screen is being shown).
     private void setupIdleRenderingMenu()
     {
+	// Rendering menu.
 	m_startMenuItem.setEnabled(true);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
-	m_refreshMenuItem.setEnabled(false);
+
+	// Display menu.
+	m_refreshDisplayMenuItem.setEnabled(false);
+	m_wobbleDisplayMenuItem.setEnabled(false);
+	m_savePositionMenuItem.setEnabled(false);
+	m_restorePositionMenuItem.setEnabled(false);
+	m_startRecordingMenuItem.setEnabled(false);
+	m_stopRecordingMenuItem.setEnabled(false);
+	m_abortRecordingMenuItem.setEnabled(false);
+	m_recordMovementsMenu.setEnabled(false);
+	m_replayRecordingMenuItem.setEnabled(false);
     }
 
     ///////////////////////////////////////////////////////////////////////
 
-    // Changes the enabled state of the items in the Rendering menu to
-    // reflect an active rendering state (when a Canvas3D is being shown).
+    // Changes the enabled state of various menu items to reflect an active
+    // rendering state (when a Canvas3D is being shown).
     private void setupActiveRenderingMenu()
     {
+	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(true);
 	m_updateMenuItem.setEnabled(true);
-	m_refreshMenuItem.setEnabled(true);
+
+	// Display menu.
+	m_refreshDisplayMenuItem.setEnabled(true);
+	m_wobbleDisplayMenuItem.setEnabled(true);
+	m_savePositionMenuItem.setEnabled(true);
+	m_restorePositionMenuItem.setEnabled(m_savedDisplayPosition != null);
+	m_startRecordingMenuItem.setEnabled(true);
+	m_recordMovementsMenu.setEnabled(true);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1316,21 +1355,6 @@ public class H3Main
 		}
 	    });
 
-	m_refreshMenuItem = new JMenuItem("Refresh Display");
-	m_refreshMenuItem.setMnemonic(KeyEvent.VK_R);
-	m_refreshMenuItem.setEnabled(false);
-	m_refreshMenuItem.setAccelerator
-	    (KeyStroke.getKeyStroke(KeyEvent.VK_R, ActionEvent.CTRL_MASK));
-	m_refreshMenuItem.addActionListener(new ActionListener() {
-		public void actionPerformed(ActionEvent e)
-		{
-		    if (m_renderLoop != null)
-		    {
-			m_renderLoop.refreshDisplay();
-		    }
-		}
-	    });
-
 	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive Rendering");
 	m_adaptiveMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_adaptiveMenuItem.setSelected(true);
@@ -1373,14 +1397,103 @@ public class H3Main
 	m_renderingMenu.add(m_stopMenuItem);
 	m_renderingMenu.add(m_updateMenuItem);
 	m_renderingMenu.addSeparator();
-	m_renderingMenu.add(m_refreshMenuItem);
-	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
 	m_renderingMenu.add(m_depthCueingMenuItem);
 	m_renderingMenu.add(m_axesMenuItem);
 	m_renderingMenu.add(m_screenCaptureMenuItem);
 	m_renderingMenu.add(m_automaticRefreshMenuItem);
+
+	// Create "Display" menu. ------------------------------------------
+
+	m_refreshDisplayMenuItem = new JMenuItem("Refresh");
+	m_refreshDisplayMenuItem.setMnemonic(KeyEvent.VK_R);
+	m_refreshDisplayMenuItem.setEnabled(false);
+	m_refreshDisplayMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_R, ActionEvent.CTRL_MASK));
+	m_refreshDisplayMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.refreshDisplay();
+		}
+	    });
+
+	m_wobbleDisplayMenuItem = new JMenuItem("Wobble");
+	m_wobbleDisplayMenuItem.setMnemonic(KeyEvent.VK_W);
+	m_wobbleDisplayMenuItem.setEnabled(false);
+	m_wobbleDisplayMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
+	m_wobbleDisplayMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_wobbleDisplayMenuItem.setEnabled(false);
+		    m_eventHandler.forceIdleState();
+		    m_eventHandler.startWobbling(new CancellationListener()
+			{
+			    public void cancelled()
+			    {
+				m_wobbleDisplayMenuItem.setEnabled(true);
+			    }
+			});
+		}
+	    });
+
+	m_savePositionMenuItem = new JMenuItem("Save Position");
+	m_savePositionMenuItem.setMnemonic(KeyEvent.VK_S);
+	m_savePositionMenuItem.setEnabled(false);
+	m_savePositionMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.forceIdleState();
+		    m_savedDisplayPosition = m_renderLoop.getDisplayPosition();
+		    m_restorePositionMenuItem.setEnabled(true);
+		}
+	    });
+
+	m_restorePositionMenuItem = new JMenuItem("Restore Position");
+	m_restorePositionMenuItem.setMnemonic(KeyEvent.VK_T);
+	m_restorePositionMenuItem.setEnabled(false);
+	m_restorePositionMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.forceIdleState();
+		    m_renderLoop.setDisplayPosition(m_savedDisplayPosition);
+		}
+	    });
+
+	m_startRecordingMenuItem = new JMenuItem("Start");
+	m_startRecordingMenuItem.setMnemonic(KeyEvent.VK_S);
+	m_startRecordingMenuItem.setEnabled(false);
+
+	m_stopRecordingMenuItem = new JMenuItem("Stop");
+	m_stopRecordingMenuItem.setMnemonic(KeyEvent.VK_P);
+	m_stopRecordingMenuItem.setEnabled(false);
+
+	m_abortRecordingMenuItem = new JMenuItem("Abort");
+	m_abortRecordingMenuItem.setMnemonic(KeyEvent.VK_A);
+	m_abortRecordingMenuItem.setEnabled(false);
+
+	m_recordMovementsMenu = new JMenu("Record Movements");
+	m_recordMovementsMenu.setMnemonic(KeyEvent.VK_M);
+	m_recordMovementsMenu.setEnabled(false);
+	m_recordMovementsMenu.add(m_startRecordingMenuItem);
+	m_recordMovementsMenu.add(m_stopRecordingMenuItem);
+	m_recordMovementsMenu.add(m_abortRecordingMenuItem);
+
+	m_replayRecordingMenuItem = new JMenuItem("Replay Movements");
+	m_replayRecordingMenuItem.setMnemonic(KeyEvent.VK_P);
+	m_replayRecordingMenuItem.setEnabled(false);
+
+	m_displayMenu = new JMenu("Display");
+	m_displayMenu.setMnemonic(KeyEvent.VK_D);
+	m_displayMenu.add(m_refreshDisplayMenuItem);
+	m_displayMenu.add(m_wobbleDisplayMenuItem);
+	m_displayMenu.addSeparator();
+	m_displayMenu.add(m_savePositionMenuItem);
+	m_displayMenu.add(m_restorePositionMenuItem);
+	m_displayMenu.addSeparator();
+	m_displayMenu.add(m_recordMovementsMenu);
+	m_displayMenu.add(m_replayRecordingMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
@@ -1401,6 +1514,7 @@ public class H3Main
 	JMenuBar retval = new JMenuBar();
 	retval.add(m_fileMenu);
 	retval.add(m_renderingMenu);
+	retval.add(m_displayMenu);
 	retval.add(m_spanningTreeMenu);
 	retval.add(m_colorSchemeMenu.getColorSchemeMenu());
 	retval.add(m_nodeLabelMenu);
@@ -1450,7 +1564,8 @@ public class H3Main
     private RenderingConfiguration m_renderingConfiguration;
     private Graph m_backingGraph;  // Will be non-null if a graph is open.
     private H3Graph m_graph;  // ...non-null when a graph is being rendered.
-    private H3DisplayPosition m_displayPosition;
+    private H3DisplayPosition m_displayPosition; // Saved while updating disp..
+    private H3DisplayPosition m_savedDisplayPosition; // Saved by user...
     private H3Canvas3D m_canvas; // Always non-null; one per program run.
     private H3ViewParameters m_viewParameters; // Always non-null.
     private H3RenderLoop m_renderLoop; // ...non-null when ... being rendered.
@@ -1472,13 +1587,23 @@ public class H3Main
     private JMenuItem m_startMenuItem;
     private JMenuItem m_stopMenuItem;
     private JMenuItem m_updateMenuItem;
-    private JMenuItem m_refreshMenuItem;
     private JCheckBoxMenuItem m_adaptiveMenuItem;
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
     private JCheckBoxMenuItem m_depthCueingMenuItem;
     private JCheckBoxMenuItem m_axesMenuItem;
     private JCheckBoxMenuItem m_screenCaptureMenuItem;
     private JCheckBoxMenuItem m_automaticRefreshMenuItem;
+
+    private JMenu m_displayMenu;
+    private JMenuItem m_refreshDisplayMenuItem;
+    private JMenuItem m_wobbleDisplayMenuItem;
+    private JMenuItem m_savePositionMenuItem;
+    private JMenuItem m_restorePositionMenuItem;
+    private JMenu m_recordMovementsMenu;
+    private JMenuItem m_startRecordingMenuItem;
+    private JMenuItem m_stopRecordingMenuItem;
+    private JMenuItem m_abortRecordingMenuItem;
+    private JMenuItem m_replayRecordingMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -1498,6 +1623,19 @@ public class H3Main
     ///////////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     ///////////////////////////////////////////////////////////////////////
+
+    private static interface CancellationListener
+    {
+	void cancelled();
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    // NOTE: The public methods of EventHandler aren't synchronized.
+    //       Because this class listens for AWT events, any threads
+    //       accessing this class should take care not to collide with
+    //       the AWT event dispatching thread.  To be absolutely safe,
+    //       only the AWT thread should access this class.
 
     private static class EventHandler
 	implements KeyListener, MouseListener, MouseMotionListener
@@ -1553,6 +1691,86 @@ public class H3Main
 	    else
 	    {
 		m_canvas.removeComponentListener(m_resizeListener);
+	    }
+	}
+
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	public void refreshDisplay()
+	{
+	    if (m_state == STATE_IDLE)
+	    {
+		m_renderLoop.refreshDisplay();		
+	    }
+	}
+
+	public void forceIdleState()
+	{
+	    switch (m_state)
+	    {
+	    case STATE_IDLE:
+		//IGNORE
+		break;
+
+	    case STATE_DISPLAYING_ATTRIBUTES:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_INTERACTIVE:
+		m_interactiveRequest.end();
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS:
+		m_repeatingRequest.end();
+		break;
+
+	    case STATE_ROTATING_CONTINUOUS_START:
+		//IGNORE
+		break;
+
+	    case STATE_ROTATING_TRACKING:
+		m_repeatingRequest.end();
+		break;
+
+	    case STATE_WOBBLING:
+		m_wobblingListener.cancelled();
+		m_wobblingListener = null;
+		m_wobblingRequest.end();
+		break;
+
+	    case STATE_REPLAYING:
+		// XXX: Stop replaying...
+		break;
+
+	    default:
+		throw new RuntimeException
+		    ("Invalid state in EventHandler: invalid state "+ m_state);
+	    }
+	    m_state = STATE_IDLE;
+	}
+
+	public void startWobbling(CancellationListener listener)
+	{
+	    if (m_state == STATE_IDLE) 
+	    {
+		m_state = STATE_WOBBLING;
+		m_wobblingListener = listener;
+		m_wobblingRequest.start();
+		m_renderLoop.rotateDisplay(m_wobblingRequest);
+	    }
+	    else
+	    {
+		listener.cancelled();
+	    }
+	}
+
+	public void stopWobbling()
+	{
+	    if (m_state == STATE_WOBBLING)
+	    {
+		m_state = STATE_IDLE;
+		m_wobblingListener = null;
+		m_wobblingRequest.end();
 	    }
 	}
 
@@ -1636,6 +1854,8 @@ public class H3Main
 
 	    case STATE_WOBBLING:
 		m_state = STATE_IDLE;
+		m_wobblingListener.cancelled();
+		m_wobblingListener = null;
 		m_wobblingRequest.end();
 		break;
 
@@ -2163,12 +2383,6 @@ public class H3Main
 	private double m_dyRadians;
 
 	private boolean m_isCapturing = false;
-	private boolean m_savedDisplay = false;
-
-	private static final int INTERACTIVE_ROTATION = 0;
-	private static final int REPEATING_ROTATION = 1;
-	private static final int WOBBLING_ROTATION = 2;
-	private int m_rotationKind;
 
 	private H3InteractiveRotationRequest m_interactiveRequest
 	    = new H3InteractiveRotationRequest();
@@ -2178,6 +2392,8 @@ public class H3Main
 
 	private H3WobblingRotationRequest m_wobblingRequest
 	    = new H3WobblingRotationRequest();
+
+	private CancellationListener m_wobblingListener;
 
 	private boolean m_automaticRefresh;
 	private PaintObserver m_paintObserver = new PaintObserver();
