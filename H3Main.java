@@ -745,12 +745,12 @@ public class H3Main
 
     private void handleStopRenderingRequest()
     {
+	m_displayPosition = m_renderLoop.getDisplayPosition();
+	stopRendering();
+
 	m_frame.getContentPane().remove(m_canvas);
 	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 	m_frame.validate();
-
-	m_displayPosition = m_renderLoop.getDisplayPosition();
-	stopRendering();
 
 	m_startMenuItem.setEnabled(true);
 	m_stopMenuItem.setEnabled(false);
@@ -1071,7 +1071,28 @@ public class H3Main
 	m_eventHandler.dispose();
 	m_eventHandler = null;
 
+	// We must call waitForShutdown() to avoid problems that occur
+	// when multiple H3RenderLoop instances overlap in lifetime.
+	// Specifically, when a user selects Rendering->Update, the old
+	// and the new render loops may overlap briefly in lifetime.  Because
+	// each render loop accesses the same Canvas3D (via GraphicsContext3D),
+	// the old render loop may change settings in Canvas3D that affect
+	// the new render loop.  An example of this problem involves
+	// front-buffer rendering.  H3AdaptiveRenderLoop.synchCompleteState()
+	// turns off front-buffer rendering as it changes to STATE_SHUTDOWN.
+	// If the old render loop turns off front-buffer rendering sometime
+	// after the new render loop has completed its beCompleteInitState(),
+	// in which front-buffer rendering is turned on, then the new render
+	// loop may execute its beCompleteState() with front-buffer rendering
+	// turned off.  The result is a partially drawn display, since
+	// rendering is taking place in the back buffer.
+	//
+	// The simplest solution to this problem is to simply wait for the
+	// old render loop to completely exit before starting the new
+	// render loop.  This is exactly what waitForShutdown() lets us do.
+
 	m_renderLoop.shutdown();
+	m_renderLoop.waitForShutdown();
 	m_renderLoop = null;
     }
 

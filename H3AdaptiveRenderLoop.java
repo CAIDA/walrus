@@ -81,6 +81,8 @@ public class H3AdaptiveRenderLoop
 	    {
 		if (DEBUG_PRINT)
 		{
+		    System.out.print("[" + Thread.currentThread().getName()
+				     + "]: ");
 		    System.out.println("refreshing display ...");
 		}
 
@@ -219,7 +221,7 @@ public class H3AdaptiveRenderLoop
 	startRequest();
 	{
 	    m_displayPosition = position;
-	    m_restoreDisplayRequested = true;
+            m_restoreDisplayRequested = true;
 	}
 	endRequest();
     }
@@ -231,6 +233,17 @@ public class H3AdaptiveRenderLoop
 	    m_state = STATE_SHUTDOWN;
 	}
 	endRequest();
+    }
+
+    // This method should not be synchronized, since it must allow the thread
+    // running H3AdaptiveRenderLoop to enter the monitor as needed in order
+    // to run to completion.
+    public void waitForShutdown()
+    {
+	while (!m_isShutdown)
+	{
+	    waitForShutdownEvent();
+	}
     }
 
     public synchronized void setMaxRotationDuration(long max)
@@ -287,6 +300,12 @@ public class H3AdaptiveRenderLoop
 	    // various view transformations after a window changes size.
 	    m_parameters.refresh();
 
+	    if (DEBUG_PRINT)
+	    {
+		System.out.print("[" + Thread.currentThread().getName()
+				 + "]: ");
+	    }
+
 	    switch (m_state)
 	    {
 	    case STATE_SHUTDOWN:
@@ -294,7 +313,7 @@ public class H3AdaptiveRenderLoop
 		{
 		    System.out.println("STATE_SHUTDOWN");
 		}
-		m_transformer.shutdown();
+		beShutdownState();
 		System.out.println("H3AdaptiveRenderLoop exiting...");
 		return;
 
@@ -356,6 +375,27 @@ public class H3AdaptiveRenderLoop
     // PRIVATE METHODS (states)
     ////////////////////////////////////////////////////////////////////////
 
+    private void beShutdownState()
+    {
+	synchShutdownState();
+    }
+
+    private synchronized void synchShutdownState()
+    {
+	m_transformer.shutdown();
+	m_isShutdown = true;	
+
+	m_isWaiting = false;
+	m_isRequestTurn = true;
+
+	if (m_numPendingRequests > 0)
+	{
+	    notifyAll();
+	}
+    }
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     private void beIdleState()
     {
 	synchIdleState();
@@ -367,11 +407,20 @@ public class H3AdaptiveRenderLoop
 	{
 	    if (DEBUG_PRINT)
 	    {
+		System.out.print("[" + Thread.currentThread().getName()
+				 + "]: ");
 		System.out.println("synchIdleState() waiting ...");
 	    }
 
 	    if (m_restoreDisplayRequested)
 	    {
+		if (DEBUG_PRINT)
+		{
+		    System.out.print("[" + Thread.currentThread().getName()
+				     + "]: ");
+		    System.out.println("restoring display ...");
+		}
+
 		m_restoreDisplayRequested = false;
 		m_picker.reset();
 		m_renderer.reset();
@@ -549,6 +598,8 @@ public class H3AdaptiveRenderLoop
 	{
 	    if (DEBUG_PRINT)
 	    {
+		System.out.print("[" + Thread.currentThread().getName()
+				 + "]: ");
 		System.out.println("synchCompleteState() waiting ...");
 		System.out.println("(" + m_numPendingRequests +
 				   " request(s) pending)");
@@ -564,6 +615,7 @@ public class H3AdaptiveRenderLoop
 
 	if (DEBUG_PRINT)
 	{
+	    System.out.print("[" + Thread.currentThread().getName() + "]: ");
 	    System.out.println("synchCompleteState() running ...");
 	}
 
@@ -672,6 +724,16 @@ public class H3AdaptiveRenderLoop
     // PRIVATE METHODS (request synchronization)
     ////////////////////////////////////////////////////////////////////////
 
+    private synchronized void waitForShutdownEvent()
+    {
+	if (!m_isShutdown)
+	{
+	    // Block till the next rendezvous point.
+	    startRequest();
+	    endRequest();
+	}
+    }
+
     private synchronized void startRequest()
     {
 	++m_numPendingRequests;
@@ -724,6 +786,8 @@ public class H3AdaptiveRenderLoop
     private int m_numPendingRequests = 0;
     private boolean m_isRequestTurn = false;
     private boolean m_isWaiting = false;
+
+    private boolean m_isShutdown = false;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

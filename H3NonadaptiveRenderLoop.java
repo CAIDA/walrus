@@ -244,6 +244,17 @@ public class H3NonadaptiveRenderLoop
 	endRequest();
     }
 
+    // This method should not be synchronized, since it must allow the thread
+    // running H3AdaptiveRenderLoop to enter the monitor as needed in order
+    // to run to completion.
+    public void waitForShutdown()
+    {
+	while (!m_isShutdown)
+	{
+	    waitForShutdownEvent();
+	}
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // INTERFACE METHODS (Runnable)
     ////////////////////////////////////////////////////////////////////////
@@ -259,6 +270,11 @@ public class H3NonadaptiveRenderLoop
 	    switch (m_state)
 	    {
 	    case STATE_SHUTDOWN:
+		if (DEBUG_PRINT)
+		{
+		    System.out.println("STATE_SHUTDOWN");
+		}
+		beShutdownState();
 		System.out.println("H3NonadaptiveRenderLoop exiting...");
 		return;
 
@@ -303,6 +319,26 @@ public class H3NonadaptiveRenderLoop
     ////////////////////////////////////////////////////////////////////////
     // PRIVATE METHODS (states)
     ////////////////////////////////////////////////////////////////////////
+
+    private void beShutdownState()
+    {
+	synchShutdownState();
+    }
+
+    private synchronized void synchShutdownState()
+    {
+	m_isShutdown = true;	
+
+	m_isWaiting = false;
+	m_isRequestTurn = true;
+
+	if (m_numPendingRequests > 0)
+	{
+	    notifyAll();
+	}
+    }
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private void beIdleState()
     {
@@ -559,6 +595,16 @@ public class H3NonadaptiveRenderLoop
     // PRIVATE METHODS (request synchronization)
     ////////////////////////////////////////////////////////////////////////
 
+    private synchronized void waitForShutdownEvent()
+    {
+	if (!m_isShutdown)
+	{
+	    // Block till the next rendezvous point.
+	    startRequest();
+	    endRequest();
+	}
+    }
+
     private synchronized void startRequest()
     {
 	++m_numPendingRequests;
@@ -607,6 +653,8 @@ public class H3NonadaptiveRenderLoop
     private int m_numPendingRequests = 0;
     private boolean m_isRequestTurn = false;
     private boolean m_isWaiting = false;
+
+    private boolean m_isShutdown = false;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
