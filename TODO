@@ -1,0 +1,53 @@
+=========================================================================
+BUGS & ISSUES
+=========================================================================
+
+* Sometimes the display is only partially redrawn after the user changes
+  the configuration and selects Rendering->Update.  I suspect Walrus is
+  losing track of the node currently at the center of the display.  The
+  renderer traverses the graph starting at this central node.
+
+  A workaround is to right-click the node at center of the display (or even
+  any visible node).
+
+* The transparency option in the Color Scheme menu doesn't work quite as
+  expected.  It makes the last selected color transparent, so users have
+  to take two steps to get the transparent color they want.  The problem
+  is that transparency should be an _attribute_ of a color and not a color
+  itself (the menu item should be turned into a checkbox that may be selected
+  in addition to a color).
+
+* Improve memory usage in H3RenderQueue and H3Transformer.  The use of longs
+  was an expedient that is now past its usefulness.
+
+* Owing to a AWT/Java3D/Swing bug, none of the keyboard accelerators for
+  the menu items work.
+
+* Owing to a Java3D bug, the display may flicker when a user interacts with
+  the menus.
+
+* Owing to a Java3D bug, depth cueing can't be disabled with
+  Rendering->Depth Cueing.
+
+* Owing to a Java3D bug, antialiasing doesn't work in immediate mode,
+  which is the mode used by Walrus.
+
+=========================================================================
+FEATURES
+=========================================================================
+
+* Add menu items and/or keyboard commands to control wobbling, screen
+  capture, and recording.  Remove the current bindings to mouse controls.
+
+* Revamp the Color Scheme menu.  Remove 'Hot to Cold', 'Logarithmic HtoC',
+  and 'Hue' menu items.  Add some perceptually uniform colorscales.
+  Make a better set of fixed colors and predefined color schemes.
+
+* Implement the Selection Attribute menu item in Color Scheme.
+
+* Selecting the nonadaptive rendering algorithm causes a fixed color scheme
+  to take effect.  Change this to work like the adaptive algorithm.
+
+* Implement File->Save with Layout and File->Save with Layout As.
+
+* Implement File->Preferences.
