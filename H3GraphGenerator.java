@@ -113,10 +113,10 @@ public class H3GraphGenerator
     {
 	createIncreasingTree(buffer, base, scale, numIterations,
 			     new SizeFunction() {
-	    public int evaluate(int base, int scale, int numIterations,
+	    public int evaluate(int _base, int _scale, int _numIterations,
 				int currentIteration, int currentSize)
 		{
-		    return base + scale * currentIteration;
+		    return _base + _scale * currentIteration;
 		}
 	});
     }
@@ -127,10 +127,11 @@ public class H3GraphGenerator
     {
 	createIncreasingTree(buffer, base, scale, numIterations,
 			     new SizeFunction() {
-	    public int evaluate(int base, int scale, int numIterations,
+	    public int evaluate(int _base, int _scale, int _numIterations,
 				int currentIteration, int currentSize)
 		{
-		    return base + scale * currentIteration * currentIteration;
+		    return _base + _scale
+			* currentIteration * currentIteration;
 		}
 	});
     }
@@ -141,11 +142,11 @@ public class H3GraphGenerator
     {
 	createIncreasingTree(buffer, base, scale, numIterations,
 			     new SizeFunction() {
-	    public int evaluate(int base, int scale, int numIterations,
+	    public int evaluate(int _base, int _scale, int _numIterations,
 				int currentIteration, int currentSize)
 		{
-		    int c = currentIteration;
-		    return base	+ scale * c * c * c;
+		    return _base + _scale * currentIteration
+			* currentIteration * currentIteration;
 		}
 	});
     }
