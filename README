@@ -2,7 +2,7 @@
 
                    The Walrus Graph Visualization Tool
 
-                             version 0.1
+                             version 0.2
 
                              ___ __, 2001
 
@@ -46,6 +46,18 @@ at an accelerated rate from the center to the boundary, until objects are
 reduced to zero size at the latter, which represents infinity. By bringing
 different parts of a graph to the magnified central region, the user can
 examine every part of the graph in detail.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+CHANGES
+
+Since 0.1:
+
+  * Added full support for color to the nonadaptive render loop.
+    You can now use color in all the ways currently possible when
+    Rendering->Adaptive Rendering is unchecked.
+  * Fixed refresh bug.  The display would sometimes fail to refresh when
+    the user clicked within the Walrus window to bring it to the front.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,11 +110,24 @@ QUICK START
 
 You can give Walrus a quick try by doing the following:
 
-1. Extract 'walrus-0.1.tar.gz' or 'walrus-0.1.zip' anywhere you wish.  This
-   will create a subdirectory named 'walrus-0.1' containing several JAR
+1. Extract 'walrus-0.2.tar.gz' or 'walrus-0.2.zip' anywhere you wish.  This
+   will create a subdirectory named 'walrus-0.2' containing several JAR,
    files among other things.
 
-1. From the 'walrus-0.1' subdirectory, enter the following at a shell
+    For UNIX users...
+
+      The file walrus-0.2.tar.gz was packaged with the standard TAR utility
+      and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
+      it with the following command:
+
+          gzip -cd walrus-0.2.tar.gz | tar xvf -
+
+    For Windows users...
+
+      The file walrus-0.2.zip was packaged in the common ZIP format.  You
+      can unpack it using a program like WinZip (http://www.winzip.com/).
+
+1. From the 'walrus-0.2' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
