@@ -142,6 +142,11 @@ public class H3ViewParameters
 	return m_objectTransform;
     }
 
+    public void setObjectTransform(Transform3D transform)
+    {
+	m_objectTransform.set(transform);
+    }
+
     public void saveObjectTransform()
     {
 	m_savedObjectTransform.set(m_objectTransform);
@@ -155,6 +160,11 @@ public class H3ViewParameters
     public void restoreObjectTransform()
     {
 	m_objectTransform.set(m_savedObjectTransform);
+    }
+
+    public void resetObjectTransform()
+    {
+	m_objectTransform.setIdentity();
     }
 
     public Point3d getEye()
@@ -184,6 +194,8 @@ public class H3ViewParameters
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+    // These two are used by the nonadaptive renderer.
+
     public Appearance getPointAppearance()
     {
 	return m_pointAppearance;
@@ -195,6 +207,8 @@ public class H3ViewParameters
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+    // These three are used by the adaptive renderer.
 
     public Appearance getNodeAppearance()
     {
@@ -212,6 +226,8 @@ public class H3ViewParameters
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+    // These three are used by the adaptive renderer.
 
     public Appearance getNearNodeAppearance()
     {
@@ -318,7 +334,8 @@ public class H3ViewParameters
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	m_transparencyAttributes =
-	    new TransparencyAttributes(TransparencyAttributes.BLENDED, 0.95f);
+	    //new TransparencyAttributes(TransparencyAttributes.BLENDED, 0.95f);
+	    new TransparencyAttributes(TransparencyAttributes.BLENDED, 0.8f);
     }
 
     private void initializeGraphAppearances()
