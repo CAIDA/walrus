@@ -200,6 +200,15 @@ public class H3AdaptiveRenderLoop
 	endRequest();
     }
 
+    public synchronized void shutdown()
+    {
+	startRequest();
+	{
+	    m_state = STATE_SHUTDOWN;
+	}
+	endRequest();
+    }
+
     public synchronized void setMaxRotationDuration(long max)
     {
 	startRequest();
@@ -256,6 +265,15 @@ public class H3AdaptiveRenderLoop
 
 	    switch (m_state)
 	    {
+	    case STATE_SHUTDOWN:
+		if (DEBUG_PRINT)
+		{
+		    System.out.println("STATE_SHUTDOWN");
+		}
+		m_transformer.shutdown();
+		System.out.println("H3AdaptiveRenderLoop exiting...");
+		return;
+
 	    case STATE_IDLE:
 		if (DEBUG_PRINT)
 		{
@@ -454,8 +472,8 @@ public class H3AdaptiveRenderLoop
 
 	m_parameters.putModelTransform(gc);
 	m_parameters.drawAxes(gc);
-
 	m_renderer.reset();
+
 	m_state = STATE_COMPLETE;
     }
 
@@ -650,14 +668,15 @@ public class H3AdaptiveRenderLoop
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private static final int STATE_IDLE = 0;
-    private static final int STATE_ROTATE = 1;
-    private static final int STATE_TRANSLATE = 2;
-    private static final int STATE_REFRESH = 3;
-    private static final int STATE_COMPLETE_INIT = 4;
-    private static final int STATE_COMPLETE = 5;
+    private static final int STATE_SHUTDOWN = 0;
+    private static final int STATE_IDLE = 1;
+    private static final int STATE_ROTATE = 2;
+    private static final int STATE_TRANSLATE = 3;
+    private static final int STATE_REFRESH = 4;
+    private static final int STATE_COMPLETE_INIT = 5;
+    private static final int STATE_COMPLETE = 6;
     private static final String[] STATE_NAMES = {
-	"STATE_IDLE", "STATE_ROTATE", "STATE_TRANSLATE",
+	"STATE_SHUTDOWN", "STATE_IDLE", "STATE_ROTATE", "STATE_TRANSLATE",
 	"STATE_REFRESH", "STATE_COMPLETE_INIT", "STATE_COMPLETE"
     };
 
