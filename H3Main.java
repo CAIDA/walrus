@@ -1218,6 +1218,8 @@ public class H3Main
     private JMenuBar createInitialMenuBar()
     {
 	// Cause menus to be rendered as heavyweight objects.
+	// Without this, the ordinarily lightweight menus would be drawn
+	// behind the heavyweight Canvas3D and thus be obscured.
 	JPopupMenu.setDefaultLightWeightPopupEnabled(false);
 
 	// Create "File" menu. --------------------------------------------
