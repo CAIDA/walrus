@@ -302,8 +302,6 @@ public class H3Main
 	m_saveWithLayoutAsMenuItem.setEnabled(false);
 	m_closeMenuItem.setEnabled(false);
 	m_captureScreenMenuItem.setEnabled(false);
-	m_captureScreenMenuItem2.setEnabled(false);
-	m_captureScreenMenuItem3.setEnabled(false);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
@@ -347,101 +345,146 @@ public class H3Main
     //     2048x2048 on a Canvas3D.  A larger size is a waste, as Java3D
     //     treats the Canvas3D as if it were 2048x2048.
 
-    private void handleCaptureScreenRequest(int width, int height)
+    private void handleCaptureScreenRequest()
     {
-	System.out.println
-	    ("handleCaptureScreenRequest(" + width + ", " + height + ")");
-
 	H3PointRenderList renderList = m_renderList;
 	H3DisplayPosition displayPosition = m_renderLoop.getDisplayPosition();
+
+	Dimension resolution = computeCaptureResolution();
 
 	m_view.removeCanvas3D(m_canvas);
 	handleStopRenderingRequest();
 	{
-	    // Setup scene graph. - - - - - - - - - - - - - - - - - - - - - -
+	    Canvas3D canvas = makeCaptureCanvas3D
+		(resolution.width, resolution.height);
+	    BranchGroup scene = makeCaptureUniverse
+		(canvas, renderList, displayPosition);
 
-	    GraphicsConfiguration config =
-		SimpleUniverse.getPreferredConfiguration();
-
-	    Canvas3D canvas = new Canvas3D(config, true);
-	    canvas.setSize(width, height); // probably not necessary
-
-	    SimpleUniverse univ = new SimpleUniverse(canvas);
-	    univ.getViewingPlatform().setNominalViewingTransform();
-
-	    // Move eye back in +z direction a tad so that the whole
-	    // sphere fits within the window.
-	    if (false)
-	    {
-		TransformGroup transformGroup =
-		    univ.getViewingPlatform().getViewPlatformTransform();
-		Transform3D transform = new Transform3D();
-		transformGroup.getTransform(transform);
-		transform.setTranslation(new Vector3d(0.0, 0.0, 3.0));
-		transformGroup.setTransform(transform);
-	    }
-
-	    BranchGroup BG = renderList.makeBranchGraph();
-	    TransformGroup TG =
-		new TransformGroup(displayPosition.getRotation());
-	    TG.addChild(BG);
-
-	    if (m_renderingConfiguration.axes)
-	    {
-		TG.addChild(m_viewParameters.makeAxesBranchGraph());
-	    }
-
-	    if (m_renderingConfiguration.depthCueing)
-	    {
-		LinearFog depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
-		depthCueing.setFrontDistance(2.0);
-		depthCueing.setBackDistance(4.5);
-		depthCueing.setInfluencingBounds
-		    (new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
-
-		TG.addChild(depthCueing);
-	    }
-
-	    BranchGroup scene = new BranchGroup();
-	    scene.setCapability(BranchGroup.ALLOW_DETACH);
-	    scene.addChild(TG);
-
-	    univ.addBranchGraph(scene);
-
-	    // Capture screen. - - - - - - - - - - - - - - - - - - - - - - -
-
-	    Screen3D onScreen = m_canvas.getScreen3D();
-	    double screenWidthPixelToMeterScale =
-		onScreen.getPhysicalScreenWidth() / onScreen.getSize().width;
-	    double screenHeightPixelToMeterScale =
-		onScreen.getPhysicalScreenHeight() / onScreen.getSize().height;
-
-            double screenPhysicalWidth = width * screenWidthPixelToMeterScale;
-	    double screenPhysicalHeight = height*screenHeightPixelToMeterScale;
-
-	    Screen3D screen = canvas.getScreen3D();
-	    screen.setSize(width, height);
-	    screen.setPhysicalScreenWidth(screenPhysicalWidth);
-	    screen.setPhysicalScreenHeight(screenPhysicalHeight);
-
-	    BufferedImage image =
-		new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-
-	    ImageComponent2D buffer =
-		new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
-
-	    canvas.setOffScreenBuffer(buffer);
-	    canvas.renderOffScreenBuffer();
-	    canvas.waitForOffScreenRendering();
-	    image = canvas.getOffScreenBuffer().getImage();
-
-	    writeImage(image, width, height);
+	    captureScreen(canvas, resolution.width, resolution.height);
 	    
 	    scene.detach();
 	}
 	m_view.addCanvas3D(m_canvas);
 	m_canvas.stopRenderer();
 	handleStartRenderingRequest();
+    }
+
+    private void captureScreen(Canvas3D canvas, int width, int height)
+    {
+	Screen3D onScreen = m_canvas.getScreen3D();
+	double screenWidthPixelToMeterScale =
+	    onScreen.getPhysicalScreenWidth() / onScreen.getSize().width;
+	double screenHeightPixelToMeterScale =
+	    onScreen.getPhysicalScreenHeight() / onScreen.getSize().height;
+
+	double screenPhysicalWidth = width * screenWidthPixelToMeterScale;
+	double screenPhysicalHeight = height * screenHeightPixelToMeterScale;
+
+	Screen3D screen = canvas.getScreen3D();
+	screen.setSize(width, height);
+	screen.setPhysicalScreenWidth(screenPhysicalWidth);
+	screen.setPhysicalScreenHeight(screenPhysicalHeight);
+
+	BufferedImage image =
+	    new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+	ImageComponent2D buffer =
+	    new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
+
+	canvas.setOffScreenBuffer(buffer);
+	canvas.renderOffScreenBuffer();
+	canvas.waitForOffScreenRendering();
+	image = canvas.getOffScreenBuffer().getImage();
+
+	writeImage(image, width, height);
+    }
+
+    private Canvas3D makeCaptureCanvas3D(int width, int height)
+    {
+	GraphicsConfiguration config =
+	    SimpleUniverse.getPreferredConfiguration();
+
+	Canvas3D retval = new Canvas3D(config, true);
+	retval.setSize(width, height); // probably not necessary
+
+	return retval;
+    }
+
+    private BranchGroup makeCaptureUniverse
+	(Canvas3D canvas, H3PointRenderList renderList,
+	 H3DisplayPosition displayPosition)
+    {
+	SimpleUniverse univ = new SimpleUniverse(canvas);
+	univ.getViewingPlatform().setNominalViewingTransform();
+
+	// Move eye back in +z direction a tad so that the whole
+	// sphere fits within the window.
+	if (true)
+	{
+	    TransformGroup transformGroup =
+		univ.getViewingPlatform().getViewPlatformTransform();
+	    Transform3D transform = new Transform3D();
+	    transformGroup.getTransform(transform);
+	    transform.setTranslation(new Vector3d(0.0, 0.0, 3.0));
+	    transformGroup.setTransform(transform);
+	}
+
+	BranchGroup BG = renderList.makeBranchGraph();
+	TransformGroup TG =
+	    new TransformGroup(displayPosition.getRotation());
+	TG.addChild(BG);
+
+	if (m_renderingConfiguration.axes)
+	{
+	    TG.addChild(m_viewParameters.makeAxesBranchGraph());
+	}
+
+	if (m_renderingConfiguration.depthCueing)
+	{
+	    LinearFog depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
+	    depthCueing.setFrontDistance(2.0);
+	    depthCueing.setBackDistance(4.5);
+	    depthCueing.setInfluencingBounds
+		(new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
+
+	    TG.addChild(depthCueing);
+	}
+
+	BranchGroup retval = new BranchGroup();
+	retval.setCapability(BranchGroup.ALLOW_DETACH);
+	retval.addChild(TG);
+
+	univ.addBranchGraph(retval);
+
+	return retval;
+    }
+
+    private Dimension computeCaptureResolution()
+    {
+	Dimension retval = new Dimension();
+
+	switch (m_captureResolution)
+	{
+	case CAPTURE_SCREEN_RESOLUTION:
+	    retval.width = m_canvas.getWidth();
+	    retval.height = m_canvas.getHeight();
+	    break;
+
+	case CAPTURE_1500_RESOLUTION:
+	    retval.width = 1500;
+	    retval.height = 1500;
+	    break;
+
+	case CAPTURE_2048_RESOLUTION:
+	    retval.width = 2048;
+	    retval.height = 2048;
+	    break;
+
+	default:
+	    throw new RuntimeException();
+	}
+
+	return retval;
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1261,8 +1304,6 @@ public class H3Main
     {
 	// File menu.
 	m_captureScreenMenuItem.setEnabled(false);
-	m_captureScreenMenuItem2.setEnabled(false);
-	m_captureScreenMenuItem3.setEnabled(false);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(true);
@@ -1286,8 +1327,6 @@ public class H3Main
     {
 	// File menu.
 	m_captureScreenMenuItem.setEnabled(true);
-	m_captureScreenMenuItem2.setEnabled(true);
-	m_captureScreenMenuItem3.setEnabled(true);
 
 	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
@@ -1365,32 +1404,13 @@ public class H3Main
 		}
 	    });
 
-	m_captureScreenMenuItem = new JMenuItem("Capture Screen (1:1)");
+	m_captureScreenMenuItem = new JMenuItem("Capture Screen");
+	m_closeMenuItem.setMnemonic(KeyEvent.VK_T);
 	m_captureScreenMenuItem.setEnabled(false);
 	m_captureScreenMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
-		    handleCaptureScreenRequest
-			(m_canvas.getWidth(), m_canvas.getHeight());
-		}
-	    });
-
-	m_captureScreenMenuItem2 = new JMenuItem("Capture Screen (1500x1500)");
-	m_captureScreenMenuItem2.setEnabled(false);
-	m_captureScreenMenuItem2.addActionListener(new ActionListener() {
-		public void actionPerformed(ActionEvent e)
-		{
-		    handleCaptureScreenRequest(1500, 1500);
-		}
-	    });
-
-
-	m_captureScreenMenuItem3 = new JMenuItem("Capture Screen (2048x2048)");
-	m_captureScreenMenuItem3.setEnabled(false);
-	m_captureScreenMenuItem3.addActionListener(new ActionListener() {
-		public void actionPerformed(ActionEvent e)
-		{
-		    handleCaptureScreenRequest(2048, 2048);
+		    handleCaptureScreenRequest();
 		}
 	    });
 
@@ -1409,6 +1429,91 @@ public class H3Main
 		}
 	    });
 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	JRadioButtonMenuItem captureScreenResolutionMenuItem
+	    = new JRadioButtonMenuItem("Screen Resolution");
+	captureScreenResolutionMenuItem.setSelected(true);
+	captureScreenResolutionMenuItem.addActionListener
+	    (new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			m_captureResolution = CAPTURE_SCREEN_RESOLUTION;
+		    }
+		});
+
+	JRadioButtonMenuItem capture1500ResolutionMenuItem
+	    = new JRadioButtonMenuItem("1500x1500 Resolution");
+	capture1500ResolutionMenuItem.addActionListener
+	    (new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			m_captureResolution = CAPTURE_1500_RESOLUTION;
+		    }
+		});
+
+	JRadioButtonMenuItem capture2048ResolutionMenuItem
+	    = new JRadioButtonMenuItem("2048x2048 Resolution");
+	capture2048ResolutionMenuItem.addActionListener
+	    (new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			m_captureResolution = CAPTURE_2048_RESOLUTION;
+		    }
+		});
+
+	m_captureResolutionButtonGroup = new ButtonGroup();
+	m_captureResolutionButtonGroup.add(captureScreenResolutionMenuItem);
+	m_captureResolutionButtonGroup.add(capture1500ResolutionMenuItem);
+	m_captureResolutionButtonGroup.add(capture2048ResolutionMenuItem);
+
+	JRadioButtonMenuItem captureScreenDPIMenuItem
+	    = new JRadioButtonMenuItem("Screen DPI");
+	captureScreenDPIMenuItem.setSelected(true);
+	captureScreenDPIMenuItem.addActionListener
+	    (new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			m_captureDPI = CAPTURE_SCREEN_DPI;
+		    }
+		});
+
+	JRadioButtonMenuItem capture300DPIMenuItem
+	    = new JRadioButtonMenuItem("300 DPI");
+	capture300DPIMenuItem.addActionListener
+	    (new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			m_captureDPI = CAPTURE_300_DPI;
+		    }
+		});
+
+	JRadioButtonMenuItem capture600DPIMenuItem
+	    = new JRadioButtonMenuItem("600 DPI");
+	capture600DPIMenuItem.addActionListener
+	    (new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			m_captureDPI = CAPTURE_600_DPI;
+		    }
+		});
+
+	m_captureDPIButtonGroup = new ButtonGroup();
+	m_captureDPIButtonGroup.add(captureScreenDPIMenuItem);
+	m_captureDPIButtonGroup.add(capture300DPIMenuItem);
+	m_captureDPIButtonGroup.add(capture600DPIMenuItem);
+
+	JMenu captureSettingsMenu = new JMenu("Capture Settings"); 
+	captureSettingsMenu.add(captureScreenResolutionMenuItem);
+	captureSettingsMenu.add(capture1500ResolutionMenuItem);
+	captureSettingsMenu.add(capture2048ResolutionMenuItem);
+	captureSettingsMenu.addSeparator();
+	captureSettingsMenu.add(captureScreenDPIMenuItem);
+	captureSettingsMenu.add(capture300DPIMenuItem);
+	captureSettingsMenu.add(capture600DPIMenuItem);
+
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 	m_fileMenu = new JMenu("File");
 	m_fileMenu.setMnemonic(KeyEvent.VK_F);
 	m_fileMenu.add(openMenuItem);
@@ -1417,8 +1522,8 @@ public class H3Main
 	m_fileMenu.add(m_closeMenuItem);
 	m_fileMenu.addSeparator();
 	m_fileMenu.add(m_captureScreenMenuItem);
-	m_fileMenu.add(m_captureScreenMenuItem2);
-	m_fileMenu.add(m_captureScreenMenuItem3);
+	m_fileMenu.add(captureSettingsMenu);
+	m_fileMenu.addSeparator();
 	m_fileMenu.add(preferencesMenuItem);
 	m_fileMenu.addSeparator();
 	m_fileMenu.add(exitMenuItem);
@@ -1632,6 +1737,14 @@ public class H3Main
     private static final boolean DEBUG_CHECK_ID_MAPPINGS = true;
     private static final boolean DEBUG_EVENT_HANDLING = false;
 
+    private static final int CAPTURE_SCREEN_RESOLUTION = 0;
+    private static final int CAPTURE_1500_RESOLUTION = 1;
+    private static final int CAPTURE_2048_RESOLUTION = 2;
+
+    private static final int CAPTURE_SCREEN_DPI = 0;
+    private static final int CAPTURE_300_DPI = 1;
+    private static final int CAPTURE_600_DPI = 2;
+
     private static final int DEFAULT_FRAME_WIDTH = 900;
     private static final int DEFAULT_FRAME_HEIGHT = 1000;
 
@@ -1662,6 +1775,8 @@ public class H3Main
     private EventHandler m_eventHandler; // ...non-null when ...being rendered.
     private MemoryUsage m_memoryUsage = new MemoryUsage();
     private H3GraphLoader m_graphLoader = new H3GraphLoader();
+    private int m_captureResolution = CAPTURE_SCREEN_RESOLUTION;
+    private int m_captureDPI = CAPTURE_SCREEN_DPI;
 
     private JFrame m_frame;
     private JTextField m_statusBar;
@@ -1675,6 +1790,8 @@ public class H3Main
     private JMenuItem m_captureScreenMenuItem;
     private JMenuItem m_captureScreenMenuItem2;
     private JMenuItem m_captureScreenMenuItem3;
+    private ButtonGroup m_captureResolutionButtonGroup;
+    private ButtonGroup m_captureDPIButtonGroup;
 
     private JMenu m_renderingMenu;
     private JMenuItem m_startMenuItem;
