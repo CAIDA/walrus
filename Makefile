@@ -30,12 +30,14 @@ walrus_sources = H3AdaptivePicker.java \
 	H3LineRenderer.java \
 	H3Main.java \
 	H3Math.java \
+	H3Matrix4d.java \
 	H3MouseInputAdapter.java \
 	H3NonadaptivePicker.java \
 	H3NonadaptiveRenderLoop.java \
 	H3PickViewer.java \
 	H3Picker.java \
 	H3PickerCommon.java \
+	H3Point4d.java \
 	H3PointRenderList.java \
 	H3RenderList.java \
 	H3RenderLoop.java \
