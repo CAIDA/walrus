@@ -272,11 +272,11 @@ provides flexible mechanisms by which application-specific conventions and
 policies may be implemented.  This section describes the conventions
 employed by Walrus.
 
-The only convention currently employed by Walrus is the specification of
-spanning trees with qualifiers.  Every graph file must have at least one
-spanning tree, but there can be more than one.  A spanning tree provides
-the crucial information necessary to layout a graph.  The following excerpt
-from a graph file shows the form of the spanning tree qualifier:
+There is currently only one convention.  Every graph file must specify at
+least one spanning tree (but there can be more than one) by means of
+qualifiers.  A spanning tree provides the crucial information needed to lay
+out a graph.  The following excerpt from a graph file shows the required
+form of the spanning tree qualifier:
 
    @qualifiers=[
       {
