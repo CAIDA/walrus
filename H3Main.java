@@ -1631,6 +1631,10 @@ public class H3Main
 		m_interactiveRequest.end();
 		break;
 
+	    case STATE_ROTATING_INTERACTIVE_START:
+		//IGNORE
+		break;
+
 	    case STATE_ROTATING_CONTINUOUS:
 		m_repeatingRequest.end();
 		break;
