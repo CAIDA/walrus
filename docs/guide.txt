@@ -2,7 +2,7 @@
 USAGE
 ===========================================================================
 
-Walrus is used in the following basic pattern: 1) load a graph, 2) adjust
+Walrus usage has the following basic pattern: 1) load a graph, 2) adjust
 colors and other configuration items, and 3) start the rendering.  Step 3
 may be slightly unintuitive, but it fits the general design of Walrus.  In
 Walrus, configuration changes do not take effect until the rendering is
