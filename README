@@ -134,17 +134,14 @@ You can give Walrus a quick try by doing the following:
    the node to the center.  Parts of the graph may disappear during
    these translations because of adaptive rendering.
 
-6. Select Color Scheme->Nontree Link Color->Grey.
+6. Select Color Scheme->Predefined->Green-Olive-[Summer Sky].
 
 7. Select Rendering->Update.
 
-8. Select Color Scheme->Nontree Link Color->Transparent.
-
-9. Select Rendering->Update.
-
-At this point, you should have a display with nodes in yellow, tree links
-in green, and nontree links in a cobweb-like transparent grey.  This is
-a good color scheme for exploring graphs with nontree links.
+At this point, you should have a display with nodes in green, tree links
+in olive green, and nontree links in a cobweb-like transparent blue.  Using
+transparency like this is often a good way of exploring graphs with nontree
+links.
 
 Two other features you may wish to try are wobbling and continuous
 rotations.  To activate wobbling, select Display->Wobble.  To stop the
