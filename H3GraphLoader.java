@@ -133,8 +133,12 @@ public class H3GraphLoader
 		bufferFreeMemory = Runtime.getRuntime().freeMemory();
 	    }
 
+	    if (DEBUG_PRINT_TRACE)
+	    {
+		m_buffer.dumpForTesting();
+	    }
+
 	    retval = m_buffer.toGraph();
-	    //m_buffer.dumpForTesting();
 
 	    if (DEBUG_MEMORY)
 	    {
@@ -220,6 +224,20 @@ public class H3GraphLoader
     {
 	// 's'|'n' <int> <double>
 
+	// NOTE: You might think at first sight that the following code
+	//       does nothing special when encountering the 's' line, which
+	//       specifies the root node.  Specifically, you may be puzzled
+	//       at how information about the root node is communicated to
+	//       H3GraphBuffer.  It turns out that it just happens
+	//       automatically as a consequence of the mapping that is done
+	//       between the external and internal IDs.  This mapping is
+	//       necessary in general since the external IDs are allowed to
+	//       start at any value and to have gaps.  In this mapping, the
+	//       root node will always map to the internal ID of zero, since
+	//       the 's' line must be the first node line in a file.  Hence,
+	//       the expectation of H3GraphBuffer is met without additional
+	//       effort.
+
 	boolean isRoot = (m_lexer.ttype == 's');
 
 	match(StreamTokenizer.TT_NUMBER);
@@ -227,7 +245,11 @@ public class H3GraphLoader
 	Integer id = new Integer((int)m_lexer.nval);
 	Integer node = new Integer(m_buffer.addNode());
 
-	//System.out.println("ID(" + id + ") => Node(" + node + ")");
+	if (DEBUG_PRINT_TRACE)
+	{
+	    System.out.println("Node mapping: ID(" + id + ") => Node("
+			       + node + ")");
+	}
 
 	if (m_nodes.put(id, node) != null)
 	{
@@ -269,13 +291,13 @@ public class H3GraphLoader
 				     + destinationID + ".");
 	}
 
-	if (false)
+	if (DEBUG_PRINT_TRACE)
 	{
-	    System.out.println("ID(" + sourceID + ") => ID("
+	    System.out.println("Link: src ID(" + sourceID + ") => dst ID("
 			       + destinationID + ")");
 
-	    System.out.println("Node(" + sourceNode + ") => Node("
-			       + destinationNode + ")");
+	    System.out.println("Link: src Node(" + sourceNode
+			       + ") => dst Node(" + destinationNode + ")");
 	}
 
 	if (isTreeLink)
@@ -383,6 +405,7 @@ public class H3GraphLoader
     ////////////////////////////////////////////////////////////////////////
 
     private static final boolean DEBUG_PRINT = true;
+    private static final boolean DEBUG_PRINT_TRACE = false;
     private static final boolean DEBUG_MEMORY = true;
 
     private StreamTokenizer m_lexer;
