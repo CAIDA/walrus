@@ -724,7 +724,7 @@ public class H3Graph
 	for (int i = 0; i < m_numNodes; i++)
 	{
 	    getNodeLayoutCoordinates(i, p);
-	    if (isGood(p.x) && isGood(p.y) && isGood(p.z) && isGood(p.w))
+	    if (H3Math.isFinite(p))
 	    {
 		++retval;
 	    }
@@ -751,11 +751,6 @@ public class H3Graph
 	System.out.println("numWInfs = " + numWInfs);
 
 	return retval;
-    }
-
-    private boolean isGood(double x)
-    {
-	return !Double.isNaN(x) && !Double.isInfinite(x);
     }
 
     ////////////////////////////////////////////////////////////////////////
