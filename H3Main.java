@@ -837,8 +837,6 @@ public class H3Main
 		H3GraphLayout layout = new H3GraphLayout();
 		layout.layoutHyperbolic(m_graph);
 
-		printGraphStatistics(m_graph);
-
 		int numNodes = m_graph.getNumNodes();
 		int numGoodNodes = m_graph.checkLayoutCoordinates();
 
@@ -911,181 +909,6 @@ public class H3Main
 				     JOptionPane.ERROR_MESSAGE);
 	}
 	return retval;
-    }
-
-    private void printGraphStatistics(final H3Graph graph)
-    {
-	GraphVisitor depthVisitor = new GraphVisitor()
-	    {
-		public void visit(int node, int level)
-		{
-		    if (level > m_maxDepth)
-		    {
-			m_maxDepth = level;
-		    }
-		}
-
-		public int getStatistics()
-		{
-		    return m_maxDepth;
-		}
-
-		private int m_maxDepth = 0;
-	    };
-
-	new GraphTraversal(graph, depthVisitor).traverse();
-	System.out.println("maxDepth = " + depthVisitor.getStatistics());
-
-	GraphVisitor branchingVisitor = new GraphVisitor()
-	    {
-		public void visit(int node, int level)
-		{
-		    int branching = graph.getNodeNontreeIndex(node)
-			- graph.getNodeChildIndex(node);
-
-		    if (branching > m_maxBranching)
-		    {
-			m_maxBranching = branching;
-		    }
-		}
-
-		public int getStatistics()
-		{
-		    return m_maxBranching;
-		}
-
-		private int m_maxBranching = 0;
-	    };
-
-	new GraphTraversal(graph, branchingVisitor).traverse();
-	System.out.println("maxBranching = "
-			   + branchingVisitor.getStatistics());
-
-	GraphVisitor coordinatesVisitor = new GraphVisitor()
-	    {
-		public void visit(int node, int level)
-		{
-		    graph.getNodeLayoutCoordinates(node, m_p);
-		    if (!isValidCoordinates(m_p))
-		    {
-			int parent = findGoodParent(node);
-			if (parent != -1)
-			{
-			    graph.getNodeLayoutCoordinates(parent, m_p);
-			    /*
-			    System.out.println
-				("(" + m_p.x + ", " + m_p.y + ", "
-				 + m_p.z + ", " + m_p.w + ")");
-			    */
-
-			    double x = m_p.x / m_p.w;
-			    double y = m_p.y / m_p.w;
-			    double z = m_p.z / m_p.w;
-			    System.out.println
-				("  <<" + x + ", " + y + ", " + z + ">>");
-			}
-		    }
-		}
-
-		public int getStatistics()
-		{
-		    return -1;
-		}
-
-		private int findGoodParent(int node)
-		{
-		    int retval = node;
-
-		    do
-		    {
-			retval = graph.getNodeParent(retval);
-			if (retval != -1)
-			{
-			    graph.getNodeLayoutCoordinates(retval, m_p);
-			}
-		    }
-		    while (retval != -1 && !isValidCoordinates(m_p));
-
-		    return retval;
-		}
-
-		private Point4d m_p = new Point4d();
-	    };
-
-	new GraphTraversal(graph, coordinatesVisitor).traverse();
-
-	GraphVisitor layoutVisitor = new GraphVisitor()
-	    {
-		public void visit(int node, int level)
-		{
-		    graph.getNodeLayoutCoordinates(node, m_p);
-		    if (!isValidCoordinates(m_p))
-		    {
-			m_p.x = 0.0;
-			m_p.y = 0.0;
-			m_p.z = 0.0;
-			m_p.w = 1.0;
-			graph.setNodeLayoutCoordinates(node, m_p);
-		    }
-		}
-
-		public int getStatistics()
-		{
-		    return -1;
-		}
-
-		private Point4d m_p = new Point4d();
-	    };
-
-	new GraphTraversal(graph, layoutVisitor).traverse();
-    }
-
-    private boolean isValidCoordinates(Point4d p)
-    {
-	return isGood(p.x) && isGood(p.y)
-	    && isGood(p.z) && isGood(p.w);
-    }
-
-    private boolean isGood(double x)
-    {
-	return !Double.isNaN(x) && !Double.isInfinite(x);
-    }
-
-    private interface GraphVisitor
-    {
-	void visit(int node, int level);
-	int getStatistics();
-    }
-
-    private class GraphTraversal
-    {
-	public GraphTraversal(H3Graph graph, GraphVisitor visitor)
-	{
-	    m_graph = graph;
-	    m_visitor = visitor;
-	}
-
-	public void traverse()
-	{
-	    traverseNode(m_graph.getRootNode(), 0);
-	}
-
-	private void traverseNode(int node, int level)
-	{
-	    m_visitor.visit(node, level);
-
-	    int start = m_graph.getNodeChildIndex(node);
-	    int nontreeStart = m_graph.getNodeNontreeIndex(node);
-    
-	    for (int i = start; i < nontreeStart; i++)
-	    {
-		int child = m_graph.getLinkDestination(i);
-		traverseNode(child, level + 1);
-	    }
-	}
-
-	private H3Graph m_graph;
-	private GraphVisitor m_visitor;
     }
 
     // Debugging routine.
@@ -4079,5 +3902,43 @@ public class H3Main
 	// After freeing graph buffer, and leaving only graph.
 	private long m_finalTotalMemory;
 	private long m_finalFreeMemory;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private interface GraphVisitor
+    {
+	void visit(int node, int level);
+    }
+
+    private class GraphTraversal
+    {
+	public GraphTraversal(H3Graph graph, GraphVisitor visitor)
+	{
+	    m_graph = graph;
+	    m_visitor = visitor;
+	}
+
+	public void traverse()
+	{
+	    traverseNode(m_graph.getRootNode(), 0);
+	}
+
+	private void traverseNode(int node, int level)
+	{
+	    m_visitor.visit(node, level);
+
+	    int start = m_graph.getNodeChildIndex(node);
+	    int nontreeStart = m_graph.getNodeNontreeIndex(node);
+    
+	    for (int i = start; i < nontreeStart; i++)
+	    {
+		int child = m_graph.getLinkDestination(i);
+		traverseNode(child, level + 1);
+	    }
+	}
+
+	private H3Graph m_graph;
+	private GraphVisitor m_visitor;
     }
 }
