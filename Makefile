@@ -76,6 +76,24 @@ atonce: $(walrus_sources) $(tester_sources)
 pedantic:
 	$(MAKE) JAVAC=jikes JAVAC_FLAGS=+P
 
+# Jikes occasionally includes the fully-qualified path of source and
+# class files when generating dependencies.  This almost always makes
+# these dependency files useless for anyone other than the current developer.
+#
+# Hence, for occasions when one wishes to distribute these dependency files,
+# so that an installation of Jikes is not a requirement to building Walrus,
+# this rule strips away the directory parts.  For day-to-day development,
+# this step is not necessary, of course.
+#
+# This assumes that stripping away the directory part of paths does not
+# cause ambiguity or cause files not to be found.  To ensure this, you
+# should especially take care to use ANTLR in a jar file, so that Jikes
+# elides dependencies on ANTLR classes.  We discard dependencies on libsea
+# to prevent problems.
+sanitize:
+	perl -i -e 'use File::Basename; while (<>) { next if /\/libsea\//; my ($$a,$$b) = split(":", $$_); print(basename($$a), " : ", basename($$b), "\n"); }' *.u
+
+
 clean:
 	-rm *.class *~
 
