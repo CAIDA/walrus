@@ -54,7 +54,7 @@ CHANGES
 Since 0.2, released Jan 25, 2002:
 
   * Added some more introductory documentation on the LibSea file format.
-      See docs/guide.txt.
+      This should help people to get up to speed quickly. See docs/guide.txt.
   * Added support for overlaid node labels.
       Attribute values can now be shown in the display area next to the
       relavant nodes.  These labels, however, are only temporary and
