@@ -496,22 +496,51 @@ public class H3Graph
 
     public void checkTreeReachability()
     {
-	int numReachable = checkTreeReachabilityAux(0);
+	checkTreeReachability(0);
+    }
+
+    public void checkTreeReachability(int node)
+    {
+	BitSet visited = new BitSet();
+	int numReachable = checkReachability(visited, node);
 	if (numReachable == m_numNodes)
 	{
-	    System.out.println("PASSED: All nodes reachable in tree.");
+	    String msg =
+		"PASSED: All nodes reachable in tree from node " + node;
+	    System.out.println(msg);
 	}
 	else
 	{
-	    System.out.println("FAILED: Only " + numReachable
-			       + " nodes of " + m_numNodes
-			       + " reachable in tree.");
+	    String msg = "FAILED: Only " + numReachable
+		+ " nodes of " + m_numNodes
+		+ " reachable in tree from node " + node;
+	    System.out.println(msg);
+
+	    System.out.println("Unvisited nodes:");
+	    for (int i = 0; i < m_numNodes; i++)
+	    {
+		if (!visited.get(i))
+		{
+		    System.out.println("\t" + i);
+		}
+	    }
+
+	    dumpForTesting();
+	    dumpForTesting2();
 	}
     }
 
-    public int checkTreeReachabilityAux(int node)
+    private int checkReachability(BitSet visited, int node)
     {
 	int retval = 1;
+
+	if (visited.get(node))
+	{
+	    String msg = "ERROR: Encountered cycle in tree at node " + node;
+	    System.out.println(msg);
+	    return 0;
+	}
+	visited.set(node);
 
 	int treeLinks = m_nodes.treeLinks[node];
 	int nontreeLinks = m_nodes.nontreeLinks[node];
@@ -519,7 +548,7 @@ public class H3Graph
 	while (treeLinks < nontreeLinks)
 	{
 	    int child = m_links.destination[treeLinks++];
-	    retval += checkTreeReachabilityAux(child);
+	    retval += checkReachability(visited, child);
 	}
 
 	return retval;
@@ -589,7 +618,10 @@ public class H3Graph
 	for (int i = 0; i < m_numNodes; i++)
 	{
 	    System.out.println("Node " + i + ":");
-	    System.out.println("\tparent: " + m_nodes.parent[i]);
+	    System.out.println("\tparent link: " + m_nodes.parent[i]);
+	    System.out.println("\tparent node: "
+			       + (m_nodes.parent[i] >= 0
+				  ? m_links.source[m_nodes.parent[i]] : -1));
 
 	    int treeLinks = m_nodes.treeLinks[i];
 	    int nontreeLinks = m_nodes.nontreeLinks[i];
