@@ -326,6 +326,7 @@ public class H3Main
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
+	m_showParentNodeMenuItem.setEnabled(false);
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
@@ -1516,6 +1517,7 @@ public class H3Main
 	m_refreshDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.setEnabled(false);
+	m_showParentNodeMenuItem.setEnabled(false);
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
@@ -1545,6 +1547,7 @@ public class H3Main
 	m_refreshDisplayMenuItem.setEnabled(true);
 	m_wobbleDisplayMenuItem.setEnabled(true);
 	m_showRootNodeMenuItem.setEnabled(true);
+	m_showParentNodeMenuItem.setEnabled(true);
 	m_showPreviousNodeMenuItem.setEnabled(true);
 	m_savePositionMenuItem.setEnabled(true);
 	m_restorePositionMenuItem.setEnabled(m_savedDisplayPosition != null);
@@ -1859,6 +1862,17 @@ public class H3Main
 		}
 	    });
 
+	m_showParentNodeMenuItem = new JMenuItem("Show Parent Node");
+	m_showParentNodeMenuItem.setMnemonic(KeyEvent.VK_A);
+	m_showParentNodeMenuItem.setEnabled(false);
+	m_showParentNodeMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_eventHandler.forceIdleState();
+		    m_eventHandler.showParentNode();
+		}
+	    });
+
 	m_showPreviousNodeMenuItem = new JMenuItem("Show Previous Node");
 	m_showPreviousNodeMenuItem.setMnemonic(KeyEvent.VK_V);
 	m_showPreviousNodeMenuItem.setEnabled(false);
@@ -1906,6 +1920,7 @@ public class H3Main
 	m_displayMenu.add(m_refreshDisplayMenuItem);
 	m_displayMenu.add(m_wobbleDisplayMenuItem);
 	m_displayMenu.add(m_showRootNodeMenuItem);
+	m_displayMenu.add(m_showParentNodeMenuItem);
 	m_displayMenu.add(m_showPreviousNodeMenuItem);
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_savePositionMenuItem);
@@ -2057,6 +2072,7 @@ public class H3Main
     private JMenuItem m_refreshDisplayMenuItem;
     private JMenuItem m_wobbleDisplayMenuItem;
     private JMenuItem m_showRootNodeMenuItem;
+    private JMenuItem m_showParentNodeMenuItem;
     private JMenuItem m_showPreviousNodeMenuItem;
     private JMenuItem m_savePositionMenuItem;
     private JMenuItem m_restorePositionMenuItem;
@@ -2270,6 +2286,20 @@ public class H3Main
 		m_labelZOffsetCounter = 0;
 		m_renderLoop.translate(m_rootNode);
 		shiftCenterNodes(m_rootNode);
+	    }
+	}
+
+	public void showParentNode()
+	{
+	    if (m_state == STATE_IDLE)
+	    {
+		int parent = m_graph.getNodeParent(m_currentNode);
+		if (parent != -1)
+		{
+		    m_labelZOffsetCounter = 0;
+		    m_renderLoop.translate(parent);
+		    shiftCenterNodes(parent);
+		}
 	    }
 	}
 
@@ -2710,6 +2740,10 @@ public class H3Main
 		else if (c == 'n')
 		{
 		    m_narrowingHandler.narrowToPath(m_currentNode);
+		}
+		else if (c == 'p')
+		{
+		    showParentNode();
 		}
 		else if (c >= '0' && c <= '9')
 		{
