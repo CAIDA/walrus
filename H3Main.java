@@ -130,10 +130,6 @@ public class H3Main
 
 		    m_closeMenuItem.setEnabled(true);
 		    m_startMenuItem.setEnabled(true);
-
-		    m_renderingConfiguration =
-			createRenderingConfigurationSnapshot();
-		    m_renderingConfiguration.print();
 		}
 	    }
 	    catch (FileNotFoundException e)
@@ -181,30 +177,6 @@ public class H3Main
 
 	return retval;
     }
-
-    ///////////////////////////////////////////////////////////////////////
-
-	    /*
-	      m_frame.getContentPane().remove(m_splashLabel);
-	      m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
-	      m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
-	      m_statusBar.setText(MSG_GRAPH_LOADED);
-	      m_closeMenuItem.setEnabled(true);
-	      m_frame.validate();
-
-	      startRendering();
-	    */
-
-	    /*
-	    catch (H3GraphLoader.InvalidGraphDataException e)
-	    {
-		String msg = "Graph file lacks needed data: "
-		    + e.getMessage();
-		JOptionPane dialog = new JOptionPane();
-		dialog.showMessageDialog(null, msg, "Open Failed",
-					 JOptionPane.ERROR_MESSAGE);
-	    }
-	    */
 
     ///////////////////////////////////////////////////////////////////////
 
@@ -296,20 +268,65 @@ public class H3Main
 	RenderingConfiguration renderingConfiguration =
 	    createRenderingConfigurationSnapshot();
 	renderingConfiguration.print();
+
+	try
+	{
+	    if (m_renderingConfiguration == null
+		|| !renderingConfiguration.spanningTree.equals
+		(m_renderingConfiguration.spanningTree))
+	    {
+		m_graph = m_graphLoader.load
+		    (m_backingGraph, renderingConfiguration.spanningTree);
+
+		H3GraphLayout layout = new H3GraphLayout();
+		layout.layoutHyperbolic(m_graph);
+
+		System.out.println("Finished graph layout.");
+	    }
+
+	    m_renderingConfiguration = renderingConfiguration;
+
+	    m_startMenuItem.setEnabled(false);
+	    m_stopMenuItem.setEnabled(true);
+	    m_updateMenuItem.setEnabled(true);
+
+	    m_frame.getContentPane().remove(m_splashLabel);
+	    m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
+	    m_frame.validate();
+
+	    startRendering();
+	}
+	catch (H3GraphLoader.InvalidGraphDataException e)
+	{
+	    String msg = "Graph file lacks needed data: " + e.getMessage();
+	    JOptionPane dialog = new JOptionPane();
+	    dialog.showMessageDialog(null, msg, "Rendering Failed",
+				     JOptionPane.ERROR_MESSAGE);
+	}
     }
 
     ///////////////////////////////////////////////////////////////////////
 
     private void handleStopRenderingRequest()
     {
+	m_frame.getContentPane().remove(m_canvas);
+	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
+	m_frame.validate();
 
+	stopRendering();
+
+	m_startMenuItem.setEnabled(true);
+	m_stopMenuItem.setEnabled(false);
+	m_updateMenuItem.setEnabled(false);
     }
 
     ///////////////////////////////////////////////////////////////////////
 
     private void handleUpdateRenderingRequest()
     {
-
+	RenderingConfiguration renderingConfiguration =
+	    createRenderingConfigurationSnapshot();
+	renderingConfiguration.print();
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -325,11 +342,6 @@ public class H3Main
 	System.out.println("numNontreeLinks = " + m_graph.getNumNontreeLinks());
 
 	//dumpOutdegreeHistogram(m_graph);
-
-	H3GraphLayout layout = new H3GraphLayout();
-	layout.layoutHyperbolic(m_graph);
-
-	System.out.println("Finished graph layout.");
 
 	H3ViewParameters parameters = new H3ViewParameters(m_canvas);
 
@@ -668,9 +680,6 @@ public class H3Main
     }
 
     ///////////////////////////////////////////////////////////////////////
-
-
-    ///////////////////////////////////////////////////////////////////////
     // PRIVATE FIELDS
     ///////////////////////////////////////////////////////////////////////
 
@@ -688,12 +697,14 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
+    // The following, m_renderingConfiguration, will be non-null if a graph
+    // has been loaded and rendered (at least once).
     private RenderingConfiguration m_renderingConfiguration;
-    private Graph m_backingGraph;  // Will be non-null when a graph is open.
-    private H3Graph m_graph;  // Will be non-null when a graph is open.
+    private Graph m_backingGraph;  // Will be non-null if a graph is open.
+    private H3Graph m_graph;  // ...non-null when a graph is being rendered.
     private H3Canvas3D m_canvas;
-    private H3RenderLoop m_renderLoop;
-    private EventHandler m_eventHandler;
+    private H3RenderLoop m_renderLoop; // ...non-null when ... being rendered.
+    private EventHandler m_eventHandler; // ...non-null when ...being rendered.
     private MemoryUsage m_memoryUsage = new MemoryUsage();
     private H3GraphLoader m_graphLoader = new H3GraphLoader();
 
