@@ -213,97 +213,14 @@ public class H3ViewParameters
 	double scale = m_objectTransform.getScale();
 	System.out.println("scale=" + scale);
 
-	Transform3D scalingTransform = new Transform3D();
-	scalingTransform.set(scale);
+	double frontComputed = 1.8 * Math.pow(scale, -1.2);
+	double backComputed = 3.8 * Math.pow(scale, -0.7);
 
-	m_canvas.getCenterEyeInImagePlate(m_eye);
-
-	/*
-	m_canvas.getVworldToImagePlate(m_vworldToImage);
-
-	Transform3D transform = new Transform3D(m_vworldToImage);
-	transform.mul(scalingTransform);
-
-	Point3d pCenter = new Point3d(0.0, 0.0, 0.0);
-	Point3d pFar = new Point3d(0.0, 0.0, -1.0);
-	Point3d pNear = new Point3d(0.0, 0.0, 1.0);
-
-	transform.transform(pCenter);
-	transform.transform(pFar);
-	transform.transform(pNear);
-
-	System.out.println("eye=" + m_eye);
-	System.out.println("pCenter_img=" + pCenter);
-	System.out.println("pFar_img=" + pFar);
-	System.out.println("pNear_img=" + pNear);
-
-	pCenter.sub(m_eye);
-	pFar.sub(m_eye);
-	pNear.sub(m_eye);
-
-	System.out.println("pCenter_eye=" + pCenter);
-	System.out.println("pFar_eye=" + pFar);
-	System.out.println("pNear_eye=" + pNear);
-	*/
-
-	m_canvas.getImagePlateToVworld(m_imageToVworld);
-	Point3d eye = new Point3d(m_eye);
-	m_imageToVworld.transform(eye);
-	System.out.println("eye_vworld=" + eye);
-
-	Point3d pFar = new Point3d(0.0, 0.0, -1.0);
-	Point3d pNear = new Point3d(0.0, 0.0, 0.5);
-
-	System.out.println("pFar=" + pFar);
-	System.out.println("pNear=" + pNear);
-
-	/*
-	scalingTransform.transform(pFar);
-	scalingTransform.transform(pNear);
-
-	System.out.println("pFar_vw=" + pFar);
-	System.out.println("pNear_vw=" + pNear);
-	*/
-
-	pFar.sub(eye, pFar);
-	pNear.sub(eye, pNear);
-
-	System.out.println("pFar_eye=" + pFar);
-	System.out.println("pNear_eye=" + pNear);
-
-	double front = askForDistance("Front", pNear.z);
-	double back = askForDistance("Back", pFar.z);
+	double front = askForDistance("Front", frontComputed);
+	double back = askForDistance("Back", backComputed);
 
 	m_depthCueing.setFrontDistance(front);
 	m_depthCueing.setBackDistance(back);
-
-	/*
-	double front;
-	if (scale > 1.0)
-	{
-	    front = DEPTH_CUEING_ENABLED_FRONT / (scale * scale);
-	}
-	else
-	{
-	    front = DEPTH_CUEING_ENABLED_FRONT / scale;
-	}
-	double back = front +
-	    (DEPTH_CUEING_ENABLED_BACK - DEPTH_CUEING_ENABLED_FRONT) / scale;
-
-
-	double frontScale = (scale > 1.0 ? scale * scale : scale);
-	double front = (eye.z - scale * (eye.z - DEPTH_CUEING_ENABLED_FRONT))
-	    / frontScale;
-
-	double back = (eye.z - scale * (eye.z - DEPTH_CUEING_ENABLED_BACK))
-	    / scale;
-
-	System.out.println("front=" + front);
-	System.out.println("back=" + back);
-
-	m_depthCueing.setFrontDistance(front);
-	m_depthCueing.setBackDistance(back);
-	*/
     }
 
     private double askForDistance(String s, double value)
