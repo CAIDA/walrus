@@ -1010,15 +1010,15 @@ public class H3Main
 		    if (numReachable == -1)
 		    {
 			msg = "The selected spanning tree does not specify"
-			    + " a tree.  A node is reachable along at least"
-			    + " two paths, which could result from a cycle,"
-			    + " a parallel edge, or from the convergence of"
-			    + " two paths.";
+			    + " a tree.\nA node is reachable along at least"
+			    + " two paths, which indicates a cycle,\n"
+			    + "a parallel edge, or the convergence of"
+			    + " two branches.";
 		    }
 		    else
 		    {
 			msg = "The selected spanning tree does not cover"
-			    + " all nodes.  Only " + numReachable + " of "
+			    + " all nodes.\nOnly " + numReachable + " of "
 			    + numNodes + " nodes are reachable through the"
 			    + " spanning tree.";
 		    }
