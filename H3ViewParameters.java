@@ -96,9 +96,31 @@ public class H3ViewParameters
 	m_axesEnabled = enable;
     }
 
-    public BranchGroup makeAxesBranchGraph()
+    public BranchGroup makeAxesBranchGraph(double lineScale)
     {
-	return m_axes.makeBranchGraph();
+	return m_axes.makeBranchGraph(getAxesTransform(), lineScale);
+    }
+
+    public void saveAxesTransform()
+    {
+	if (m_axesTransform == null)
+	{
+	    m_axesTransform = new Transform3D(m_objectTransform);
+	}
+	else
+	{
+	    m_axesTransform.set(m_objectTransform);
+	}
+    }
+
+    public void clearAxesTransform()
+    {
+	m_axesTransform = null;
+    }
+
+    public Transform3D getAxesTransform()
+    {
+	return (m_axesTransform == null ? m_objectTransform : m_axesTransform);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -485,6 +507,8 @@ public class H3ViewParameters
     private boolean m_axesEnabled = true;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private Transform3D m_axesTransform;
 
     private Transform3D m_objectTransform = new Transform3D();
     private Transform3D m_savedObjectTransform = new Transform3D();
