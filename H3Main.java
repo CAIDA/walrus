@@ -123,24 +123,17 @@ public class H3Main
 		{
 		    populateMenus(backingGraph);
 
-		    m_file = file;
 		    m_backingGraph = backingGraph;
 
 		    m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
 		    m_statusBar.setText(MSG_GRAPH_LOADED);
+
 		    m_closeMenuItem.setEnabled(true);
 		    m_startMenuItem.setEnabled(true);
 
-		    /*
-		      m_frame.getContentPane().remove(m_splashLabel);
-		      m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
-		      m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
-		      m_statusBar.setText(MSG_GRAPH_LOADED);
-		      m_closeMenuItem.setEnabled(true);
-		      m_frame.validate();
-
-		      startRendering();
-		    */
+		    m_renderingConfiguration =
+			createRenderingConfigurationSnapshot();
+		    m_renderingConfiguration.print();
 		}
 	    }
 	    catch (FileNotFoundException e)
@@ -150,6 +143,58 @@ public class H3Main
 		dialog.showMessageDialog(null, msg, "File Not Found",
 					 JOptionPane.ERROR_MESSAGE);
 	    }
+
+	    if (m_backingGraph == null)
+	    {
+		m_statusBar.setText(MSG_NO_GRAPH_LOADED);
+	    }
+	}
+
+	System.out.println("Finished handleOpenFileRequest()");
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private RenderingConfiguration createRenderingConfigurationSnapshot()
+    {
+	RenderingConfiguration retval = new RenderingConfiguration();
+
+	int numSpanningTrees = m_spanningTreeMenu.getItemCount();
+	for (int i = 0; i < numSpanningTrees; i++)
+	{
+	    JMenuItem menuItem = m_spanningTreeMenu.getItem(i);
+	    if (menuItem.isSelected())
+	    {
+		retval.spanningTree = menuItem.getText();
+		break;
+	    }
+	}
+
+	retval.isAdaptive = m_adaptiveMenuItem.isSelected();
+	retval.hasMultipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
+	retval.nodeColor =
+	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
+	retval.treeLinkColor =
+	    m_colorSchemeMenu.createTreeLinkColorConfigurationSnapshot();
+	retval.nontreeLinkColor =
+	    m_colorSchemeMenu.createNontreeLinkColorConfigurationSnapshot();
+
+	return retval;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+	    /*
+	      m_frame.getContentPane().remove(m_splashLabel);
+	      m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
+	      m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
+	      m_statusBar.setText(MSG_GRAPH_LOADED);
+	      m_closeMenuItem.setEnabled(true);
+	      m_frame.validate();
+
+	      startRendering();
+	    */
+
 	    /*
 	    catch (H3GraphLoader.InvalidGraphDataException e)
 	    {
@@ -160,15 +205,6 @@ public class H3Main
 					 JOptionPane.ERROR_MESSAGE);
 	    }
 	    */
-
-	    if (m_backingGraph == null)
-	    {
-		m_statusBar.setText(MSG_NO_GRAPH_LOADED);
-	    }
-	}
-
-	System.out.println("Finished handleOpenFileRequest()");
-    }
 
     ///////////////////////////////////////////////////////////////////////
 
@@ -212,6 +248,7 @@ public class H3Main
 
     private void handleCloseFileRequest()
     {
+	m_renderingConfiguration = null;
 	m_backingGraph = null;
 	m_graph = null;
 	if (m_renderLoop != null)
@@ -219,28 +256,36 @@ public class H3Main
 	    stopRendering();
 	}
 
+	// UI.
 	m_frame.setTitle(WALRUS_TITLE);
 	m_frame.getContentPane().remove(m_canvas);
 	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 	m_statusBar.setText(MSG_NO_GRAPH_LOADED);
+	m_frame.getContentPane().validate();
 
+	// File menu.
 	m_saveWithLayoutMenuItem.setEnabled(false);
 	m_saveWithLayoutAsMenuItem.setEnabled(false);
 	m_closeMenuItem.setEnabled(false);
+
+	// Rendering menu.
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
 
+	// Spanning Tree menu.
 	m_spanningTreeMenu.removeAll();
-	m_nodeLabelMenu.removeAll();
+	m_spanningTreeButtonGroup = null;
+	m_spanningTreeQualifiers = null;
+
+	// Color Scheme menu.
 	m_colorSchemeMenu.removeAttributeMenus();
 	m_colorSchemeMenu.enableReasonableColorScheme();
 
-	m_spanningTreeButtonGroup = null;
-	m_spanningTreeQualifiers = null;
+	// Node Label menu.
+	m_nodeLabelMenu.removeAll();
 	m_nodeLabelAttributes = null;
 
-	m_frame.getContentPane().validate();
 	System.out.println("Finished handleCloseFileRequest()");
     }
 
@@ -248,7 +293,9 @@ public class H3Main
 
     private void handleStartRenderingRequest()
     {
-
+	RenderingConfiguration renderingConfiguration =
+	    createRenderingConfigurationSnapshot();
+	renderingConfiguration.print();
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -391,11 +438,11 @@ public class H3Main
 
     private void stopRendering()
     {
-	m_renderLoop.shutdown();
-	m_renderLoop = null;
-
 	m_eventHandler.dispose();
 	m_eventHandler = null;
+
+	m_renderLoop.shutdown();
+	m_renderLoop = null;
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -575,10 +622,27 @@ public class H3Main
 		}
 	    });
 
+	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive");
+	m_adaptiveMenuItem.setSelected(true);
+	m_adaptiveMenuItem.addItemListener(new ItemListener() {
+		public void itemStateChanged(ItemEvent e)
+		{
+		    boolean enable =(e.getStateChange() == ItemEvent.SELECTED);
+		    m_multipleNodeSizesMenuItem.setEnabled(enable);
+		}
+	    });
+
+	m_multipleNodeSizesMenuItem =
+	    new JCheckBoxMenuItem("Multiple Node Sizes");
+	m_multipleNodeSizesMenuItem.setSelected(true);
+
 	m_renderingMenu = new JMenu("Rendering");
 	m_renderingMenu.add(m_startMenuItem);
 	m_renderingMenu.add(m_stopMenuItem);
 	m_renderingMenu.add(m_updateMenuItem);
+	m_renderingMenu.addSeparator();
+	m_renderingMenu.add(m_adaptiveMenuItem);
+	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
@@ -624,7 +688,7 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private File m_file;  // Will be non-null when a graph is open.
+    private RenderingConfiguration m_renderingConfiguration;
     private Graph m_backingGraph;  // Will be non-null when a graph is open.
     private H3Graph m_graph;  // Will be non-null when a graph is open.
     private H3Canvas3D m_canvas;
@@ -647,6 +711,8 @@ public class H3Main
     private JMenuItem m_startMenuItem;
     private JMenuItem m_stopMenuItem;
     private JMenuItem m_updateMenuItem;
+    private JCheckBoxMenuItem m_adaptiveMenuItem;
+    private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -1160,6 +1226,22 @@ public class H3Main
 	    m_nontreeLinkColorSelection.enableReasonableSelection();
 	}
 
+	public ColorConfiguration createNodeColorConfigurationSnapshot()
+	{
+	    return m_nodeColorSelection.createColorConfigurationSnapshot();
+	}
+
+	public ColorConfiguration createTreeLinkColorConfigurationSnapshot()
+	{
+	    return m_treeLinkColorSelection.createColorConfigurationSnapshot();
+	}
+
+	public ColorConfiguration createNontreeLinkColorConfigurationSnapshot()
+	{
+	    return m_nontreeLinkColorSelection
+		.createColorConfigurationSnapshot();
+	}
+
 	////////////////////////////////////////////////////////////////////
 	// PRIVATE METHODS
 	////////////////////////////////////////////////////////////////////
@@ -1513,6 +1595,7 @@ public class H3Main
 	{
 	    m_defaultSelection = menuItem;
 	    m_defaultSelection.setSelected(true);
+	    updateSelectedFixedColorIndex(m_defaultSelection);
 	    updateMenuInterdependencies();
 	}
 
@@ -1524,8 +1607,66 @@ public class H3Main
 		|| m_RGBMenuItem.isSelected())
 	    {
 		m_defaultSelection.setSelected(true);
+		updateSelectedFixedColorIndex(m_defaultSelection);
 		updateMenuInterdependencies();
 	    }
+	}
+
+	public ColorConfiguration createColorConfigurationSnapshot()
+	{
+	    ColorConfiguration retval = new ColorConfiguration();
+
+	    if (m_invisibleMenuItem.isSelected())
+	    {
+		retval.scheme = ColorConfiguration.INVISIBLE;
+	    }
+	    else if (m_transparentMenuItem.isSelected())
+	    {
+		retval.scheme = ColorConfiguration.TRANSPARENT;
+	    }
+	    else if (m_hotToColdMenuItem.isSelected())
+	    {
+		retval.scheme = ColorConfiguration.HOT_TO_COLD;
+		retval.colorAttribute =
+		    findSelectedMenuItem(m_colorAttributeMenu).getText();
+	    }
+	    else if (m_logHotToColdMenuItem.isSelected())
+	    {
+		retval.scheme = ColorConfiguration.LOG_HOT_TO_COLD;
+		retval.colorAttribute =
+		    findSelectedMenuItem(m_colorAttributeMenu).getText();
+	    }
+	    else if (m_hueMenuItem.isSelected())
+	    {
+		retval.scheme = ColorConfiguration.HUE;
+		retval.colorAttribute =
+		    findSelectedMenuItem(m_colorAttributeMenu).getText();
+	    }
+	    else if (m_RGBMenuItem.isSelected())
+	    {
+		retval.scheme = ColorConfiguration.RGB;
+		retval.colorAttribute =
+		    findSelectedMenuItem(m_colorAttributeMenu).getText();
+	    }
+	    else
+	    {
+		retval.scheme = ColorConfiguration.FIXED_COLOR;
+		retval.fixedColorIndex = m_selectedFixedColorIndex;
+	    }
+
+	    if (m_selectionAttributeMenu.isEnabled())
+	    {
+		JMenuItem menuItem = 
+		    findSelectedMenuItem(m_selectionAttributeMenu);
+		// NOTE: One menu item is always selected.
+		// The zeroth element in the menu stands for no-choice.
+		if (menuItem != m_selectionAttributeMenu.getItem(0))
+		{
+		    retval.selectionAttribute = menuItem.getText();
+		}
+	    }
+
+	    return retval;
 	}
 
 	////////////////////////////////////////////////////////////////////
@@ -1569,6 +1710,7 @@ public class H3Main
 	private void handleFixedColorRequest(int index)
 	{
 	    setupForFixedColorChoice();
+	    m_selectedFixedColorIndex = index;
 	}
 
 	private void setupForMinimalColorChoice()
@@ -1760,6 +1902,59 @@ public class H3Main
 	    m_RGBMenuItem.setEnabled(RGB);
 	}
 
+	/**
+	 * Update <code>m_selectedFixedColorIndex</code> if the given
+	 * selected menu item is that for a fixed color.
+	 *
+	 * <p>
+	 * Usually, this value is automatically updated by an action
+	 * listener added to the menu item representing a fixed
+	 * color.  That works well in general, but during program
+	 * initialization, when we want to setup the default color scheme,
+	 * we need a different mechanism.  Even during initialization, we
+	 * could conceivably call <code>JMenuItem.doClick()</code>
+	 * (which is inherited from <code>AbstractButton</code>) and
+	 * simply take advantage of the mechanism involving action listeners.
+	 * But despite its attractiveness at first glance, this approach
+	 * is not really tenable, owing to the assumptions that an action
+	 * listener may make about which parts of the program are fully
+	 * initialized.  That is to say, though it could work in many cases,
+	 * it could also be the source of subtle bugs.  So it seems much
+	 * better to be cautious and have this other mechanism for keeping
+	 * <code>m_selectedFixedColorIndex</code> up-to-date in special
+	 * circumstances.
+	 * </p>
+	 */
+	private void updateSelectedFixedColorIndex(JMenuItem selectedMenuItem)
+	{
+	    for (int i = 0; i < m_fixedColorMenuItems.length; i++)
+	    {
+		if (selectedMenuItem == m_fixedColorMenuItems[i])
+		{
+		    m_selectedFixedColorIndex = i;
+		    break;
+		}
+	    }
+	}
+
+	private JMenuItem findSelectedMenuItem(JMenu menu)
+	{
+	    JMenuItem retval = null;
+
+	    int numItems = menu.getItemCount();
+	    for (int i = 0; i < numItems && retval == null; i++)
+	    {
+		JMenuItem menuItem = menu.getItem(i);
+		// NOTE: getItem() returns null for menu separators.
+		if (menuItem != null && menuItem.isSelected())
+		{
+		    retval = menuItem;
+		}
+	    }
+
+	    return retval;
+	}
+
 	private void putChecked(Map map, String name, Object data)
 	{
 	    if (map.put(name, data) != null)
@@ -1782,14 +1977,14 @@ public class H3Main
 	private JRadioButtonMenuItem m_hueMenuItem;
 	private JRadioButtonMenuItem m_RGBMenuItem;
 	private JMenu m_colorAttributeMenu;
-	private ButtonGroup m_selectionAttributeButtonGroup;
 	private JMenu m_selectionAttributeMenu;
+	private ButtonGroup m_selectionAttributeButtonGroup;
 
 	// This is the menu item which will be in the selected state when
 	// no menu item has yet been selected by the user or when the
-	// currently selected menu item must cease to be enabled (such as
-	// when removing all color attributes).  This must point to a menu
-	// item for a fixed color or to a menu item for either the invisible
+	// currently selected menu item must be disabled (as a result of
+	// removing all color attributes, for example).  This must point
+	// to a menu item for a fixed color or to one of the invisible
 	// or transparent choices.  By doing so, we ensure that this menu
 	// item is selectable in all situations.
 	private JMenuItem m_defaultSelection;
@@ -1798,8 +1993,10 @@ public class H3Main
 	private ButtonGroup m_allColorAttributeButtonGroup;
 	private JRadioButtonMenuItem[] m_scalarColorAttributeMenus;
 	private JRadioButtonMenuItem[] m_allColorAttributeMenus;
+
 	private int[] m_fixedColors;
 	private JRadioButtonMenuItem[] m_fixedColorMenuItems;
+	private int m_selectedFixedColorIndex;
 
 	////////////////////////////////////////////////////////////////////
 	// PRIVATE INNER CLASSES
@@ -1820,6 +2017,71 @@ public class H3Main
 
 	    private int m_index;
 	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class RenderingConfiguration
+    {
+	public String spanningTree;
+	public boolean isAdaptive;
+	public boolean hasMultipleNodeSizes;
+
+	public ColorConfiguration nodeColor;
+	public ColorConfiguration treeLinkColor;
+	public ColorConfiguration nontreeLinkColor;
+
+	public void print()
+	{
+	    System.out.println("------------------------------------------\n");
+	    System.out.println("RenderingConfiguration:");
+	    System.out.println("\tspanningTree = " + spanningTree);
+	    System.out.println("\tisAdaptive = " + isAdaptive);
+	    System.out.println("\thasMultipleNodeSizes = "
+			       + hasMultipleNodeSizes);
+	    System.out.print("(Node) ");
+	    nodeColor.print();
+	    System.out.print("(Tree Link) ");
+	    treeLinkColor.print();
+	    System.out.print("(Nontree Link) ");
+	    nontreeLinkColor.print();
+	    System.out.println("------------------------------------------\n");
+	}
+    }
+
+    private static class ColorConfiguration
+    {
+	public static final int INVISIBLE = 0;
+	public static final int TRANSPARENT = 1;
+	public static final int FIXED_COLOR = 2;
+	public static final int HOT_TO_COLD = 3;
+	public static final int LOG_HOT_TO_COLD = 4;
+	public static final int HUE = 5;
+	public static final int RGB = 6;
+
+	public int scheme;
+	public int fixedColorIndex;
+	public String colorAttribute;
+	public String selectionAttribute;
+
+	public void print()
+	{
+	    System.out.println("ColorConfiguration:");
+	    System.out.println("\tscheme = " + getSchemeName());
+	    System.out.println("\tfixedColorIndex = " + fixedColorIndex);
+	    System.out.println("\tcolorAttribute = " + colorAttribute);
+	    System.out.println("\tselectionAttribute = " + selectionAttribute);
+	}
+
+	private String getSchemeName()
+	{
+	    return m_schemeNames[scheme];
+	}
+
+	private static final String[] m_schemeNames = {
+	    "INVISIBLE", "TRANSPARENT", "FIXED_COLOR", "HOT_TO_COLD",
+	    "LOG_HOT_TO_COLD", "HUE", "RGB"
+	};
     }
 
     ///////////////////////////////////////////////////////////////////////
