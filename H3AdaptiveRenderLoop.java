@@ -158,14 +158,17 @@ public class H3AdaptiveRenderLoop
     {
 	startRequest();
 	{
-	    if (DEBUG_PRINT)
+	    if (m_state == STATE_IDLE || m_state == STATE_COMPLETE)
 	    {
-		System.out.println("translating to node " + node + " ...");
-	    }
+		if (DEBUG_PRINT)
+		{
+		    System.out.println("translating to node " + node + " ...");
+		}
 
-	    m_picker.reset();
-	    m_translationNode = node;
-	    m_state = STATE_TRANSLATE;
+		m_picker.reset();
+		m_translationNode = node;
+		m_state = STATE_TRANSLATE;
+	    }
 	}
 	endRequest();
     }
@@ -473,13 +476,54 @@ public class H3AdaptiveRenderLoop
 	m_renderer.reset();
 	m_renderer.setMaxDuration(m_maxRotationDuration);
 
+	m_isFinishedRotating = false;
 	Matrix4d rot = new Matrix4d();
-	while (m_rotationRequest.getRotation(rot))
+	while (synchRotateState())
 	{
-	    rotate(rot);
+	    if (m_rotationRequest.getRotation(rot))
+	    {
+		rotate(rot);
+	    }
+	    else
+	    {
+		m_isFinishedRotating = true;
+	    }
+	}
+    }
+
+    private synchronized boolean synchRotateState()
+    {
+	if (m_numPendingRequests > 0)
+	{
+	    if (DEBUG_PRINT)
+	    {
+		System.out.print("[" + Thread.currentThread().getName()
+				 + "]: ");
+		System.out.println("synchRotateState() waiting ...");
+		System.out.println("(" + m_numPendingRequests +
+				   " request(s) pending)");
+	    }
+
+	    m_isRequestTurn = true;
+	    notifyAll();
+
+	    m_isWaiting = true;
+	    waitIgnore();
+	    m_isWaiting = false;
 	}
 
-	m_state = STATE_COMPLETE_INIT;
+	if (DEBUG_PRINT)
+	{
+	    System.out.print("[" + Thread.currentThread().getName() + "]: ");
+	    System.out.println("synchRotateState() running ...");
+	}
+
+	if (m_state == STATE_ROTATE && m_isFinishedRotating)
+	{
+	    m_state = STATE_COMPLETE_INIT;
+	}
+
+	return m_state == STATE_ROTATE;
     }
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -806,6 +850,7 @@ public class H3AdaptiveRenderLoop
     private long m_maxCompletionDuration = Long.MAX_VALUE;
 
     private H3RotationRequest m_rotationRequest;
+    private boolean m_isFinishedRotating;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
