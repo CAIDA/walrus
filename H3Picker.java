@@ -39,7 +39,14 @@ import javax.vecmath.*;
 
 public interface H3Picker
 {
+    // (x, y) are the AWT (that is, window) coordinates of the location
+    // clicked on by the user.  {center} is the AWT coordinates of the node
+    // actually picked, if any.  This returns the ID of the node picked,
+    // or -1 if no node was picked.
     int pickNode(int x, int y, Point2d center);
+
+    // (x, y) are the AWT (that is, window) coordinates of the location
+    // clicked on by the user.
     void highlightNode(int x, int y, boolean enableFrontRendering);
     void highlightNode(int node, boolean enableFrontRendering);
     void reset();
