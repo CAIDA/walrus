@@ -80,6 +80,11 @@ public class H3Graph
 	return m_numLinks;
     }
 
+    public int getRootNode()
+    {
+	return m_rootNode;
+    }
+
     public double getNodeRadius(int node)
     {
 	return m_nodes.radius[node];
@@ -201,6 +206,11 @@ public class H3Graph
 	    m_nodes.y[i] = p.y / p.w;
 	    m_nodes.z[i] = p.z / p.w;
 	}
+    }
+
+    public void setRootNode(int node)
+    {
+	m_rootNode = node;
     }
 
     public void setNodeRadius(int node, double radius)
@@ -364,6 +374,7 @@ public class H3Graph
     private int m_numTreeLinks = 0;
     private int m_numNontreeLinks = 0;
 
+    private int m_rootNode = 0;
     private Nodes m_nodes;
     private Links m_links;
 
