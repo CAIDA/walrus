@@ -31,8 +31,7 @@ meaningful for the underlying data and appropriate for the desired insight.
 The prominence and orderliness that Walrus gives to the links in the
 spanning tree, in contrast to all other links, means that an arbitrarily
 chosen spanning tree may create a misleading or ineffective visualization.
-This means that, ideally, the input graphs should be inherently
-hierarchical.
+Ideally, the input graphs should be inherently hierarchical.
 
 Walrus uses 3D hyperbolic geometry to display graphs under a fisheye-like
 distortion.  At any moment, the amount of magnification, and thus the level
