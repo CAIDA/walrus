@@ -69,20 +69,14 @@ public class H3Transform
 	t1.transform(pa);
 	t1.transform(pb);
 
-	pa.project(pa);
-	pb.project(pb);
-
 	retval.mul(buildTranslation(ORIGIN4, pa));
 
 	Matrix4d t2 = buildTranslation(pa, ORIGIN4);
 	t2.transform(pa);
 	t2.transform(pb);
 
-	pa.project(pa);
-	pb.project(pb);
-
 	/* calculate spherical coordinates (rho, phi, theta) of pb */
-	double rho = pb.distance(ORIGIN4);
+	double rho = H3Math.vectorLength(pb);
 	double phi = Math.acos(pb.x / rho);
 	double theta = Math.atan2(pb.z, pb.y);
 
