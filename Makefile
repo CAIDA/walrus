@@ -93,6 +93,8 @@ pedantic:
 sanitize:
 	perl -i -e 'use File::Basename; while (<>) { next if /\/libsea\//; my ($$a,$$b) = split(":", $$_); print(basename($$a), " : ", basename($$b), "\n"); }' *.u
 
+jar:
+	jar cvmf distrib/manifest-supplement walrus.jar *.class walrus-splash.jpg
 
 clean:
 	-rm *.class *~
