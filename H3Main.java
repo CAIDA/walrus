@@ -2783,52 +2783,6 @@ public class H3Main
 		    m_narrowingHandler.pruneToNeighborhood
 			(m_currentNode, distance);
 		}
-		else if (c == '+')
-		{
-		    forceIdleState();
-
-		    Matrix4d t = new Matrix4d();
-		    t.set(1.2);
-		    m_parameters.extendObjectTransform(t);
-
-		    refreshDisplay();
-		}
-		else if (c == '-')
-		{
-		    forceIdleState();
-
-		    Matrix4d t = new Matrix4d();
-		    t.set(0.8);
-		    m_parameters.extendObjectTransform(t);
-
-		    refreshDisplay();
-		}
-		else if (c == '?')
-		{
-	View view = m_canvas.getView();
-	System.out.println("PHYSICAL_EYE=" + View.PHYSICAL_EYE);
-	System.out.println("PHYSICAL_SCREEN=" + View.PHYSICAL_SCREEN);
-	System.out.println("FrontClipPolicy=" + view.getFrontClipPolicy());
-	System.out.println("FrontClipDistance=" + view.getFrontClipDistance());
-	System.out.println("BackClipPolicy=" + view.getBackClipPolicy());
-	System.out.println("BackClipDistance=" + view.getBackClipDistance());
-
-	Point3d eye = new Point3d();
-	m_canvas.getCenterEyeInImagePlate(eye);
-	System.out.println("eye(" + eye.x + ", " + eye.y + ", " + eye.z + ")");
-
-		}
-		else if (c == '/')
-		{
-	forceIdleState();
-
-	View view = m_canvas.getView();
-	double distance = view.getFrontClipDistance() + 0.1;
-	System.out.println("FrontClipDistance=" + distance);
-	view.setFrontClipDistance(distance);
-
-	refreshDisplay();
-		}
 	    }
 	}
 
