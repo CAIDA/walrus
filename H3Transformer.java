@@ -98,6 +98,7 @@ public class H3Transformer
 	m_transform.transform(p);
     }
 
+    // XXX: Why isn't this safeguarded with startRequest() .. endRequest()?
     public synchronized void pushPosition()
     {
 	Position position = new Position();
@@ -113,19 +114,9 @@ public class H3Transformer
 	{
 	    if (m_graph.getNumNodes() > 0)
 	    {
-		++m_iteration;
-		m_renderQueue.clear();
-		m_transformQueue.clear();
-
 		Position position = (Position)
 		    m_savedPositions.remove(m_savedPositions.size() - 1);
-
-		m_startingNode = position.startingNode;
-		m_transform.set(position.transform);
-
-		m_graph.markNodeVisited(m_startingNode, m_iteration);
-		m_startingRadius = transformAndEnqueueNode(m_startingNode);
-		m_state = STATE_NODE;
+		reinstatePosition(position);
 	    }
 	    else
 	    {
@@ -140,6 +131,32 @@ public class H3Transformer
     public synchronized void discardPosition()
     {
         m_savedPositions.remove(m_savedPositions.size() - 1);
+    }
+
+    public synchronized Position getPosition()
+    {
+	Position retval = new Position();
+	retval.startingNode = m_startingNode;
+	retval.transform.set(m_transform);
+	return retval;
+    }
+
+    public synchronized void setPosition(Position position)
+    {
+	startRequest();
+	{
+	    if (m_graph.getNumNodes() > 0)
+	    {
+		reinstatePosition(position);
+	    }
+	    else
+	    {
+		m_renderQueue.clear();
+		m_renderQueue.end();
+		m_state = STATE_IDLE;
+	    }
+	}
+	endRequest();
     }
 
     public synchronized void shutdown()
@@ -244,6 +261,21 @@ public class H3Transformer
 	    m_renderQueue.end();
 	    m_state = STATE_IDLE;
 	}
+    }
+
+    // NOTE: This assumes that m_graph.getNumNodes() > 0.
+    private synchronized void reinstatePosition(Position position)
+    {
+	++m_iteration;
+	m_renderQueue.clear();
+	m_transformQueue.clear();
+
+	m_startingNode = position.startingNode;
+	m_transform.set(position.transform);
+
+	m_graph.markNodeVisited(m_startingNode, m_iteration);
+	m_startingRadius = transformAndEnqueueNode(m_startingNode);
+	m_state = STATE_NODE;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -493,12 +525,12 @@ public class H3Transformer
     private int m_currentLinksEndIndex;
 
     ////////////////////////////////////////////////////////////////////////
-    // PRIVATE NESTED CLASSES
+    // PUBLIC CLASSES
     ////////////////////////////////////////////////////////////////////////
 
-    private static class Position
+    public static class Position
     {
 	public int startingNode;
-	public Matrix4d transform = new Matrix4d();
+	public Matrix4d transform = new Matrix4d(); // Copy of original matrix.
     }
 }
