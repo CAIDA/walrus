@@ -15,20 +15,37 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 DESCRIPTION
 
-Walrus is a tool for visualizing large directed graphs, where large is on
-the order of a million nodes, and about as many links. It is applicable
-mainly to graphs that are tree-like by having a meaningful spanning tree
-and by including a relatively small number of non-tree links. It overcomes
-the difficulties of visualizing large graphs in two ways. First, the
-computational cost of layout is overcome by considering only the spanning
-tree in the calculations, since techniques for tree layout scale better
-than those for general graph layout. Second, the problem of displaying a
-large graph on a small screen is overcome by making use of hyperbolic
-geometry. Hyperbolic geometry provides a Focus+Context view which resembles
-a continuous fish-eye distortion in three dimensions. It allows the user to
-examine the fine details of a small area while always having a view of the
-whole graph available as a frame of reference. The user examines the whole
-graph by interactively moving the focus.
+Walrus is a tool for interactively visualizing large directed graphs in
+three-dimensional space. Although Walrus can display graphs containing a
+million nodes or more, visual clutter and occlusion greatly diminish the
+effectiveness of the visualization as the number of nodes, or the degree of
+their connectivity, increases.  The greater the connectivity, the more
+occlusion becomes a problem. Thus, in practice, Walrus is best suited to
+visualizing moderately sized graphs that are nearly trees. A graph with a
+hundred thousand nodes and a slightly greater number of links is likely to
+be comfortable to work with.
+
+Walrus computes its layout based on a user-supplied spanning tree. Because
+the specifics of the supplied spanning tree greatly affect the resulting
+display, it is crucial that graphs contain a meaningful spanning tree. In
+particular, the prominence and orderliness that Walrus gives to the links
+in the spanning tree, in contrast to all other links, means that an
+arbitrarily chosen spanning tree may create a misleading display. This
+implies that graphs should ideally be inherently hierarchical.
+
+Walrus uses 3D hyperbolic geometry to display graphs under a fisheye-like
+distortion. The amount of magnification, and thus the level of visible
+detail, varies across the display. This allows the user to examine the fine
+details of a small area while always having a view of the whole graph
+available as a frame of reference.  Graphs are rendered inside a sphere
+that contains the Euclidean projection of 3D hyperbolic space. Points
+within the sphere are magnified according to their radial distance from the
+center. Objects near the center are magnified, while those near the
+boundary are shrunk. The amount of magnification decreases continuously and
+at an accelerated rate from the center to the boundary, until objects are
+reduced to zero size at the latter, which represents infinity. By bringing
+different parts of a graph to the magnified central region, the user can
+examine every part of the graph in detail.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
