@@ -704,6 +704,20 @@ public class H3Graph
     // TEST METHODS
     ////////////////////////////////////////////////////////////////////////
 
+    // Place nodes with invalid layout coordinates at the origin.
+    public void sanitizeLayoutCoordinates()
+    {
+	Point4d p = new Point4d();
+	for (int i = 0; i < m_numNodes; i++)
+	{
+	    getNodeLayoutCoordinates(i, p);
+	    if (!H3Math.isFinite(p))
+	    {
+		setNodeLayoutCoordinates(i, 0.0, 0.0, 0.0, 1.0);
+	    }
+	}
+    }
+
     // Returns the number of nodes with valid (not NaN or infinite) layout
     // coordinates.
     public int checkLayoutCoordinates()
