@@ -200,12 +200,12 @@ public class H3NonadaptiveRenderLoop
 	    m_translation.set(m_savedTranslation);
 	    m_graph.transformNodes(m_translation);
 
-	    refresh();
+	    m_state = STATE_REFRESH;
 	}
 	endRequest();
     }
 
-    public H3DisplayPosition getDisplayPosition()
+    public synchronized H3DisplayPosition getDisplayPosition()
     {
 	H3DisplayPosition retval = null;
 	startRequest();
@@ -218,7 +218,7 @@ public class H3NonadaptiveRenderLoop
 	return retval;
     }
 
-    public void setDisplayPosition(H3DisplayPosition position)
+    public synchronized void setDisplayPosition(H3DisplayPosition position)
     {
 	startRequest();
 	{
@@ -228,7 +228,7 @@ public class H3NonadaptiveRenderLoop
 	    m_translation.set(position.getTranslation());
 	    m_graph.transformNodes(m_translation);
 
-	    refresh();
+	    m_state = STATE_REFRESH;
 	}
 	endRequest();
     }
