@@ -50,9 +50,6 @@ public class PPMWriter
 	int right = minX + width;
 	int bottom = minY + m_raster.getHeight();
 
-	System.out.println("minX=" + minX + "; minY=" + minY);
-	System.out.println("right=" + right + "; bottom=" + bottom);
-
 	m_pixels4 = new int[4 * m_raster.getWidth()];
 	m_pixels3 = new byte[3 * m_raster.getWidth()];
 
