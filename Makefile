@@ -1,3 +1,7 @@
+#############################################################################
+# The Walrus Graph Visualization Tool.
+#############################################################################
+
 JAVA_INSTALL = /usr/j2se
 
 JAVA = $(JAVA_INSTALL)/bin/java
@@ -14,6 +18,10 @@ J3D_JARS = $(JAVA_EXT_DIR)/vecmath.jar:$(JAVA_EXT_DIR)/j3dcore.jar:$(JAVA_EXT_DI
 JIKES = jikes
 JIKES_FLAGS = -classpath $(JAVA_RUNTIME):$(J3D_JARS):$$CLASSPATH
 JIKES_DEPENDENCY_FLAGS = +B +M
+
+#############################################################################
+# NO FURTHER CONFIGURATION OPTIONS BELOW
+#############################################################################
 
 walrus_sources = H3AdaptivePicker.java \
 	H3AdaptiveRenderLoop.java \
@@ -81,17 +89,16 @@ pedantic:
 # these dependency files useless for anyone other than the current developer.
 #
 # Hence, for occasions when one wishes to distribute these dependency files,
-# so that an installation of Jikes is not a requirement to building Walrus,
+# so that an installation of Jikes is not a requirement to building LibSea,
 # this rule strips away the directory parts.  For day-to-day development,
 # this step is not necessary, of course.
 #
 # This assumes that stripping away the directory part of paths does not
 # cause ambiguity or cause files not to be found.  To ensure this, you
 # should especially take care to use ANTLR in a jar file, so that Jikes
-# elides dependencies on ANTLR classes.  We discard dependencies on libsea
-# to prevent problems.
+# elides dependencies on ANTLR classes.
 sanitize:
-	perl -i -e 'use File::Basename; while (<>) { next if /\/libsea\//; my ($$a,$$b) = split(":", $$_); print(basename($$a), " : ", basename($$b), "\n"); }' *.u
+	for F in *.u; do perl -i -n -MFile::Basename -e 's/\s//g; my ($$a,$$b) = split(/:/, $$_); print(basename($$a), " : ", basename($$b), "\n");' $$F; done
 
 jar:
 	jar cvmf distrib/manifest-supplement walrus.jar *.class walrus-splash.jpg
