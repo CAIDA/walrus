@@ -569,7 +569,7 @@ Each attribute definition includes three lists in which the values of the
 attribute for the three types of objects (nodes, links, and paths) are
 provided.  In the case of the 'root' attribute, the list for node values
 appears on line 40, link values on line 41, and path values on line 42.
-These lists enumerate the mapping from object ID's to attribute values with
+These lists supply the mapping from object ID's to attribute values with
 (ID, value) pairs.  For example, the pair
 
                          { @id=0; @value=T; }
@@ -620,10 +620,10 @@ types to be potential sources of coloring information and automatically
 builds several menus, such as Color Scheme->Node Color->Color Attribute,
 listing them.
 
-An integer value should specify a color with the red, green, and blue
-components encoded into 32 bits in the order (_, R, G, B), with blue
-occupying the lowest eight bits and red occupying the next to highest eight
-bits.  More precisely, given R, G, and B,
+Integer attributes should encode the red, green, and blue components of a
+color into 32 bits in the order (_, R, G, B), with blue occupying the
+lowest eight bits and red occupying the next to highest eight bits.  More
+precisely, given R, G, and B,
 
            color = ((R * 255) + G) * 255 + B.
 
@@ -654,7 +654,7 @@ indicates the tree links.  The qualifier itself should have 'type' equal to
 arbitrary (this one is called 'sample_spanning_tree').  The referenced
 attributes need not be named 'root' and 'tree_link', although this happens
 to be the case in the sample graph (on lines 37 and 45).  It is crucial,
-however, that correct names are supplied for the '@alias=' component, as
+however, that correct names are supplied for the '@alias=' components, as
 they are done here on lines 74 and 75.
 
 Walrus allows graph files to include more than one spanning tree.  The
