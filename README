@@ -62,6 +62,9 @@ Since 0.2, released Jan 25, 2002:
       nodes or links are displayed.
   * Added support for displaying attributes of list type.
       Previously, only scalar attributes could be displayed.
+  * Improved the layout of binary trees.
+      Walrus now makes better use of available space when laying out
+      binary trees.
   * Fixed bug in which links would sometimes be drawn as black lines.
       If you had transparency enabled and then switched the coloring of
       links to RGB (that is, to colors stored in an attribute), then
