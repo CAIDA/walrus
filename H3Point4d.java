@@ -4,6 +4,7 @@
 // This was independently written without consulting Sun's source, though
 // the interface of this class mimics Sun's.
 
+import javax.vecmath.Point4d;
 import mpfun.*;
 
 public final class H3Point4d
@@ -79,6 +80,14 @@ public final class H3Point4d
     public void set(H3Point4d t1)
     {
 	x = t1.x;  y = t1.y;  z = t1.z;  w = t1.w;
+    }
+
+    public void set(Point4d t1)
+    {
+	this.x = new MPReal(t1.x);
+	this.y = new MPReal(t1.y);
+	this.z = new MPReal(t1.z);
+	this.w = new MPReal(t1.w);
     }
 
     public void set(double x, double y, double z, double w)
