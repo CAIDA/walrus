@@ -2503,41 +2503,37 @@ public class H3Main
 	    {
 		StringBuffer buffer = new StringBuffer();
 
-		int attribute = m_nodeLabelAttributes[i];
-		ValueIterator iterator = null;
 		try
 		{
-		    iterator =
+		    int attribute = m_nodeLabelAttributes[i];
+		    ValueIterator iterator =
 			m_backingGraph.getNodeAttribute(node, attribute);
+
+		    boolean isListType = iterator.getType().isListType();
+		    if (isListType)
+		    {
+			buffer.append('[');
+		    }
+
+		    int k = 0;
+		    while (!iterator.atEnd())
+		    {
+			if (k++ > 0)
+			{
+			    buffer.append(", ");
+			}
+			addAttributeValue(buffer, iterator, quoteStrings);
+			iterator.advance();
+		    }
+
+		    if (isListType)
+		    {
+			buffer.append(']');
+		    }
 		}
 		catch (AttributeUnavailableException e)
 		{
-		    String msg =
-			"INTERNAL ERROR: attribute '" + attribute
-			+ "' not found in backing graph.";
-		    throw new RuntimeException(msg);
-		}
-
-		boolean isListType = iterator.getType().isListType();
-		if (isListType)
-		{
-		    buffer.append('[');
-		}
-
-		int k = 0;
-		while (!iterator.atEnd())
-		{
-		    if (k++ > 0)
-		    {
-			buffer.append(", ");
-		    }
-		    addAttributeValue(buffer, iterator, quoteStrings);
-		    iterator.advance();
-		}
-
-		if (isListType)
-		{
-		    buffer.append(']');
+		    buffer.append("<<unavailable>>");
 		}
 
 		retval[i] = buffer.toString();
