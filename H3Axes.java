@@ -181,8 +181,6 @@ public class H3Axes
 	    gc.setModelTransform(zT3D);
 	    gc.draw(m_zLabel);
 	}
-
-	gc.setModelTransform(transform);
     }
 
     private void createUnitSphere()

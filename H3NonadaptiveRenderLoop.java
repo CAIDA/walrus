@@ -458,6 +458,7 @@ public class H3NonadaptiveRenderLoop
 	gc.clear();
 	{
 	    m_parameters.drawAxes(gc);
+	    m_parameters.putModelTransform(gc);
 	    render(gc);
 	}
 	m_canvas.swap();
@@ -494,6 +495,7 @@ public class H3NonadaptiveRenderLoop
 	gc.clear();
 	{
 	    m_parameters.drawAxes(gc);
+	    m_parameters.putModelTransform(gc);
 	    render(gc);
 	}
 	m_canvas.swap();
@@ -522,6 +524,7 @@ public class H3NonadaptiveRenderLoop
 	gc.clear();
 	{
 	    m_parameters.drawAxes(gc);
+	    m_parameters.putModelTransform(gc);
 	    render(gc);
 	}
 	m_canvas.swap();

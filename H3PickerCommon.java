@@ -76,6 +76,7 @@ public abstract class H3PickerCommon
 	Point3d pickedCoordinates = getPixelLocationInImagePlate(x, y);
 	m_parameters.drawPickViewer(gc, pickedCoordinates.x,
 				    pickedCoordinates.y);
+	m_parameters.putModelTransform(gc);
 
 	Point2d center = new Point2d();
 	int node = pick(pickedCoordinates.x, pickedCoordinates.y, center);
@@ -92,7 +93,6 @@ public abstract class H3PickerCommon
 	    PointArray array = new PointArray(1, PointArray.COORDINATES);
 	    array.setCoordinate(0, nodeCoordinates);
 
-	    m_parameters.putModelTransform(gc);
 	    gc.setAppearance(m_parameters.getPickAppearance());
 	    gc.draw(array);
 	}

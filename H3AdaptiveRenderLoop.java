@@ -445,6 +445,7 @@ public class H3AdaptiveRenderLoop
 		GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
 		gc.clear();
 		m_parameters.drawAxes(gc);
+		m_parameters.putModelTransform(gc);
 		m_canvas.swap();
 
 		m_state = STATE_COMPLETE_INIT;
@@ -558,8 +559,8 @@ public class H3AdaptiveRenderLoop
 	gc.setFrontBufferRendering(true);
 	gc.clear();
 
-	m_parameters.putModelTransform(gc);
 	m_parameters.drawAxes(gc);
+	m_parameters.putModelTransform(gc);
 	m_renderer.reset();
 
 	m_state = STATE_COMPLETE;
@@ -653,7 +654,6 @@ public class H3AdaptiveRenderLoop
 	gc.clear();
 	{
 	    m_parameters.drawAxes(gc);
-
 	    m_parameters.putModelTransform(gc);
 	    m_renderer.render(gc);
 	}
@@ -695,7 +695,6 @@ public class H3AdaptiveRenderLoop
 	gc.clear();
 	{
 	    m_parameters.drawAxes(gc);
-
 	    m_parameters.putModelTransform(gc);
 	    m_renderer.render(gc);
 	}
