@@ -2394,6 +2394,8 @@ public class H3Main
 
     private static class ColorSelection
     {
+	private static final boolean COLOR_SCALES = false;
+
 	////////////////////////////////////////////////////////////////////
 	// PUBLIC CONSTANTS
 	////////////////////////////////////////////////////////////////////
@@ -2481,16 +2483,22 @@ public class H3Main
 	    m_colorSchemeButtonGroup = new ButtonGroup();
 	    m_colorSchemeButtonGroup.add(m_invisibleMenuItem);
 	    m_colorSchemeButtonGroup.add(m_transparentMenuItem);
+	    if (COLOR_SCALES)
+	    {
 	    m_colorSchemeButtonGroup.add(m_hotToColdMenuItem);
 	    m_colorSchemeButtonGroup.add(m_logHotToColdMenuItem);
 	    m_colorSchemeButtonGroup.add(m_hueMenuItem);
+	    }
 	    m_colorSchemeButtonGroup.add(m_RGBMenuItem);
 
 	    putChecked(map, INVISIBLE, m_invisibleMenuItem);
 	    putChecked(map, TRANSPARENT, m_transparentMenuItem);
+	    if (COLOR_SCALES)
+	    {
 	    putChecked(map, HOT_TO_COLD, m_hotToColdMenuItem);
 	    putChecked(map, LOG_HOT_TO_COLD, m_logHotToColdMenuItem);
 	    putChecked(map, HUE, m_hueMenuItem);
+	    }
 	    putChecked(map, RGB, m_RGBMenuItem);
 
 	    menu.add(m_invisibleMenuItem);
@@ -2522,9 +2530,12 @@ public class H3Main
 		}
 	    }
 	    menu.addSeparator();
+	    if (COLOR_SCALES)
+	    {
 	    menu.add(m_hotToColdMenuItem);
 	    menu.add(m_logHotToColdMenuItem);
 	    menu.add(m_hueMenuItem);
+	    }
 	    menu.add(m_RGBMenuItem);
 	    menu.add(m_colorAttributeMenu);
 	    menu.addSeparator();
