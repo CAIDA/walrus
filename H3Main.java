@@ -1624,7 +1624,7 @@ public class H3Main
 	    });
 
 	m_recomputeLayoutExtendedMenuItem =
-	    new JMenuItem("Recompute Layout with Extended Precision");
+	    new JMenuItem("Recompute Layout With Extended Precision");
 	m_recomputeLayoutExtendedMenuItem.setMnemonic(KeyEvent.VK_R);
 	m_recomputeLayoutExtendedMenuItem.setEnabled(false);
 	m_recomputeLayoutExtendedMenuItem.addActionListener
@@ -1687,7 +1687,7 @@ public class H3Main
 
 	// Create "Display" menu. ------------------------------------------
 
-	m_narrowToPathMenuItem = new JMenuItem("Narrow to Path");
+	m_narrowToPathMenuItem = new JMenuItem("Narrow To Path");
 	m_narrowToPathMenuItem.setMnemonic(KeyEvent.VK_N);
 	m_narrowToPathMenuItem.setEnabled(false);
 	m_narrowToPathMenuItem.addActionListener(new ActionListener() {
@@ -1710,7 +1710,7 @@ public class H3Main
 		}
 	    });
 
-	m_widenTowardRootMenuItem = new JMenuItem("Widen toward Root");
+	m_widenTowardRootMenuItem = new JMenuItem("Widen Toward Root");
 	m_widenTowardRootMenuItem.setMnemonic(KeyEvent.VK_W);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.addActionListener
@@ -1722,7 +1722,7 @@ public class H3Main
 		}
 	    });
 
-	m_widenToGraphMenuItem = new JMenuItem("Widen to Entire Graph");
+	m_widenToGraphMenuItem = new JMenuItem("Widen To Entire Graph");
 	m_widenToGraphMenuItem.setMnemonic(KeyEvent.VK_G);
 	m_widenToGraphMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.addActionListener(new ActionListener() {
