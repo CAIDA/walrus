@@ -16,7 +16,7 @@ JAVA_INSTALL = /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/H
 
 JAVA = java
 JAVAC = javac
-JAVAC_FLAGS =
+JAVAC_FLAGS = #-classpath $$CLASSPATH
 
 # The following two symbols, giving the path of various system jar files,
 # are needed to get Jikes to recognize the Java3D standard extension.
