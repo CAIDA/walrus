@@ -307,8 +307,9 @@ public class H3PointRenderList
 	    int sourceNode = m_graph.getLinkSource(link);
 	    int targetNode = m_graph.getLinkDestination(link);
 
-	    if (m_graph.checkNodeVisible(sourceNode)
-		&& m_graph.checkNodeVisible(targetNode))
+	    if (SHOW_LINKS_OF_HIDDEN_NODES
+		|| (m_graph.checkNodeVisible(sourceNode)
+		    && m_graph.checkNodeVisible(targetNode)))
 	    {
 		m_numTreeVerticesDisplayed += 2;
 
@@ -348,8 +349,9 @@ public class H3PointRenderList
 	    int sourceNode = m_graph.getLinkSource(link);
 	    int targetNode = m_graph.getLinkDestination(link);
 
-	    if (m_graph.checkNodeVisible(sourceNode)
-		&& m_graph.checkNodeVisible(targetNode))
+	    if (SHOW_LINKS_OF_HIDDEN_NODES
+		|| (m_graph.checkNodeVisible(sourceNode)
+		    && m_graph.checkNodeVisible(targetNode)))
 	    {
 		m_numNontreeVerticesDisplayed += 2;
 
@@ -482,6 +484,8 @@ public class H3PointRenderList
     ////////////////////////////////////////////////////////////////////////
 
     private static final boolean DEBUG_PRINT = false;
+
+    private static final boolean SHOW_LINKS_OF_HIDDEN_NODES = true;
 
     private static final double MIDDLE_NODES_THRESHOLD = 0.5;
     private static final double FAR_NODES_THRESHOLD = 0.2;
