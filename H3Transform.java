@@ -84,7 +84,7 @@ public class H3Transform
 	/* calculate spherical coordinates (rho, phi, theta) of pb */
 	double rho = pb.distance(ORIGIN4);
 	double phi = Math.acos(pb.x / rho);
-	double theta = H3Math.polarTheta(pb.y, pb.z);
+	double theta = Math.atan2(pb.z, pb.y);
 
 	if (!H3Math.epsilonZero(phi))
 	{

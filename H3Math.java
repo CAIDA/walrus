@@ -120,43 +120,6 @@ public class H3Math
 	return Math.sqrt(1.0 - 1.0 / (y * y));
     }    
 
-    public static double polarTheta(double x, double y)
-    {
-	double retval = 0.0;
-
-	boolean positiveX = (x > 0.0);
-	boolean positiveY = (y > 0.0);
-
-	int axis = 0;
-	axis |= (epsilonZero(x) ? 0x1 : 0);
-	axis |= (epsilonZero(y) ? 0x2 : 0);
-
-	switch (axis)
-	{
-	case 0: // point not on an axis
-	    double phi = Math.atan(y / x);
-	    retval = (positiveX ? phi : Math.PI + phi);
-	    break;
-
-	case 1: // point on y-axis not at origin
-	    retval = (positiveY ? HALF_PI : -HALF_PI);
-	    break;
-
-	case 2: // point on x-axis not at origin
-	    retval = (positiveX ? 0.0 : Math.PI);
-	    break;
-
-	case 3: // point at origin
-	    retval = 0.0;
-	    break;
-
-	default:
-	    throw new RuntimeException();
-	}
-
-	return retval;
-    }
-
     // This is the Klein metric given in "Visualizing Hyperbolic Space:
     // Unusual Uses of 4x4 Matrices" by Phillips and Gunn.
 
