@@ -203,6 +203,8 @@ public class H3Main
 	retval.axes = m_axesMenuItem.isSelected();
 	retval.onScreenLabels = m_onScreenLabelsMenuItem.isSelected();
 	retval.automaticRefresh = m_automaticRefreshMenuItem.isSelected();
+	retval.automaticExtendedPrecision =
+	    m_automaticExtendedPrecisionMenuItem.isSelected();
 	retval.nodeColor =
 	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
 	retval.treeLinkColor =
@@ -309,6 +311,7 @@ public class H3Main
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
+	m_recomputeLayoutExtendedMenuItem.setEnabled(false);
 
 	// Display menu.
 	m_refreshDisplayMenuItem.setEnabled(false);
@@ -810,6 +813,35 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
+    // NOTE: Assumes that a graph has been loaded and laid out already
+    //       (that is, m_renderingConfiguration != null).
+    //
+    //       This can be called both while some graph is being rendered
+    //       and when rendering has been stopped (but with some graph loaded
+    //       and previously laid out).
+    private void handleRecomputeLayoutExtendedRequest()
+    {
+	if (m_renderLoop != null)
+	{
+	    stopRendering();
+	    reinstateSplashScreenContentPane();
+	    setupIdleRenderingMenu();
+	}
+
+	if (layoutGraph(m_renderingConfiguration, true))
+	{
+	    reinstateCanvasContentPane();
+	    setupActiveRenderingMenu();
+	    startRendering(m_renderingConfiguration);
+	}
+	else
+	{
+	    m_renderingConfiguration = null;
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
     private boolean setupRendering
 	(RenderingConfiguration renderingConfiguration)
     {
@@ -834,30 +866,7 @@ public class H3Main
 		    checkGraphIDMappings(m_graph, m_backingGraph);
 		}
 
-		H3GraphLayout layout = new H3GraphLayout();
-		layout.layoutHyperbolic(m_graph);
-
-		int numNodes = m_graph.getNumNodes();
-		int numGoodNodes = m_graph.checkLayoutCoordinates();
-
-		retval = (numGoodNodes == numNodes);
-		if (!retval)
-		{
-		    int numBadNodes = numNodes - numGoodNodes;
-
-		    String msg = "Graph could not be laid out within the"
-			+ " limits of floating-point precision.\n"
-			+ "Layout failed for "  + numBadNodes
-			+ " of " + numNodes + " nodes.\n\n"
-			+ "Would you like to proceed anyway by arbitrarily"
-			+ " placing these nodes?"; 
-		    JOptionPane dialog = new JOptionPane();
-		    int response = dialog.showConfirmDialog
-			(null, msg, "Rendering Setup Failed",
-			 JOptionPane.YES_NO_OPTION);
-		    retval = (response == JOptionPane.YES_OPTION);
-		}
-
+		retval = layoutGraph(renderingConfiguration, false);
 		if (retval)
 		{
 		    System.out.println("Finished graph layout.");
@@ -908,6 +917,79 @@ public class H3Main
 	    dialog.showMessageDialog(null, msg, "Rendering Setup Failed",
 				     JOptionPane.ERROR_MESSAGE);
 	}
+	return retval;
+    }
+
+    private boolean layoutGraph
+	(RenderingConfiguration renderingConfiguration,
+	 boolean useExtendedPrecision)
+    {
+	H3GraphLayout layout = new H3GraphLayout
+	    (renderingConfiguration.automaticExtendedPrecision);
+
+	H3GraphLayout.LayoutState layoutState =
+	    layout.layoutHyperbolic(m_graph, useExtendedPrecision);
+
+	int numNodes = m_graph.getNumNodes();
+	int numGoodNodes = m_graph.checkLayoutCoordinates();
+
+	boolean retval = (numGoodNodes == numNodes);
+	if (!retval)
+	{
+	    int numBadNodes = numNodes - numGoodNodes;
+
+	    if (useExtendedPrecision)
+	    {
+		String msg = "Graph could not be laid out within the"
+		    + " limits of extended floating-point precision.\n"
+		    + "Layout failed for "  + numBadNodes
+		    + " of " + numNodes + " nodes.\n\n"
+		    + "Would you like to proceed anyway by arbitrarily"
+		    + " placing these nodes at the origin?"; 
+		JOptionPane dialog = new JOptionPane();
+		int response = dialog.showConfirmDialog
+		    (null, msg, "Graph Layout Failed",
+		     JOptionPane.YES_NO_OPTION);
+		retval = (response == JOptionPane.YES_OPTION);
+		if (retval)
+		{
+		    m_graph.sanitizeLayoutCoordinates();
+		}
+	    }
+	    else
+	    {
+		String msg = "Graph could not be laid out within the"
+		    + " limits of floating-point precision.\n"
+		    + "Layout failed for "  + numBadNodes
+		    + " of " + numNodes + " nodes.\n\n"
+		    + "You may retry using extended precision arithmetic,"
+		    + " but layout can take several hours for large graphs.\n"
+		    + "Or you may proceed by arbitrarily placing the"
+		    + " problematic nodes at the origin.\n"
+		    + "Or you may cancel the layout attempt and not render"
+		    + " the graph.\n";
+		JOptionPane dialog = new JOptionPane();
+		int response = dialog.showOptionDialog
+		    (null, msg, "Graph Layout Failed",
+		     JOptionPane.YES_NO_CANCEL_OPTION,
+		     JOptionPane.QUESTION_MESSAGE, null,
+		     new String[] { "Retry with Extended Precision",
+				    "Place Nodes at Origin", "Cancel" },
+		     null);
+
+		if (response == JOptionPane.YES_OPTION)
+		{
+		    retval = layoutGraph(renderingConfiguration, true);
+		}
+		else if (response == JOptionPane.NO_OPTION)
+		{
+		    retval = true;
+		    m_graph.sanitizeLayoutCoordinates();
+		}
+		// else do nothing and fail
+	    }
+	}
+
 	return retval;
     }
 
@@ -1266,6 +1348,8 @@ public class H3Main
 	m_startMenuItem.setEnabled(true);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
+	m_recomputeLayoutExtendedMenuItem.setEnabled
+	    (m_renderingConfiguration != null);
 
 	// Display menu.
 	m_refreshDisplayMenuItem.setEnabled(false);
@@ -1286,6 +1370,7 @@ public class H3Main
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(true);
 	m_updateMenuItem.setEnabled(true);
+	m_recomputeLayoutExtendedMenuItem.setEnabled(true);
 
 	// Display menu.
 	m_refreshDisplayMenuItem.setEnabled(true);
@@ -1415,6 +1500,18 @@ public class H3Main
 		}
 	    });
 
+	m_recomputeLayoutExtendedMenuItem =
+	    new JMenuItem("Recompute Layout with Extended Precision");
+	m_recomputeLayoutExtendedMenuItem.setMnemonic(KeyEvent.VK_R);
+	m_recomputeLayoutExtendedMenuItem.setEnabled(false);
+	m_recomputeLayoutExtendedMenuItem.addActionListener
+	    (new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleRecomputeLayoutExtendedRequest();
+		}
+	    });
+
 	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive Rendering");
 	m_adaptiveMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_adaptiveMenuItem.setSelected(true);
@@ -1444,11 +1541,18 @@ public class H3Main
 	m_automaticRefreshMenuItem.setMnemonic(KeyEvent.VK_F);
 	m_automaticRefreshMenuItem.setSelected(true);
 
+	m_automaticExtendedPrecisionMenuItem
+	    = new JCheckBoxMenuItem("Automatic Extended Precision Layout");
+	m_automaticExtendedPrecisionMenuItem.setMnemonic(KeyEvent.VK_P);
+	m_automaticExtendedPrecisionMenuItem.setSelected(true);
+
 	m_renderingMenu = new JMenu("Rendering");
 	m_renderingMenu.setMnemonic(KeyEvent.VK_R);
 	m_renderingMenu.add(m_startMenuItem);
 	m_renderingMenu.add(m_stopMenuItem);
 	m_renderingMenu.add(m_updateMenuItem);
+	m_renderingMenu.addSeparator();
+	m_renderingMenu.add(m_recomputeLayoutExtendedMenuItem);
 	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
@@ -1456,6 +1560,7 @@ public class H3Main
 	m_renderingMenu.add(m_axesMenuItem);
 	m_renderingMenu.add(m_onScreenLabelsMenuItem);
 	m_renderingMenu.add(m_automaticRefreshMenuItem);
+	m_renderingMenu.add(m_automaticExtendedPrecisionMenuItem);
 
 	// Create "Display" menu. ------------------------------------------
 
@@ -1641,12 +1746,14 @@ public class H3Main
     private JMenuItem m_startMenuItem;
     private JMenuItem m_stopMenuItem;
     private JMenuItem m_updateMenuItem;
+    private JMenuItem m_recomputeLayoutExtendedMenuItem;
     private JCheckBoxMenuItem m_adaptiveMenuItem;
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
     private JCheckBoxMenuItem m_depthCueingMenuItem;
     private JCheckBoxMenuItem m_axesMenuItem;
     private JCheckBoxMenuItem m_onScreenLabelsMenuItem;
     private JCheckBoxMenuItem m_automaticRefreshMenuItem;
+    private JCheckBoxMenuItem m_automaticExtendedPrecisionMenuItem;
 
     private JMenu m_displayMenu;
     private JMenuItem m_refreshDisplayMenuItem;
@@ -3610,6 +3717,7 @@ public class H3Main
 	public boolean axes;
 	public boolean onScreenLabels;
 	public boolean automaticRefresh;
+	public boolean automaticExtendedPrecision;
 
 	public ColorConfiguration nodeColor;
 	public ColorConfiguration treeLinkColor;
@@ -3629,6 +3737,8 @@ public class H3Main
 	    System.out.println("\taxes = " + axes);
 	    System.out.println("\tonScreenLabels = " + onScreenLabels);
 	    System.out.println("\tautomaticRefresh = " + automaticRefresh);
+	    System.out.println("\tautomaticExtendedPrecision = "
+			       + automaticExtendedPrecision);
 
 	    System.out.print("(Node) ");
 	    nodeColor.print();
