@@ -59,6 +59,29 @@ public class H3Main
 
     public static void main(String[] args)
     {
+	// NOTE: We must be running under JDK 1.3.0 or later, if on Solaris,
+	//       owing to various JDK bugs.  Even 1.3.0 isn't enough in
+	//       some cases.
+	// 
+	// Some bugs to keep in mind from Sun's bug database
+	//  (http://developer.java.sun.com/developer/bugParade/bugs/...):
+	// 
+	//  * (4209844.html) "Modifiers not set for KEY_TYPED events on win32"
+	//    This affects 1.1.8 and 1.2.2 on Solaris.  The modifiers
+	//    (shift, meta, etc.) aren't set for KeyListener.keyTyped()
+	//    events.  This is fixed in Java 1.3.0.
+	//
+	//  * (4344900.html) "Keyboard accelerators not working with canvas"
+	//    This affects 1.2.2 and 1.3.0.  When a heavyweight component
+	//    has focus, keyboard accelerators for Swing menus don't work.
+	//
+	//  * (4362074.html) "KeyEvent not get unless requestFocus() when
+	//    focus lost in heavy weight Canvas"  This affects 1.2.2 and
+	//    1.3.0.  It seems once a heavyweight component loses focus to
+	//    a lightweight component, the heavyweight component fails to
+	//    get key events (even after being selected) until requestFocus()
+	//    has been called.
+
 	new H3Main();
     }
 
@@ -170,12 +193,35 @@ public class H3Main
 	retval.isAdaptive = m_adaptiveMenuItem.isSelected();
 	retval.useMultipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
 	retval.supportScreenCapture = m_screenCaptureMenuItem.isSelected();
+	retval.refreshAlways = m_refreshAlwaysMenuItem.isSelected();
 	retval.nodeColor =
 	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
 	retval.treeLinkColor =
 	    m_colorSchemeMenu.createTreeLinkColorConfigurationSnapshot();
 	retval.nontreeLinkColor =
 	    m_colorSchemeMenu.createNontreeLinkColorConfigurationSnapshot();
+
+	int numSelected = countNumSelectedItems(m_nodeLabelMenu);
+	retval.nodeLabelAttributes = new int[numSelected];
+
+	int numAdded = 0;
+	int numAttributes = m_nodeLabelMenu.getItemCount();
+	for (int i = 0; i < numAttributes; i++)
+	{
+	    JMenuItem menuItem = m_nodeLabelMenu.getItem(i);
+	    if (menuItem != null && menuItem.isSelected())
+	    {
+		AttributeDefinitionIterator iterator =
+		    m_backingGraph.getAttributeDefinition(menuItem.getText());
+		if (iterator.atEnd())
+		{
+		    String msg = "no attribute named `" + menuItem.getText()
+			+ "' found";
+		    throw new RuntimeException(msg);
+		}
+		retval.nodeLabelAttributes[numAdded++] = iterator.getID();
+	    }
+	}
 
 	return retval;
     }
@@ -247,6 +293,7 @@ public class H3Main
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
+	m_refreshMenuItem.setEnabled(false);
 
 	// Spanning Tree menu.
 	m_spanningTreeMenu.removeAll();
@@ -272,6 +319,393 @@ public class H3Main
 	    createRenderingConfigurationSnapshot();
 	renderingConfiguration.print();
 
+	if (setupRendering(renderingConfiguration))
+	{
+	    m_startMenuItem.setEnabled(false);
+	    m_stopMenuItem.setEnabled(true);
+	    m_updateMenuItem.setEnabled(true);
+	    m_refreshMenuItem.setEnabled(true);
+
+	    m_frame.getContentPane().remove(m_splashLabel);
+	    m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
+	    m_frame.validate();
+
+	    startRendering(renderingConfiguration);
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void colorNodes(ColorConfiguration configuration)
+    {
+	System.out.print("(colorNodes) ");
+	configuration.print();
+
+	setNodeTransparencyEnabled
+	    (configuration.scheme == ColorConfiguration.TRANSPARENT);
+
+	switch (configuration.scheme)
+	{
+	case ColorConfiguration.INVISIBLE:
+	    // No explicit coloring needed.
+	    // startRendering() will take care of setting things up.
+	    break;
+
+	case ColorConfiguration.TRANSPARENT:
+	    break;
+
+	case ColorConfiguration.FIXED_COLOR:
+	    {
+		ColoringAttributes attributes =
+		    makeColoringAttributes(configuration.fixedColor);
+
+		m_viewParameters.getNodeAppearance()
+		    .setColoringAttributes(attributes);
+		m_viewParameters.getNearNodeAppearance()
+		    .setColoringAttributes(attributes);
+		m_viewParameters.getMiddleNodeAppearance()
+		    .setColoringAttributes(attributes);
+		m_viewParameters.getFarNodeAppearance()
+		    .setColoringAttributes(attributes);
+	    }	    
+	    break;
+
+	case ColorConfiguration.HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.LOG_HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.HUE:
+	    break;
+
+	case ColorConfiguration.RGB:
+	    colorNodesRGB(configuration.colorAttribute);
+	    break;
+
+	default: throw new RuntimeException();
+	}
+    }
+
+    private void setNodeTransparencyEnabled(boolean state)
+    {
+	if (state)
+	{
+	    TransparencyAttributes attributes =
+		m_viewParameters.getTransparencyAttributes();
+
+	    m_viewParameters.getNodeAppearance()
+		.setTransparencyAttributes(attributes);
+	    m_viewParameters.getNearNodeAppearance()
+		.setTransparencyAttributes(attributes);
+	    m_viewParameters.getMiddleNodeAppearance()
+		.setTransparencyAttributes(attributes);
+	    m_viewParameters.getFarNodeAppearance()
+		.setTransparencyAttributes(attributes);
+	}
+	else
+	{
+	    m_viewParameters.getNodeAppearance()
+		.setTransparencyAttributes(null);
+	    m_viewParameters.getNearNodeAppearance()
+		.setTransparencyAttributes(null);
+	    m_viewParameters.getMiddleNodeAppearance()
+		.setTransparencyAttributes(null);
+	    m_viewParameters.getFarNodeAppearance()
+		.setTransparencyAttributes(null);
+	}
+    }
+
+    private void colorTreeLinks(ColorConfiguration configuration)
+    {
+	System.out.print("(colorTreeLinks) ");
+	configuration.print();
+
+	setTreeLinkTransparencyEnabled
+	    (configuration.scheme == ColorConfiguration.TRANSPARENT);
+
+	switch (configuration.scheme)
+	{
+	case ColorConfiguration.INVISIBLE:
+	    // No explicit coloring needed.
+	    // startRendering() will take care of setting things up.
+	    break;
+
+	case ColorConfiguration.TRANSPARENT:
+	    // Nothing further to do.
+	    break;
+
+	case ColorConfiguration.FIXED_COLOR:
+	    {
+		ColoringAttributes attributes =
+		    makeColoringAttributes(configuration.fixedColor);
+		m_viewParameters.getTreeLinkAppearance()
+		    .setColoringAttributes(attributes);
+	    }	    
+	    break;
+
+	case ColorConfiguration.HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.LOG_HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.HUE:
+	    break;
+
+	case ColorConfiguration.RGB:
+	    break;
+
+	default: throw new RuntimeException();
+	}
+    }
+
+    private void setTreeLinkTransparencyEnabled(boolean state)
+    {
+	if (state)
+	{
+	    TransparencyAttributes attributes =
+		m_viewParameters.getTransparencyAttributes();
+
+	    m_viewParameters.getTreeLinkAppearance()
+		.setTransparencyAttributes(attributes);
+	}
+	else
+	{
+	    m_viewParameters.getTreeLinkAppearance()
+		.setTransparencyAttributes(null);
+	}
+    }
+
+    private void colorNontreeLinks(ColorConfiguration configuration)
+    {
+	System.out.print("(colorNontreeLinks) ");
+	configuration.print();
+
+	setNontreeLinkTransparencyEnabled
+	    (configuration.scheme == ColorConfiguration.TRANSPARENT);
+
+	switch (configuration.scheme)
+	{
+	case ColorConfiguration.INVISIBLE:
+	    // No explicit coloring needed.
+	    // startRendering() will take care of setting things up.
+	    break;
+
+	case ColorConfiguration.TRANSPARENT:
+	    // Nothing further to do.
+	    break;
+
+	case ColorConfiguration.FIXED_COLOR:
+	    {
+		ColoringAttributes attributes =
+		    makeColoringAttributes(configuration.fixedColor);
+		m_viewParameters.getNontreeLinkAppearance()
+		    .setColoringAttributes(attributes);
+	    }	    
+	    break;
+
+	case ColorConfiguration.HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.LOG_HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.HUE:
+	    break;
+
+	case ColorConfiguration.RGB:
+	    break;
+
+	default: throw new RuntimeException();
+	}
+    }
+
+    private void setNontreeLinkTransparencyEnabled(boolean state)
+    {
+	if (state)
+	{
+	    TransparencyAttributes attributes =
+		m_viewParameters.getTransparencyAttributes();
+
+	    m_viewParameters.getNontreeLinkAppearance()
+		.setTransparencyAttributes(attributes);
+	}
+	else
+	{
+	    m_viewParameters.getNontreeLinkAppearance()
+		.setTransparencyAttributes(null);
+	}
+    }
+
+    // NOTE: Attribute must be scalar.
+    private void colorNodesRGB(String colorAttribute)
+    {
+	m_graph.setNodeDefaultColor(Color.white.getRGB());
+
+	AttributesByAttributeIterator iterator =
+	    m_backingGraph.getAttributeDefinition(colorAttribute)
+	    .getNodeAttributes();
+	while (!iterator.atEnd())
+	{
+	    int node = iterator.getObjectID();
+	    ValueIterator valueIterator = iterator.getAttributeValues();
+	    colorNodeRGB(node, valueIterator);
+
+	    iterator.advance();
+	}
+    }
+
+    private void colorNodeRGB(int node, ValueIterator iterator)
+    {
+	switch (iterator.getType().getType())
+	{
+	case ValueType._INTEGER:
+	    m_graph.setNodeColor(node, iterator.getIntegerValue());
+	    break;
+
+	case ValueType._FLOAT3:
+	    {
+		iterator.getFloat3Value(m_float3Temporary);
+		normalizeColorComponents(m_float3Temporary);
+		int color = makeColor(m_float3Temporary);
+		m_graph.setNodeColor(node, color);
+	    }
+	    break;
+
+	case ValueType._DOUBLE3:
+	    {
+		iterator.getDouble3Value(m_double3Temporary);
+		normalizeColorComponents(m_double3Temporary);
+		int color = makeColor(m_double3Temporary);
+		m_graph.setNodeColor(node, color);
+	    }
+	    break;
+
+	case ValueType._BOOLEAN:
+	    //FALLTHROUGH
+	case ValueType._FLOAT:
+	    //FALLTHROUGH
+	case ValueType._DOUBLE:
+	    //FALLTHROUGH
+	case ValueType._STRING:
+	    //FALLTHROUGH
+	case ValueType._ENUMERATION:
+	    //FALLTHROUGH
+	default: throw new RuntimeException();
+	}
+    }
+
+    private void normalizeColorComponents(float[] color)
+    {
+	for (int i = 0; i < color.length; i++)
+	{
+	    float value = color[i];
+	    if (value < 0.0f)
+	    {
+		value = 0.0f;
+	    }
+	    else if (value > 1.0f)
+	    {
+		value = 1.0f;
+	    }
+	    color[i] = value;
+	}
+    }
+
+    private void normalizeColorComponents(double[] color)
+    {
+	for (int i = 0; i < color.length; i++)
+	{
+	    double value = color[i];
+	    if (value < 0.0)
+	    {
+		value = 0.0;
+	    }
+	    else if (value > 1.0)
+	    {
+		value = 1.0;
+	    }
+	    color[i] = value;
+	}
+    }
+
+    private int makeColor(float[] color)
+    {
+	int r = (int)(255.0f * color[0]);
+	int g = (int)(255.0f * color[1]);
+	int b = (int)(255.0f * color[2]);
+	return (r << 16) | (g << 8) | b;
+    }
+
+    private int makeColor(double[] color)
+    {
+	int r = (int)(255.0 * color[0]);
+	int g = (int)(255.0 * color[1]);
+	int b = (int)(255.0 * color[2]);
+	return (r << 16) | (g << 8) | b;
+    }
+
+    private ColoringAttributes makeColoringAttributes(int color)
+    {
+	int r = (color >> 16) & 0xFF;
+	int g = (color >> 8) & 0xFF;
+	int b = color & 0xFF;
+	return new ColoringAttributes(r / 255.0f, g / 255.0f, b / 255.0f,
+				      ColoringAttributes.FASTEST);
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleStopRenderingRequest()
+    {
+	m_frame.getContentPane().remove(m_canvas);
+	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
+	m_frame.validate();
+
+	m_displayPosition = m_renderLoop.getDisplayPosition();
+	stopRendering();
+
+	m_startMenuItem.setEnabled(true);
+	m_stopMenuItem.setEnabled(false);
+	m_updateMenuItem.setEnabled(false);
+	m_refreshMenuItem.setEnabled(false);
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleUpdateRenderingRequest()
+    {
+	m_displayPosition = m_renderLoop.getDisplayPosition();
+	stopRendering();
+
+	RenderingConfiguration renderingConfiguration =
+	    createRenderingConfigurationSnapshot();
+	renderingConfiguration.print();
+
+	if (setupRendering(renderingConfiguration))
+	{
+	    startRendering(renderingConfiguration);
+	}
+	else
+	{
+	    m_frame.getContentPane().remove(m_canvas);
+	    m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
+	    m_frame.validate();
+
+	    m_startMenuItem.setEnabled(true);
+	    m_stopMenuItem.setEnabled(false);
+	    m_updateMenuItem.setEnabled(false);
+	    m_refreshMenuItem.setEnabled(false);
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private boolean setupRendering
+	(RenderingConfiguration renderingConfiguration)
+    {
+	boolean retval = false;
 	try
 	{
 	    if (m_renderingConfiguration == null
@@ -313,16 +747,7 @@ public class H3Main
 	    }
 
 	    m_renderingConfiguration = renderingConfiguration;
-
-	    m_startMenuItem.setEnabled(false);
-	    m_stopMenuItem.setEnabled(true);
-	    m_updateMenuItem.setEnabled(true);
-
-	    m_frame.getContentPane().remove(m_splashLabel);
-	    m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
-	    m_frame.validate();
-
-	    startRendering(renderingConfiguration);
+	    retval = true;
 	}
 	catch (H3GraphLoader.InvalidGraphDataException e)
 	{
@@ -331,200 +756,7 @@ public class H3Main
 	    dialog.showMessageDialog(null, msg, "Rendering Failed",
 				     JOptionPane.ERROR_MESSAGE);
 	}
-    }
-
-    ///////////////////////////////////////////////////////////////////////
-
-    private void colorNodes(ColorConfiguration configuration)
-    {
-	switch (configuration.scheme)
-	{
-	case ColorConfiguration.INVISIBLE:
-	    // No explicit coloring needed.
-	    // startRendering() will take care of setting things up.
-	    break;
-
-	case ColorConfiguration.TRANSPARENT:
-	    {
-		TransparencyAttributes attributes =
-		    m_viewParameters.getTransparencyAttributes();
-
-		m_viewParameters.getNodeAppearance()
-		    .setTransparencyAttributes(attributes);
-		m_viewParameters.getNearNodeAppearance()
-		    .setTransparencyAttributes(attributes);
-		m_viewParameters.getMiddleNodeAppearance()
-		    .setTransparencyAttributes(attributes);
-		m_viewParameters.getFarNodeAppearance()
-		    .setTransparencyAttributes(attributes);
-	    }
-	    break;
-
-	case ColorConfiguration.FIXED_COLOR:
-	    {
-		Appearance nodeAppearance =
-		    m_viewParameters.getNodeAppearance();
-		Appearance nearNodeAppearance =
-		    m_viewParameters.getNearNodeAppearance();
-		Appearance middleNodeAppearance =
-		    m_viewParameters.getMiddleNodeAppearance();
-		Appearance farNodeAppearance =
-		    m_viewParameters.getFarNodeAppearance();
-
-		nodeAppearance.setTransparencyAttributes(null);
-		nearNodeAppearance.setTransparencyAttributes(null);
-		middleNodeAppearance.setTransparencyAttributes(null);
-		farNodeAppearance.setTransparencyAttributes(null);
-
-		ColoringAttributes attributes =
-		    makeColoringAttributes(configuration.fixedColor);
-		nodeAppearance.setColoringAttributes(attributes);
-		nearNodeAppearance.setColoringAttributes(attributes);
-		middleNodeAppearance.setColoringAttributes(attributes);
-		farNodeAppearance.setColoringAttributes(attributes);
-	    }	    
-	    break;
-
-	case ColorConfiguration.HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.LOG_HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.HUE:
-	    break;
-
-	case ColorConfiguration.RGB:
-	    break;
-
-	default: throw new RuntimeException();
-	}
-    }
-
-    private void colorTreeLinks(ColorConfiguration configuration)
-    {
-	switch (configuration.scheme)
-	{
-	case ColorConfiguration.INVISIBLE:
-	    // No explicit coloring needed.
-	    // startRendering() will take care of setting things up.
-	    break;
-
-	case ColorConfiguration.TRANSPARENT:
-	    {
-		TransparencyAttributes attributes =
-		    m_viewParameters.getTransparencyAttributes();
-
-		m_viewParameters.getTreeLinkAppearance()
-		    .setTransparencyAttributes(attributes);
-	    }
-	    break;
-
-	case ColorConfiguration.FIXED_COLOR:
-	    {
-		Appearance appearance =
-		    m_viewParameters.getTreeLinkAppearance();
-		ColoringAttributes attributes =
-		    makeColoringAttributes(configuration.fixedColor);
-		appearance.setColoringAttributes(attributes);
-		appearance.setTransparencyAttributes(null);
-	    }	    
-	    break;
-
-	case ColorConfiguration.HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.LOG_HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.HUE:
-	    break;
-
-	case ColorConfiguration.RGB:
-	    break;
-
-	default: throw new RuntimeException();
-	}
-    }
-
-    private void colorNontreeLinks(ColorConfiguration configuration)
-    {
-	switch (configuration.scheme)
-	{
-	case ColorConfiguration.INVISIBLE:
-	    // No explicit coloring needed.
-	    // startRendering() will take care of setting things up.
-	    break;
-
-	case ColorConfiguration.TRANSPARENT:
-	    {
-		TransparencyAttributes attributes =
-		    m_viewParameters.getTransparencyAttributes();
-
-		m_viewParameters.getNontreeLinkAppearance()
-		    .setTransparencyAttributes(attributes);
-	    }
-	    break;
-
-	case ColorConfiguration.FIXED_COLOR:
-	    {
-		Appearance appearance =
-		    m_viewParameters.getNontreeLinkAppearance();
-		ColoringAttributes attributes =
-		    makeColoringAttributes(configuration.fixedColor);
-		appearance.setColoringAttributes(attributes);
-		appearance.setTransparencyAttributes(null);
-	    }	    
-	    break;
-
-	case ColorConfiguration.HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.LOG_HOT_TO_COLD:
-	    break;
-
-	case ColorConfiguration.HUE:
-	    break;
-
-	case ColorConfiguration.RGB:
-	    break;
-
-	default: throw new RuntimeException();
-	}
-    }
-
-    private ColoringAttributes makeColoringAttributes(int color)
-    {
-	int r = (color >> 16) & 0xFF;
-	int g = (color >> 8) & 0xFF;
-	int b = color & 0xFF;
-	return new ColoringAttributes(r / 255.0f, g / 255.0f, b / 255.0f,
-				      ColoringAttributes.FASTEST);
-    }
-
-    ///////////////////////////////////////////////////////////////////////
-
-    private void handleStopRenderingRequest()
-    {
-	m_frame.getContentPane().remove(m_canvas);
-	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
-	m_frame.validate();
-
-	m_displayPosition = m_renderLoop.getDisplayPosition();
-	stopRendering();
-
-	m_startMenuItem.setEnabled(true);
-	m_stopMenuItem.setEnabled(false);
-	m_updateMenuItem.setEnabled(false);
-    }
-
-    ///////////////////////////////////////////////////////////////////////
-
-    private void handleUpdateRenderingRequest()
-    {
-	RenderingConfiguration renderingConfiguration =
-	    createRenderingConfigurationSnapshot();
-	renderingConfiguration.print();
+	return retval;
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -660,7 +892,9 @@ public class H3Main
 
 	int rootNode = m_graph.getRootNode();
 	m_eventHandler = new EventHandler
-	    (m_canvas, m_renderLoop, manager, rootNode);
+	    (m_canvas, m_renderLoop, manager, rootNode, m_backingGraph,
+	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
+	     renderingConfiguration.refreshAlways);
 
 	if (m_displayPosition != null)
 	{
@@ -803,6 +1037,9 @@ public class H3Main
 	// Create "File" menu. --------------------------------------------
 
 	JMenuItem openMenuItem = new JMenuItem("Open");
+	openMenuItem.setMnemonic(KeyEvent.VK_O);
+	openMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
 	openMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
@@ -811,13 +1048,20 @@ public class H3Main
 	    });
 
 	m_saveWithLayoutMenuItem = new JMenuItem("Save With Layout");
+	m_saveWithLayoutMenuItem.setMnemonic(KeyEvent.VK_S);
+	m_saveWithLayoutMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_S, ActionEvent.CTRL_MASK));
 	m_saveWithLayoutMenuItem.setEnabled(false);
 
 	m_saveWithLayoutAsMenuItem = new JMenuItem("Save With Layout As");
+	m_saveWithLayoutAsMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_saveWithLayoutAsMenuItem.setEnabled(false);
 
 	m_closeMenuItem = new JMenuItem("Close");
 	m_closeMenuItem.setEnabled(false);
+	m_closeMenuItem.setMnemonic(KeyEvent.VK_C);
+	m_closeMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_W, ActionEvent.CTRL_MASK));
 	m_closeMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
@@ -827,9 +1071,13 @@ public class H3Main
 	    });
 
 	JMenuItem preferencesMenuItem = new JMenuItem("Preferences");
+	preferencesMenuItem.setMnemonic(KeyEvent.VK_R);
 	preferencesMenuItem.setEnabled(false);
 
 	JMenuItem exitMenuItem = new JMenuItem("Exit");
+	exitMenuItem.setMnemonic(KeyEvent.VK_X);
+	exitMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
 	exitMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
@@ -838,6 +1086,7 @@ public class H3Main
 	    });
 
 	m_fileMenu = new JMenu("File");
+	m_fileMenu.setMnemonic(KeyEvent.VK_F);
 	m_fileMenu.add(openMenuItem);
 	m_fileMenu.add(m_saveWithLayoutMenuItem);
 	m_fileMenu.add(m_saveWithLayoutAsMenuItem);
@@ -851,6 +1100,7 @@ public class H3Main
 
 	m_startMenuItem = new JMenuItem("Start");
 	m_startMenuItem.setEnabled(false);
+	m_startMenuItem.setMnemonic(KeyEvent.VK_S);
 	m_startMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
@@ -859,6 +1109,7 @@ public class H3Main
 	    });
 
 	m_stopMenuItem = new JMenuItem("Stop");
+	m_stopMenuItem.setMnemonic(KeyEvent.VK_P);
 	m_stopMenuItem.setEnabled(false);
 	m_stopMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
@@ -868,6 +1119,7 @@ public class H3Main
 	    });
 
 	m_updateMenuItem = new JMenuItem("Update");
+	m_updateMenuItem.setMnemonic(KeyEvent.VK_U);
 	m_updateMenuItem.setEnabled(false);
 	m_updateMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
@@ -876,7 +1128,23 @@ public class H3Main
 		}
 	    });
 
+	m_refreshMenuItem = new JMenuItem("Refresh Display");
+	m_refreshMenuItem.setMnemonic(KeyEvent.VK_R);
+	m_refreshMenuItem.setEnabled(false);
+	m_refreshMenuItem.setAccelerator
+	    (KeyStroke.getKeyStroke(KeyEvent.VK_R, ActionEvent.CTRL_MASK));
+	m_refreshMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    if (m_renderLoop != null)
+		    {
+			m_renderLoop.refreshDisplay();
+		    }
+		}
+	    });
+
 	m_adaptiveMenuItem = new JCheckBoxMenuItem("Adaptive");
+	m_adaptiveMenuItem.setMnemonic(KeyEvent.VK_A);
 	m_adaptiveMenuItem.setSelected(true);
 	m_adaptiveMenuItem.addItemListener(new ItemListener() {
 		public void itemStateChanged(ItemEvent e)
@@ -888,24 +1156,36 @@ public class H3Main
 
 	m_multipleNodeSizesMenuItem =
 	    new JCheckBoxMenuItem("Use Multiple Node Sizes");
+	m_multipleNodeSizesMenuItem.setMnemonic(KeyEvent.VK_M);
 	m_multipleNodeSizesMenuItem.setSelected(true);
 
 	m_screenCaptureMenuItem
 	    = new JCheckBoxMenuItem("Support Screen Capture");
+	m_screenCaptureMenuItem.setMnemonic(KeyEvent.VK_C);
 	m_screenCaptureMenuItem.setSelected(false);
 
+	m_refreshAlwaysMenuItem
+	    = new JCheckBoxMenuItem("Refresh Always");
+	m_refreshAlwaysMenuItem.setMnemonic(KeyEvent.VK_F);
+	m_refreshAlwaysMenuItem.setSelected(true);
+
 	m_renderingMenu = new JMenu("Rendering");
+	m_renderingMenu.setMnemonic(KeyEvent.VK_R);
 	m_renderingMenu.add(m_startMenuItem);
 	m_renderingMenu.add(m_stopMenuItem);
 	m_renderingMenu.add(m_updateMenuItem);
 	m_renderingMenu.addSeparator();
+	m_renderingMenu.add(m_refreshMenuItem);
+	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
 	m_renderingMenu.add(m_screenCaptureMenuItem);
+	m_renderingMenu.add(m_refreshAlwaysMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
 	m_spanningTreeMenu = new JMenu("Spanning Tree");
+	m_spanningTreeMenu.setMnemonic(KeyEvent.VK_S);
 
 	// Create "Color Scheme" menu. -------------------------------------
 
@@ -914,6 +1194,7 @@ public class H3Main
 	// Create "Node Label" menu. -------------------------------------
 
 	m_nodeLabelMenu = new JMenu("Node Label");
+	m_nodeLabelMenu.setMnemonic(KeyEvent.VK_N);
 
 	// Create menu bar. ------------------------------------------------
 
@@ -923,6 +1204,23 @@ public class H3Main
 	retval.add(m_spanningTreeMenu);
 	retval.add(m_colorSchemeMenu.getColorSchemeMenu());
 	retval.add(m_nodeLabelMenu);
+	return retval;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private int countNumSelectedItems(JMenu menu)
+    {
+	int retval = 0;
+	int numItems = menu.getItemCount();
+	for (int i = 0; i < numItems; i++)
+	{
+	    JMenuItem menuItem = menu.getItem(i);
+	    if (menuItem != null && menuItem.isSelected())
+	    {
+		++retval;
+	    }
+	}
 	return retval;
     }
 
@@ -971,9 +1269,11 @@ public class H3Main
     private JMenuItem m_startMenuItem;
     private JMenuItem m_stopMenuItem;
     private JMenuItem m_updateMenuItem;
+    private JMenuItem m_refreshMenuItem;
     private JCheckBoxMenuItem m_adaptiveMenuItem;
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
     private JCheckBoxMenuItem m_screenCaptureMenuItem;
+    private JCheckBoxMenuItem m_refreshAlwaysMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -987,32 +1287,72 @@ public class H3Main
     private H3GraphLoader.AttributeTypeMatcher
 	m_allAttributeTypeMatcher = new AllAttributeTypeMatcher();
 
+    private float[] m_float3Temporary = new float[3];
+    private double[] m_double3Temporary = new double[3];
+
     ///////////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
     ///////////////////////////////////////////////////////////////////////
 
     private static class EventHandler
-	extends H3MouseInputAdapter
+	implements KeyListener, MouseListener, MouseMotionListener
     {
 	public EventHandler(H3Canvas3D canvas, H3RenderLoop renderLoop,
-			    CapturingManager manager, int rootNode)
+			    CapturingManager manager, int rootNode,
+			    Graph backingGraph, int[] nodeLabelAttributes,
+			    JTextField statusBar, boolean refreshAlways)
 	{
 	    m_canvas = canvas;
+	    m_canvas.addKeyListener(this);
 	    m_canvas.addMouseListener(this);
 	    m_canvas.addMouseMotionListener(this);
-	    m_canvas.addPaintObserver(m_paintObserver);
+
+	    // This is a tradeoff between seeing flicker and having to
+	    // manually refresh the display in some cases.  There's some
+	    // problem deep in Java3D which makes a satisfactory solution
+	    // impossible.
+	    m_refreshAlways = refreshAlways;
+	    if (refreshAlways)
+	    {
+		m_canvas.addPaintObserver(m_paintObserver);
+	    }
+	    else
+	    {
+		// Resize events are generated during the initial layout
+		// and when the enclosing frame is resized.
+		m_canvas.addComponentListener(m_resizeListener);
+	    }
 
 	    m_renderLoop = new H3CapturingRenderLoop(renderLoop);
 	    m_capturingManager = manager;
 	    m_rootNode = m_currentNode = m_previousNode = rootNode;
+
+	    m_backingGraph = backingGraph;
+	    m_nodeLabelAttributes = nodeLabelAttributes;
+	    m_statusBar = statusBar;
 	}
 
 	public void dispose()
 	{
+	    m_canvas.removeKeyListener(this);
 	    m_canvas.removeMouseListener(this);
 	    m_canvas.removeMouseMotionListener(this);
-	    m_canvas.removePaintObserver(m_paintObserver);
+
+	    if (m_refreshAlways)
+	    {
+		m_canvas.removePaintObserver(m_paintObserver);
+	    }
+	    else
+	    {
+		m_canvas.removeComponentListener(m_resizeListener);
+	    }
 	}
+
+	// MouseListener - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	public void mouseClicked(MouseEvent e) {}
+	public void mouseEntered(MouseEvent e) {}
+	public void mouseExited(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e)
 	{
@@ -1120,8 +1460,7 @@ public class H3Main
                         }
                         else
                         {
-			    //System.out.println("Highlighting ...");
-			    m_renderLoop.highlightNode(e.getX(), e.getY());
+			    highlightNode(e.getX(), e.getY());
                         }
 		    }
 		}
@@ -1144,6 +1483,8 @@ public class H3Main
 		m_interactiveRequest.end();
 	    }
 	}
+
+	// MouseMotionListener  - - - - - - - - - - - - - - - - - - - - - - -
 
 	public void mouseDragged(MouseEvent e)
 	{
@@ -1224,12 +1565,59 @@ public class H3Main
 	    }
 	    else if (checkModifiers(modifiers, InputEvent.BUTTON2_MASK))
 	    {
-		//System.out.println("Highlighting ...");
-		m_renderLoop.highlightNode(e.getX(), e.getY());
+		highlightNode(e.getX(), e.getY());
+	    }
+	}
+
+	public void mouseMoved(MouseEvent e) {}
+
+	// KeyListener - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	public void keyPressed(KeyEvent e) {}
+	public void keyReleased(KeyEvent e) {}
+
+	// Supported key events:
+	//
+	//  CTRL-R: refresh display
+	public void keyTyped(KeyEvent e)
+	{
+	    if (e.isControlDown())
+	    {
+		// KeyEvent.getKeyChar() does not quite return what you would
+		// expect if the cause of the event was a user's typing a
+		// letter while holding down the control key.  What you would
+		// expect is KeyEvent.getKeyChar()'s returning the UNICODE
+		// encoding of the letter--e.g., 114 for the letter 'r'.
+		// What you get instead is the encoding of the character
+		// represented by the control sequence.  That is, you would
+		// get '\r' for CTRL-M, for example.
+
+		char c = e.getKeyChar();
+		if (c == CTRL_R)
+		{
+		    if (!m_isRotating)
+		    {
+			m_renderLoop.refreshDisplay();
+		    }
+		}
 	    }
 	}
 
 	//---------------------------------------------------------------
+
+	private void highlightNode(int x, int y)
+	{
+	    //System.out.println("Highlighting ...");
+	    m_renderLoop.highlightNode(x, y);
+	    if (m_nodeLabelAttributes.length > 0)
+	    {
+		int node = m_renderLoop.pickNode(x, y, m_center);
+		if (node >= 0)
+		{
+		    showNodeLabels(node);
+		}
+	    }
+	}
 
 	private void shiftCenterNodes(int node)
 	{
@@ -1252,6 +1640,133 @@ public class H3Main
 
 	//---------------------------------------------------------------
 
+	private void showNodeLabels(int node)
+	{
+	    StringBuffer buffer = new StringBuffer();
+
+	    for (int i = 0; i < m_nodeLabelAttributes.length; i++)
+	    {
+		if (i > 0)
+		{
+		    buffer.append("  ");
+		}
+
+		int attribute = m_nodeLabelAttributes[i];
+		AttributeDefinitionIterator iterator =
+		    m_backingGraph.getAttributeDefinition(attribute);
+		buffer.append(iterator.getName());
+		buffer.append(": ");
+
+		ValueType type = iterator.getType();
+		if (type.isListType())
+		{
+		    buffer.append("<<skipped>>");
+		}
+		else
+		{
+		    addAttributeValue(buffer, type, node, attribute);
+		}
+	    }
+
+	    m_statusBar.setText(buffer.toString());
+	}
+
+	private void addAttributeValue(StringBuffer buffer, ValueType type,
+				       int node, int attribute)
+	{
+	    try
+	    {
+		switch (type.getBaseType())
+		{
+		case ValueType._BOOLEAN:
+		    {
+			boolean value = m_backingGraph.getBooleanAttribute
+			    (ObjectType.NODE, node, attribute);
+			buffer.append(value ? 'T' : 'F');
+		    }
+		    break;
+
+		case ValueType._INTEGER:
+		    {
+			int value = m_backingGraph.getIntegerAttribute
+			    (ObjectType.NODE, node, attribute);
+			buffer.append(value);
+		    }
+		    break;
+
+		case ValueType._FLOAT:
+		    {
+			float value = m_backingGraph.getFloatAttribute
+			    (ObjectType.NODE, node, attribute);
+			buffer.append(value);
+		    }
+		    break;
+
+		case ValueType._DOUBLE:
+		    {
+			double value = m_backingGraph.getDoubleAttribute
+			    (ObjectType.NODE, node, attribute);
+			buffer.append(value);
+		    }
+		    break;
+
+		case ValueType._STRING:
+		    {
+			String value = m_backingGraph.getStringAttribute
+			    (ObjectType.NODE, node, attribute);
+			buffer.append('"');
+			buffer.append(value);
+			buffer.append('"');
+		    }
+		    break;
+
+		case ValueType._FLOAT3:
+		    m_backingGraph.getFloat3Attribute
+			(ObjectType.NODE, node, attribute, m_float3LabelData);
+		    buffer.append('{');
+		    buffer.append(m_float3LabelData[0]);
+		    buffer.append(", ");
+		    buffer.append(m_float3LabelData[1]);
+		    buffer.append(", ");
+		    buffer.append(m_float3LabelData[2]);
+		    buffer.append('}');
+		    break;
+
+		case ValueType._DOUBLE3:
+		    m_backingGraph.getDouble3Attribute
+			(ObjectType.NODE, node, attribute, m_double3LabelData);
+		    buffer.append('{');
+		    buffer.append(m_double3LabelData[0]);
+		    buffer.append(", ");
+		    buffer.append(m_double3LabelData[1]);
+		    buffer.append(", ");
+		    buffer.append(m_double3LabelData[2]);
+		    buffer.append('}');
+		    break;
+
+		case ValueType._ENUMERATION:
+		    {
+			int value = m_backingGraph.getEnumerationAttribute
+			    (ObjectType.NODE, node, attribute);
+			ReadOnlyEnumeratorIterator iterator =
+			    m_backingGraph.getEnumerator(value);
+			buffer.append(iterator.getName());
+		    }
+		    break;
+
+		default: throw new RuntimeException();
+		}
+	    }
+	    catch (AttributeUnavailableException e)
+	    {
+		buffer.append("<<unavailable>>");
+	    }
+	}
+
+	//---------------------------------------------------------------
+
+	private static final char CTRL_R = 'r' - 'a' + 1;
+
 	private static final int MOUSE_SENSITIVITY = 2;
 
 	private H3Canvas3D m_canvas;
@@ -1261,6 +1776,12 @@ public class H3Main
 	private int m_rootNode;
 	private int m_currentNode;
 	private int m_previousNode;
+
+	private Graph m_backingGraph;
+	private int[] m_nodeLabelAttributes;
+	private JTextField m_statusBar;
+	private float[] m_float3LabelData = new float[3];
+	private double[] m_double3LabelData = new double[3];
 
 	private Point2d m_center = new Point2d();
 
@@ -1285,12 +1806,31 @@ public class H3Main
 	private H3WobblingRotationRequest m_wobblingRequest
 	    = new H3WobblingRotationRequest();
 
+	private boolean m_refreshAlways;
 	private PaintObserver m_paintObserver = new PaintObserver();
+	private ComponentResizeListener m_resizeListener =
+	    new ComponentResizeListener();
+
+	////////////////////////////////////////////////////////////////////
 
 	private class PaintObserver
 	    implements Observer
 	{
 	    public void update(Observable o, Object arg)
+	    {
+		if (!m_isRotating)
+		{
+		    m_renderLoop.refreshDisplay();
+		}
+	    }
+	}
+
+	////////////////////////////////////////////////////////////////////
+
+	private class ComponentResizeListener
+	    extends ComponentAdapter
+	{
+	    public void componentResized(ComponentEvent e)
 	    {
 		if (!m_isRotating)
 		{
@@ -1396,16 +1936,19 @@ public class H3Main
 
 	    Map nodeMenuMap = new HashMap();
 	    m_nodeColorMenu = new JMenu("Node Color");
+	    m_nodeColorMenu.setMnemonic(KeyEvent.VK_N);
 	    m_nodeColorSelection = new ColorSelection
 		(m_nodeColorMenu, nodeMenuMap, m_fixedColors);
 
 	    Map treeLinkMenuMap = new HashMap();
 	    m_treeLinkColorMenu = new JMenu("Tree Link Color");
+	    m_treeLinkColorMenu.setMnemonic(KeyEvent.VK_T);
 	    m_treeLinkColorSelection = new ColorSelection
 		(m_treeLinkColorMenu, treeLinkMenuMap, m_fixedColors);
 
 	    Map nontreeLinkMenuMap = new HashMap();
 	    m_nontreeLinkColorMenu = new JMenu("Nontree Link Color");
+	    m_nontreeLinkColorMenu.setMnemonic(KeyEvent.VK_E);
 	    m_nontreeLinkColorSelection = new ColorSelection
 		(m_nontreeLinkColorMenu, nontreeLinkMenuMap, m_fixedColors);
 
@@ -1413,6 +1956,7 @@ public class H3Main
 		(nodeMenuMap, treeLinkMenuMap, nontreeLinkMenuMap);
 	    {
 		m_predefinedColorSchemeMenu = new JMenu("Predefined");
+		m_predefinedColorSchemeMenu.setMnemonic(KeyEvent.VK_P);
 		ListIterator iterator =
 		    m_predefinedColorSchemes.listIterator();
 		while (iterator.hasNext())
@@ -1426,6 +1970,7 @@ public class H3Main
 	    }
 
 	    m_colorSchemeMenu = new JMenu("Color Scheme");
+	    m_colorSchemeMenu.setMnemonic(KeyEvent.VK_C);
 	    m_colorSchemeMenu.add(m_predefinedColorSchemeMenu);
 	    m_colorSchemeMenu.addSeparator();
 	    m_colorSchemeMenu.add(m_nodeColorMenu);
@@ -1522,6 +2067,10 @@ public class H3Main
 		(maker.make("Yellow-Green/Transparent", "Yellow", "Green",
 			    ColorSelection.TRANSPARENT));
 	    m_predefinedColorSchemes.add
+		(maker.make("Yellow-Violet", "Yellow", "Violet", "Violet"));
+	    m_predefinedColorSchemes.add
+		(maker.make("Grey-Violet", "Grey", "Violet", "Violet"));
+	    m_predefinedColorSchemes.add
 		(maker.make("Gold-Violet/Transparent", "Gold", "Violet",
 			    ColorSelection.TRANSPARENT));
 	    m_predefinedColorSchemes.add
@@ -1545,13 +2094,9 @@ public class H3Main
 	    m_fixedColors.add
 		(new FixedColor("Grey", packRGB(178, 178, 178)));
 	    m_fixedColors.add
-		(new FixedColor("Unknown 1", packRGB(30, 150, 25)));
+		(new FixedColor("Pink", packRGB(255, 48, 48)));
 	    m_fixedColors.add
-		(new FixedColor("Unknown 3", packRGB(255, 48, 48)));
-	    m_fixedColors.add
-		(new FixedColor("Unknown 4", packRGB(255, 246, 143)));
-	    m_fixedColors.add
-		(new FixedColor("Green 2", packRGB(0, 139, 0)));
+		(new FixedColor("Beige", packRGB(255, 246, 143)));
 	    m_fixedColors.add
 		(new FixedColor("Violet", packRGB(199, 21, 133)));
 	    m_fixedColors.add
@@ -1702,6 +2247,7 @@ public class H3Main
 	public ColorSelection(JMenu menu, Map map, List fixedColors)
 	{
 	    m_invisibleMenuItem = new JRadioButtonMenuItem(INVISIBLE);
+	    m_invisibleMenuItem.setMnemonic(KeyEvent.VK_I);
 	    m_invisibleMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
 		    {
@@ -1710,6 +2256,7 @@ public class H3Main
 		});
 
 	    m_transparentMenuItem = new JRadioButtonMenuItem(TRANSPARENT);
+	    m_transparentMenuItem.setMnemonic(KeyEvent.VK_T);
 	    m_transparentMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
 		    {
@@ -1718,6 +2265,7 @@ public class H3Main
 		});
 
 	    m_hotToColdMenuItem = new JRadioButtonMenuItem(HOT_TO_COLD);
+	    m_hotToColdMenuItem.setMnemonic(KeyEvent.VK_H);
 	    m_hotToColdMenuItem.setEnabled(false);
 	    m_hotToColdMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
@@ -1727,6 +2275,7 @@ public class H3Main
 		});
 
 	    m_logHotToColdMenuItem = new JRadioButtonMenuItem(LOG_HOT_TO_COLD);
+	    m_logHotToColdMenuItem.setMnemonic(KeyEvent.VK_L);
 	    m_logHotToColdMenuItem.setEnabled(false);
 	    m_logHotToColdMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
@@ -1736,6 +2285,7 @@ public class H3Main
 		});
 
 	    m_hueMenuItem = new JRadioButtonMenuItem(HUE);
+	    m_hueMenuItem.setMnemonic(KeyEvent.VK_U);
 	    m_hueMenuItem.setEnabled(false);
 	    m_hueMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
@@ -1745,6 +2295,7 @@ public class H3Main
 		});
 
 	    m_RGBMenuItem = new JRadioButtonMenuItem(RGB);
+	    m_RGBMenuItem.setMnemonic(KeyEvent.VK_R);
 	    m_RGBMenuItem.setEnabled(false);
 	    m_RGBMenuItem.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e)
@@ -1754,9 +2305,11 @@ public class H3Main
 		});
 
 	    m_colorAttributeMenu = new JMenu("Color Attribute");
+	    m_colorAttributeMenu.setMnemonic(KeyEvent.VK_C);
 	    m_colorAttributeMenu.setEnabled(false);
 
 	    m_selectionAttributeMenu = new JMenu("Selection Attribute");
+	    m_selectionAttributeMenu.setMnemonic(KeyEvent.VK_S);
 	    m_selectionAttributeMenu.setEnabled(false);
 
 	    m_colorSchemeButtonGroup = new ButtonGroup();
@@ -1829,10 +2382,10 @@ public class H3Main
 		(attributeCache.getScalarColorAttributes(),
 		 m_scalarColorAttributeButtonGroup);
 
-	    m_allColorAttributeButtonGroup = new ButtonGroup();
-	    m_allColorAttributeMenus = createColorAttributeMenuCache
-		(attributeCache.getAllColorAttributes(),
-		 m_allColorAttributeButtonGroup);
+	    m_RGBColorAttributeButtonGroup = new ButtonGroup();
+	    m_RGBColorAttributeMenus = createColorAttributeMenuCache
+		(attributeCache.getRGBColorAttributes(),
+		 m_RGBColorAttributeButtonGroup);
 
 	    populateSelectionAttributeMenu
 		(attributeCache.getSelectionAttributes());
@@ -1958,7 +2511,7 @@ public class H3Main
 
 	private void handleRGBColorRequest()
 	{
-	    installAllAttributeMenu();
+	    installRGBAttributeMenu();
 	    setupForArbitraryColorChoice();
 	}
 
@@ -2048,9 +2601,9 @@ public class H3Main
 	{
 	    m_colorAttributeMenu.removeAll();
 	    m_scalarColorAttributeButtonGroup = null;
-	    m_allColorAttributeButtonGroup = null;
+	    m_RGBColorAttributeButtonGroup = null;
 	    m_scalarColorAttributeMenus = null;
-	    m_allColorAttributeMenus = null;
+	    m_RGBColorAttributeMenus = null;
 	}
 
 	private void removeSelectionAttributeMenu()
@@ -2062,7 +2615,7 @@ public class H3Main
 	private void updateMenuInterdependencies()
 	{
 	    if (m_scalarColorAttributeMenus == null
-		&& m_allColorAttributeMenus == null)
+		&& m_RGBColorAttributeMenus == null)
 	    {
 		if (m_hotToColdMenuItem.isSelected()
 		    || m_logHotToColdMenuItem.isSelected()
@@ -2076,7 +2629,7 @@ public class H3Main
 	    }
 	    else if (m_scalarColorAttributeMenus != null)
 	    {
-		// By necessity, we must have m_allColorAttributeMenus != null.
+		// By necessity, we must have m_RGBColorAttributeMenus != null.
 
 		if (m_hotToColdMenuItem.isSelected()
 		    || m_logHotToColdMenuItem.isSelected()
@@ -2087,7 +2640,7 @@ public class H3Main
 		}
 		else if (m_RGBMenuItem.isSelected())
 		{
-		    installAllAttributeMenu();
+		    installRGBAttributeMenu();
 		    m_colorAttributeMenu.setEnabled(true);
 		}
 		else
@@ -2100,7 +2653,7 @@ public class H3Main
 	    else
 	    {
 		// We must have m_scalarColorAttributesMenus == null
-		//               && m_allColorAttributeMenus != null.
+		//               && m_RGBColorAttributeMenus != null.
 
 		if (m_hotToColdMenuItem.isSelected()
 		    || m_logHotToColdMenuItem.isSelected()
@@ -2111,7 +2664,7 @@ public class H3Main
 		}
 		else if (m_RGBMenuItem.isSelected())
 		{
-		    installAllAttributeMenu();
+		    installRGBAttributeMenu();
 		    m_colorAttributeMenu.setEnabled(true);
 		}	
 		else
@@ -2139,12 +2692,12 @@ public class H3Main
 	}
 
 	// NOTE: The caller should enable m_colorAttributeMenu.
-	private void installAllAttributeMenu()
+	private void installRGBAttributeMenu()
 	{
 	    m_colorAttributeMenu.removeAll();
-	    for (int i = 0; i < m_allColorAttributeMenus.length; i++)
+	    for (int i = 0; i < m_RGBColorAttributeMenus.length; i++)
 	    {
-		m_colorAttributeMenu.add(m_allColorAttributeMenus[i]);
+		m_colorAttributeMenu.add(m_RGBColorAttributeMenus[i]);
 	    }
 	}
 
@@ -2245,9 +2798,9 @@ public class H3Main
 	private JMenuItem m_defaultSelection;
 
 	private ButtonGroup m_scalarColorAttributeButtonGroup;
-	private ButtonGroup m_allColorAttributeButtonGroup;
+	private ButtonGroup m_RGBColorAttributeButtonGroup;
 	private JRadioButtonMenuItem[] m_scalarColorAttributeMenus;
-	private JRadioButtonMenuItem[] m_allColorAttributeMenus;
+	private JRadioButtonMenuItem[] m_RGBColorAttributeMenus;
 
 	private int[] m_fixedColors; // packed RGB
 	private JRadioButtonMenuItem[] m_fixedColorMenuItems;
@@ -2282,10 +2835,13 @@ public class H3Main
 	public boolean isAdaptive;
 	public boolean useMultipleNodeSizes;
 	public boolean supportScreenCapture;
+	public boolean refreshAlways;
 
 	public ColorConfiguration nodeColor;
 	public ColorConfiguration treeLinkColor;
 	public ColorConfiguration nontreeLinkColor;
+
+	public int[] nodeLabelAttributes;
 
 	public void print()
 	{
@@ -2297,12 +2853,20 @@ public class H3Main
 			       + useMultipleNodeSizes);
 	    System.out.println("\tsupportScreenCapture = "
 			       + supportScreenCapture);
+	    System.out.println("\trefreshAlways = " + refreshAlways);
+
 	    System.out.print("(Node) ");
 	    nodeColor.print();
 	    System.out.print("(Tree Link) ");
 	    treeLinkColor.print();
 	    System.out.print("(Nontree Link) ");
 	    nontreeLinkColor.print();
+
+	    System.out.println("Node Label Attributes:");
+	    for (int i = 0; i < nodeLabelAttributes.length; i++)
+	    {
+		System.out.println("\t" + nodeLabelAttributes[i]);
+	    }
 	    System.out.println("------------------------------------------\n");
 	}
     }
@@ -2362,7 +2926,7 @@ public class H3Main
 	{
 	    System.out.println("ColorConfiguration:");
 	    System.out.println("\tscheme = " + getSchemeName());
-	    System.out.println("\tfixedColor= " + fixedColor);
+	    System.out.println("\tfixedColor = " + fixedColor);
 	    System.out.println("\tcolorAttribute = " + colorAttribute);
 	    System.out.println("\tselectionAttribute = " + selectionAttribute);
 	}
@@ -2386,8 +2950,8 @@ public class H3Main
 	{
 	    m_scalarColorAttributes = graphLoader.loadAttributes
 		(graph, m_scalarColorAttributeTypeMatcher);
-	    m_allColorAttributes = graphLoader.loadAttributes
-		(graph, m_allColorAttributeTypeMatcher);
+	    m_RGBColorAttributes = graphLoader.loadAttributes
+		(graph, m_RGBColorAttributeTypeMatcher);
 	    m_selectionAttributes = graphLoader.loadAttributes
 		(graph, m_selectionAttributeTypeMatcher);
 	}
@@ -2397,9 +2961,9 @@ public class H3Main
 	    return m_scalarColorAttributes;
 	}
 
-	public List getAllColorAttributes()
+	public List getRGBColorAttributes()
 	{
-	    return m_allColorAttributes;
+	    return m_RGBColorAttributes;
 	}
 
 	public List getSelectionAttributes()
@@ -2408,7 +2972,7 @@ public class H3Main
 	}
 
 	private List m_scalarColorAttributes;
-	private List m_allColorAttributes;
+	private List m_RGBColorAttributes;
 	private List m_selectionAttributes;
 
 	private H3GraphLoader.AttributeTypeMatcher
@@ -2416,8 +2980,8 @@ public class H3Main
 	    new ScalarColorAttributeTypeMatcher();
 
 	private H3GraphLoader.AttributeTypeMatcher
-	    m_allColorAttributeTypeMatcher =
-	    new AllColorAttributeTypeMatcher();
+	    m_RGBColorAttributeTypeMatcher =
+	    new RGBColorAttributeTypeMatcher();
 
 	private H3GraphLoader.AttributeTypeMatcher
 	    m_selectionAttributeTypeMatcher =
@@ -2435,13 +2999,12 @@ public class H3Main
 	    }
 	}
 
-	private class AllColorAttributeTypeMatcher
+	private class RGBColorAttributeTypeMatcher
 	    implements H3GraphLoader.AttributeTypeMatcher
 	{
 	    public boolean match(ValueType type)
 	    {
-		return type == ValueType.INTEGER || type == ValueType.FLOAT
-		    || type == ValueType.DOUBLE || type == ValueType.FLOAT3
+		return type == ValueType.INTEGER || type == ValueType.FLOAT3
 		    || type == ValueType.DOUBLE3;
 	    }
 	}
