@@ -848,9 +848,8 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handleNarrowToPathRequest()
+    private void handleNarrowToPathRequest(int node)
     {
-	int node = m_eventHandler.getCurrentNode();
 	m_graph.narrowVisibility(node);
 	setupNarrowedDisplayMenus(node != m_graph.getRootNode());
 	m_eventHandler.forceIdleState();
@@ -859,9 +858,9 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handleWidenSubtreeRequest()
+    private void handleWidenSubtreeRequest(int node)
     {
-	m_graph.widenSubtreeVisibility(m_eventHandler.getCurrentNode());
+	m_graph.widenSubtreeVisibility(node);
 	updateNarrowedDisplayMenus();
 	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
@@ -869,9 +868,9 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handleWidenTowardRootRequest()
+    private void handleWidenTowardRootRequest(int node)
     {
-	m_graph.widenVisibilityTowardRoot(m_eventHandler.getCurrentNode());
+	m_graph.widenVisibilityTowardRoot(node);
 	updateNarrowedDisplayMenus();
 	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
@@ -889,9 +888,9 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void handlePruneSubtreeRequest()
+    private void handlePruneSubtreeRequest(int node)
     {
-	m_graph.pruneSubtreeVisibility(m_eventHandler.getCurrentNode());
+	m_graph.pruneSubtreeVisibility(node);
 	setupNarrowedDisplayMenus(true);
 	m_eventHandler.forceIdleState();
 	m_eventHandler.refreshDisplay();
@@ -1263,8 +1262,27 @@ public class H3Main
 	    System.out.println("Started H3NonadaptiveRenderLoop.");
 	}
 
+	NarrowingEventHandler narrowingHandler = new NarrowingEventHandler()
+	    {
+		public void narrowToPath(int node)
+		{ handleNarrowToPathRequest(node); }
+
+		public void widenSubtree(int node)
+		{ handleWidenSubtreeRequest(node); }
+
+		public void widenTowardRoot(int node)
+		{ handleWidenTowardRootRequest(node); }
+
+		public void widenToGraph()
+		{ handleWidenToGraphRequest(); }
+
+		public void pruneSubtree(int node)
+		{ handlePruneSubtreeRequest(node); }
+	    };
+
 	m_eventHandler = new EventHandler
 	    (m_viewParameters, m_canvas, m_renderLoop,
+	     narrowingHandler,
 	     m_rootNode, m_currentNode, m_previousNode,
 	     m_graph, m_backingGraph,
 	     renderingConfiguration.nodeLabelAttributes,
@@ -1675,7 +1693,8 @@ public class H3Main
 	m_narrowToPathMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
-		    handleNarrowToPathRequest();
+		    int node = m_eventHandler.getCurrentNode();
+		    handleNarrowToPathRequest(node);
 		}
 	    });
 
@@ -1686,7 +1705,8 @@ public class H3Main
 	    (new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
-		    handleWidenSubtreeRequest();
+		    int node = m_eventHandler.getCurrentNode();
+		    handleWidenSubtreeRequest(node);
 		}
 	    });
 
@@ -1697,7 +1717,8 @@ public class H3Main
 	    (new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
-		    handleWidenTowardRootRequest();
+		    int node = m_eventHandler.getCurrentNode();
+		    handleWidenTowardRootRequest(node);
 		}
 	    });
 
@@ -1717,7 +1738,8 @@ public class H3Main
 	m_pruneDisplayMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
-		    handlePruneSubtreeRequest();
+		    int node = m_eventHandler.getCurrentNode();
+		    handlePruneSubtreeRequest(node);
 		}
 	    });
 
@@ -1956,6 +1978,15 @@ public class H3Main
 	void cancelled();
     }
 
+    private static interface NarrowingEventHandler
+    {
+	void narrowToPath(int node);
+	void widenSubtree(int node);
+	void widenTowardRoot(int node);
+	void widenToGraph();
+	void pruneSubtree(int node);
+    }
+
     ///////////////////////////////////////////////////////////////////////
 
     // NOTE: The public methods of EventHandler aren't synchronized.
@@ -1970,6 +2001,7 @@ public class H3Main
 	public EventHandler
 	    (H3ViewParameters parameters,
 	     H3Canvas3D canvas, H3RenderLoop renderLoop,
+	     NarrowingEventHandler narrowingHandler,
 	     int rootNode, int currentNode, int previousNode,
 	     H3Graph graph, Graph backingGraph,
 	     int[] nodeLabelAttributes, String[] nodeLabelAttributeNames,
@@ -1999,6 +2031,7 @@ public class H3Main
 	    }
 
 	    m_renderLoop = renderLoop;
+	    m_narrowingHandler = narrowingHandler;
 	    m_rootNode = rootNode;
 	    m_currentNode = currentNode;
 	    m_previousNode = previousNode;
@@ -2242,8 +2275,27 @@ public class H3Main
 		}
 		else if (checkModifiers(modifiers, InputEvent.BUTTON2_MASK))
 		{
-		    m_state = STATE_DISPLAYING_ATTRIBUTES;
-		    displayAttributes(x, y);
+		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
+		    {
+			int node = m_renderLoop.pickNode(x, y, m_center);
+			if (node >= 0)
+			{		
+			    m_narrowingHandler.pruneSubtree(node);
+			}
+		    }
+		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
+		    {
+			int node = m_renderLoop.pickNode(x, y, m_center);
+			if (node >= 0)
+			{		
+			    m_narrowingHandler.narrowToPath(node);
+			}
+		    }
+		    else
+		    {
+			m_state = STATE_DISPLAYING_ATTRIBUTES;
+			displayAttributes(x, y);
+		    }
 		}
 		else //if (checkModifiers(modifiers, InputEvent.BUTTON3_MASK))
 		{
@@ -2729,6 +2781,7 @@ public class H3Main
 	private H3ViewParameters m_parameters;
 	private H3Canvas3D m_canvas;
 	private H3RenderLoop m_renderLoop;
+	private NarrowingEventHandler m_narrowingHandler;
 
 	private int m_rootNode;
 	private int m_currentNode;
