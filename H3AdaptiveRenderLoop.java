@@ -50,15 +50,13 @@ public class H3AdaptiveRenderLoop
 				H3ViewParameters parameters,
 				H3Transformer transformer,
 				H3RenderQueue queue,
-				H3AdaptiveRenderer renderer,
-				H3ScreenCapturer capturer)
+				H3AdaptiveRenderer renderer)
     {
 	m_graph = graph;
 	m_canvas = canvas;
 	m_parameters = parameters;
 	m_transformer = transformer;
 	m_renderer = renderer;
-	m_capturer = capturer;
 
 	m_picker = new H3AdaptivePicker(graph, canvas, parameters, queue);
     }
@@ -659,11 +657,6 @@ public class H3AdaptiveRenderLoop
 	}
 	m_canvas.swap();
 
-	if (m_capturer != null)
-	{
-	    m_capturer.capture(gc);
-	}
-
 	if (DEBUG_PRINT)
 	{
 	    long stopTime = System.currentTimeMillis();
@@ -705,11 +698,6 @@ public class H3AdaptiveRenderLoop
 	    m_renderer.render(gc);
 	}
 	m_canvas.swap();
-
-	if (m_capturer != null)
-	{
-	    m_capturer.capture(gc);
-	}
 
 	if (DEBUG_PRINT)
 	{
@@ -795,7 +783,6 @@ public class H3AdaptiveRenderLoop
     private H3Canvas3D m_canvas;
     private H3Transformer m_transformer;
     private H3AdaptiveRenderer m_renderer;
-    private H3ScreenCapturer m_capturer;
     private H3ViewParameters m_parameters;
     private H3AdaptivePicker m_picker;
 

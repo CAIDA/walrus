@@ -48,13 +48,11 @@ public class H3NonadaptiveRenderLoop
     
     public H3NonadaptiveRenderLoop(H3Graph graph, H3Canvas3D canvas,
 				   H3ViewParameters parameters,
-				   H3ScreenCapturer capturer,
 				   boolean transformNontreeLinks)
     {
 	m_graph = graph;
 	m_canvas = canvas;
 	m_parameters = parameters;
-	m_capturer = capturer;
 	m_transformNontreeLinks = transformNontreeLinks;
 
 	m_picker = new H3NonadaptivePicker(graph, canvas, parameters);
@@ -467,11 +465,6 @@ public class H3NonadaptiveRenderLoop
 	}
 	m_canvas.swap();
 
-	if (m_capturer != null)
-	{
-	    m_capturer.capture(gc);
-	}
-
 	if (DEBUG_PRINT)
 	{
 	    long stopTime = System.currentTimeMillis();
@@ -507,11 +500,6 @@ public class H3NonadaptiveRenderLoop
 	    render(gc);
 	}
 	m_canvas.swap();
-
-	if (m_capturer != null)
-	{
-	    m_capturer.capture(gc);
-	}
 
 	if (DEBUG_PRINT)
 	{
@@ -661,7 +649,6 @@ public class H3NonadaptiveRenderLoop
     private H3Graph m_graph;
     private H3Canvas3D m_canvas;
     private H3ViewParameters m_parameters;
-    private H3ScreenCapturer m_capturer;
     private H3NonadaptivePicker m_picker;
 
     private boolean m_transformNontreeLinks;

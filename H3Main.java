@@ -159,10 +159,7 @@ public class H3Main
 		    m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
 		    m_statusBar.setText(MSG_GRAPH_LOADED);
 
-		    // File menu.
 		    m_closeMenuItem.setEnabled(true);
-
-		    // Rendering menu.
 		    m_startMenuItem.setEnabled(true);
 		}
 	    }
@@ -204,7 +201,6 @@ public class H3Main
 	retval.multipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
 	retval.depthCueing = m_depthCueingMenuItem.isSelected();
 	retval.axes = m_axesMenuItem.isSelected();
-	retval.supportScreenCapture = m_screenCaptureMenuItem.isSelected();
 	retval.automaticRefresh = m_automaticRefreshMenuItem.isSelected();
 	retval.nodeColor =
 	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
@@ -314,11 +310,6 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
-	m_startRecordingMenuItem.setEnabled(false);
-	m_stopRecordingMenuItem.setEnabled(false);
-	m_abortRecordingMenuItem.setEnabled(false);
-	m_recordMovementsMenu.setEnabled(false);
-	m_replayRecordingMenuItem.setEnabled(false);
 
 	// Spanning Tree menu.
 	m_spanningTreeMenu.removeAll();
@@ -916,14 +907,6 @@ public class H3Main
 	m_viewParameters.setAxesEnabled
 	    (renderingConfiguration.axes);
 
-	H3ScreenCapturer capturer = null;
-	if (renderingConfiguration.supportScreenCapture)
-	{
-	    capturer = new H3ScreenCapturer();
-	}
-
-	CapturingManager manager = new NullCapturingManager();
-
 	if (renderingConfiguration.adaptiveRendering)
 	{
 	    int queueSize = m_graph.getNumNodes() + m_graph.getTotalNumLinks();
@@ -999,7 +982,7 @@ public class H3Main
 
 	    H3AdaptiveRenderLoop adaptive = new H3AdaptiveRenderLoop
 		(m_graph, m_canvas, m_viewParameters,
-		 transformer, queue, renderer, capturer);
+		 transformer, queue, renderer);
 
 	    new Thread(adaptive).start();
 	    m_renderLoop = adaptive;
@@ -1008,11 +991,6 @@ public class H3Main
 	    adaptive.setMaxRotationDuration(DURATION);
 	    adaptive.setMaxTranslationDuration(DURATION);
 	    adaptive.setMaxCompletionDuration(DURATION);
-
-	    if (renderingConfiguration.supportScreenCapture)
-	    {
-		manager = new AdaptiveCapturingManager(capturer, adaptive);
-	    }
 
 	    System.out.println("Started H3AdaptiveRenderLoop.");
 	}
@@ -1025,22 +1003,16 @@ public class H3Main
 		 != ColorConfiguration.INVISIBLE);
 
 	    H3NonadaptiveRenderLoop nonadaptive = new H3NonadaptiveRenderLoop
-		(m_graph, m_canvas, m_viewParameters,
-		 capturer, processNontreeLinks);
+		(m_graph, m_canvas, m_viewParameters, processNontreeLinks);
+
 	    new Thread(nonadaptive).start();
 	    m_renderLoop = nonadaptive;
-
-	    if (renderingConfiguration.supportScreenCapture)
-	    {
-		manager = new NonadaptiveCapturingManager
-		    (capturer, nonadaptive);
-	    }
 
 	    System.out.println("Started H3NonadaptiveRenderLoop.");
 	}
 
 	m_eventHandler = new EventHandler
-	    (m_canvas, m_renderLoop, manager, m_rootNode, m_currentNode,
+	    (m_canvas, m_renderLoop, m_rootNode, m_currentNode,
 	     m_previousNode, m_graph, m_backingGraph,
 	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
 	     renderingConfiguration.automaticRefresh);
@@ -1217,11 +1189,6 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_savePositionMenuItem.setEnabled(false);
 	m_restorePositionMenuItem.setEnabled(false);
-	m_startRecordingMenuItem.setEnabled(false);
-	m_stopRecordingMenuItem.setEnabled(false);
-	m_abortRecordingMenuItem.setEnabled(false);
-	m_recordMovementsMenu.setEnabled(false);
-	m_replayRecordingMenuItem.setEnabled(false);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1242,8 +1209,6 @@ public class H3Main
 	m_showPreviousNodeMenuItem.setEnabled(true);
 	m_savePositionMenuItem.setEnabled(true);
 	m_restorePositionMenuItem.setEnabled(m_savedDisplayPosition != null);
-	m_startRecordingMenuItem.setEnabled(true);
-	m_recordMovementsMenu.setEnabled(true);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -1391,11 +1356,6 @@ public class H3Main
 	m_axesMenuItem.setMnemonic(KeyEvent.VK_X);
 	m_axesMenuItem.setSelected(true);
 
-	m_screenCaptureMenuItem
-	    = new JCheckBoxMenuItem("Screen Capture Support");
-	m_screenCaptureMenuItem.setMnemonic(KeyEvent.VK_C);
-	m_screenCaptureMenuItem.setSelected(false);
-
 	m_automaticRefreshMenuItem
 	    = new JCheckBoxMenuItem("Automatic Refresh");
 	m_automaticRefreshMenuItem.setMnemonic(KeyEvent.VK_F);
@@ -1411,7 +1371,6 @@ public class H3Main
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
 	m_renderingMenu.add(m_depthCueingMenuItem);
 	m_renderingMenu.add(m_axesMenuItem);
-	m_renderingMenu.add(m_screenCaptureMenuItem);
 	m_renderingMenu.add(m_automaticRefreshMenuItem);
 
 	// Create "Display" menu. ------------------------------------------
@@ -1493,29 +1452,6 @@ public class H3Main
 		}
 	    });
 
-	m_startRecordingMenuItem = new JMenuItem("Start");
-	m_startRecordingMenuItem.setMnemonic(KeyEvent.VK_S);
-	m_startRecordingMenuItem.setEnabled(false);
-
-	m_stopRecordingMenuItem = new JMenuItem("Stop");
-	m_stopRecordingMenuItem.setMnemonic(KeyEvent.VK_P);
-	m_stopRecordingMenuItem.setEnabled(false);
-
-	m_abortRecordingMenuItem = new JMenuItem("Abort");
-	m_abortRecordingMenuItem.setMnemonic(KeyEvent.VK_A);
-	m_abortRecordingMenuItem.setEnabled(false);
-
-	m_recordMovementsMenu = new JMenu("Record Movements");
-	m_recordMovementsMenu.setMnemonic(KeyEvent.VK_M);
-	m_recordMovementsMenu.setEnabled(false);
-	m_recordMovementsMenu.add(m_startRecordingMenuItem);
-	m_recordMovementsMenu.add(m_stopRecordingMenuItem);
-	m_recordMovementsMenu.add(m_abortRecordingMenuItem);
-
-	m_replayRecordingMenuItem = new JMenuItem("Replay Movements");
-	m_replayRecordingMenuItem.setMnemonic(KeyEvent.VK_P);
-	m_replayRecordingMenuItem.setEnabled(false);
-
 	m_displayMenu = new JMenu("Display");
 	m_displayMenu.setMnemonic(KeyEvent.VK_D);
 	m_displayMenu.add(m_refreshDisplayMenuItem);
@@ -1525,9 +1461,6 @@ public class H3Main
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_savePositionMenuItem);
 	m_displayMenu.add(m_restorePositionMenuItem);
-	m_displayMenu.addSeparator();
-	m_displayMenu.add(m_recordMovementsMenu);
-	m_displayMenu.add(m_replayRecordingMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
@@ -1628,7 +1561,6 @@ public class H3Main
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
     private JCheckBoxMenuItem m_depthCueingMenuItem;
     private JCheckBoxMenuItem m_axesMenuItem;
-    private JCheckBoxMenuItem m_screenCaptureMenuItem;
     private JCheckBoxMenuItem m_automaticRefreshMenuItem;
 
     private JMenu m_displayMenu;
@@ -1638,11 +1570,6 @@ public class H3Main
     private JMenuItem m_showPreviousNodeMenuItem;
     private JMenuItem m_savePositionMenuItem;
     private JMenuItem m_restorePositionMenuItem;
-    private JMenu m_recordMovementsMenu;
-    private JMenuItem m_startRecordingMenuItem;
-    private JMenuItem m_stopRecordingMenuItem;
-    private JMenuItem m_abortRecordingMenuItem;
-    private JMenuItem m_replayRecordingMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -1681,8 +1608,8 @@ public class H3Main
     {
 	public EventHandler
 	    (H3Canvas3D canvas, H3RenderLoop renderLoop,
-	     CapturingManager manager, int rootNode, int currentNode,
-	     int previousNode, H3Graph graph, Graph backingGraph,
+	     int rootNode, int currentNode, int previousNode,
+	     H3Graph graph, Graph backingGraph,
 	     int[] nodeLabelAttributes, JTextField statusBar,
 	     boolean automaticRefresh)
 	{
@@ -1707,8 +1634,7 @@ public class H3Main
 		m_canvas.addComponentListener(m_resizeListener);
 	    }
 
-	    m_renderLoop = new H3CapturingRenderLoop(renderLoop);
-	    m_capturingManager = manager;
+	    m_renderLoop = renderLoop;
 	    m_rootNode = rootNode;
 	    m_currentNode = currentNode;
 	    m_previousNode = previousNode;
@@ -1779,10 +1705,6 @@ public class H3Main
 		m_wobblingListener.cancelled();
 		m_wobblingListener = null;
 		m_wobblingRequest.end();
-		break;
-
-	    case STATE_REPLAYING:
-		// XXX: Stop replaying...
 		break;
 
 	    default:
@@ -1946,10 +1868,6 @@ public class H3Main
 		m_wobblingRequest.end();
 		break;
 
-	    case STATE_REPLAYING:
-		// XXX: Cancel replay...
-		break;
-
 		// Under normal circumstances, a mousePressed event shouldn't
 		// occur in STATE_DISPLAYING_ATTRIBUTES,
 		// STATE_ROTATING_INTERACTIVE, or
@@ -2035,8 +1953,6 @@ public class H3Main
 
 	    case STATE_WOBBLING:
 		//FALLTHROUGH
-	    case STATE_REPLAYING:
-		//FALLTHROUGH
 	    default:
 		throw new RuntimeException
 		    ("Invalid state in EventHandler: mouseReleased in state "
@@ -2096,8 +2012,6 @@ public class H3Main
 
 	    case STATE_WOBBLING:
 		//FALLTHROUGH
-	    case STATE_REPLAYING:
-		//FALLTHROUGH
 	    default:
 		throw new RuntimeException
 		    ("Invalid state in EventHandler: mouseDragged in state "
@@ -2140,10 +2054,6 @@ public class H3Main
 		break;
 
 	    case STATE_WOBBLING:
-		//IGNORE
-		break;
-
-	    case STATE_REPLAYING:
 		//IGNORE
 		break;
 
@@ -2440,7 +2350,6 @@ public class H3Main
 	private static final int STATE_ROTATING_CONTINUOUS_START = 4;
 	private static final int STATE_ROTATING_TRACKING = 5;
 	private static final int STATE_WOBBLING = 6;
-	private static final int STATE_REPLAYING = 7;
 
 	private static final char CTRL_R = 'r' - 'a' + 1;
 
@@ -2448,8 +2357,7 @@ public class H3Main
 
 	private int m_state;
 	private H3Canvas3D m_canvas;
-	private H3CapturingRenderLoop m_renderLoop;
-	private CapturingManager m_capturingManager;
+	private H3RenderLoop m_renderLoop;
 
 	private int m_rootNode;
 	private int m_currentNode;
@@ -2468,8 +2376,6 @@ public class H3Main
 	private int m_lastY;
 	private double m_dxRadians;
 	private double m_dyRadians;
-
-	private boolean m_isCapturing = false;
 
 	private H3InteractiveRotationRequest m_interactiveRequest
 	    = new H3InteractiveRotationRequest();
@@ -2514,88 +2420,6 @@ public class H3Main
 		}
 	    }
 	}
-    }
-
-    private interface CapturingManager
-    {
-	void enable();
-	void disable();
-    }
-
-    private static class NullCapturingManager
-	implements CapturingManager
-    {
-	public void enable() {}
-	public void disable() {}
-    }
-
-    private static class AdaptiveCapturingManager
-	implements CapturingManager
-    {
-	public AdaptiveCapturingManager(H3ScreenCapturer capturer,
-					 H3AdaptiveRenderLoop renderLoop)
-	{
-	    m_capturer = capturer;
-	    m_renderLoop = renderLoop;
-	}
-
-	public void enable()
-	{
-	    m_maxRotationDuration = m_renderLoop.getMaxRotationDuration();
-	    m_maxTranslationDuration =m_renderLoop.getMaxTranslationDuration();
-	    m_maxCompletionDuration = m_renderLoop.getMaxCompletionDuration();
-
-	    m_renderLoop.setMaxRotationDuration(CAPTURING_DURATION);
-	    m_renderLoop.setMaxTranslationDuration(CAPTURING_DURATION);
-	    m_renderLoop.setMaxCompletionDuration(CAPTURING_DURATION);
-
-	    m_capturer.enableCapturing();
-	}
-
-	public void disable()
-	{
-	    m_renderLoop.synchronizeWithRendering();
-
-	    m_renderLoop.setMaxRotationDuration(m_maxRotationDuration);
-	    m_renderLoop.setMaxTranslationDuration(m_maxTranslationDuration);
-	    m_renderLoop.setMaxCompletionDuration(m_maxCompletionDuration);
-
-	    m_capturer.disableCapturing();
-	}
-
-	private static final long CAPTURING_DURATION = 1000;
-
-	private long m_maxRotationDuration;
-	private long m_maxTranslationDuration;
-	private long m_maxCompletionDuration;
-
-	private H3ScreenCapturer m_capturer;
-	private H3AdaptiveRenderLoop m_renderLoop;
-    }
-
-    private static class NonadaptiveCapturingManager
-	implements CapturingManager
-    {
-	public NonadaptiveCapturingManager(H3ScreenCapturer capturer,
-					   H3NonadaptiveRenderLoop renderLoop)
-	{
-	    m_capturer = capturer;
-	    m_renderLoop = renderLoop;
-	}
-
-	public void enable()
-	{
-	    m_capturer.enableCapturing();
-	}
-
-	public void disable()
-	{
-	    m_renderLoop.synchronizeWithRendering();
-	    m_capturer.disableCapturing();
-	}
-
-	private H3ScreenCapturer m_capturer;
-	private H3NonadaptiveRenderLoop m_renderLoop;
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -3523,7 +3347,6 @@ public class H3Main
 	public boolean multipleNodeSizes;
 	public boolean depthCueing;
 	public boolean axes;
-	public boolean supportScreenCapture;
 	public boolean automaticRefresh;
 
 	public ColorConfiguration nodeColor;
@@ -3541,8 +3364,6 @@ public class H3Main
 	    System.out.println("\tmultipleNodeSizes = " + multipleNodeSizes);
 	    System.out.println("\tdepthCueing = " + depthCueing);
 	    System.out.println("\taxes = " + axes);
-	    System.out.println("\tsupportScreenCapture = "
-			       + supportScreenCapture);
 	    System.out.println("\tautomaticRefresh = " + automaticRefresh);
 
 	    System.out.print("(Node) ");
