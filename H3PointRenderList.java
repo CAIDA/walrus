@@ -329,6 +329,10 @@ public class H3PointRenderList
 		m_treeLinkColors[m_treeLinkColorIndex++] = r;
 		m_treeLinkColors[m_treeLinkColorIndex++] = g;
 		m_treeLinkColors[m_treeLinkColorIndex++] = b;
+
+		m_treeLinkColors[m_treeLinkColorIndex++] = r;
+		m_treeLinkColors[m_treeLinkColorIndex++] = g;
+		m_treeLinkColors[m_treeLinkColorIndex++] = b;
 	    }
 	}
     }
@@ -358,6 +362,10 @@ public class H3PointRenderList
 		byte r = (byte)((color >> 16) & 0xff);
 		byte g = (byte)((color >> 8) & 0xff);
 		byte b = (byte)(color & 0xff);
+
+		m_nontreeLinkColors[m_nontreeLinkColorIndex++] = r;
+		m_nontreeLinkColors[m_nontreeLinkColorIndex++] = g;
+		m_nontreeLinkColors[m_nontreeLinkColorIndex++] = b;
 
 		m_nontreeLinkColors[m_nontreeLinkColorIndex++] = r;
 		m_nontreeLinkColors[m_nontreeLinkColorIndex++] = g;
