@@ -38,6 +38,81 @@
 import java.util.*;
 import javax.vecmath.*;
 
+//
+// This is the graph representation used and needed by the rendering part
+// of Walrus.
+// 
+// Walrus traverses this graph while rendering the display.  Hence, the
+// main requirement on the design of this class is fast read access.
+// Also, nothing more need be stored in this class than the bare graph
+// topology, coloring information, and coordinates; all other data (such
+// as attributes associated with nodes and links) should be stored in a
+// backing graph.  Because of these design goals, this class is minimal
+// in implementation.
+// 
+// An additional design goal is the ability to handle large graphs.
+// Because there will usually be a backing graph from which this class is
+// populated, we want the overhead of construction to be as small as
+// possible.  In particular, we want to eliminate the need for
+// intermediate data structures during construction.  This goal is
+// accomplished by requiring the user to populate links in a disciplined
+// manner.  Specifically, links must be populated in batches, with all
+// the links of each node populated in a consecutive sequence of
+// operations.  That is, rather than allowing the user to add the links
+// of all nodes in an arbitrary order, users must add all the links of
+// some node A with a sequence of calls, and then all the links of some
+// node B, and so on.  The ordering of the nodes themselves, however,
+// doesn't matter.
+// 
+// This ordering requirement lets this class store a graph in a very
+// compact way (as a set of parallel primitive arrays) without
+// necessitating the use of an intermediate representation, which would
+// raise the peak memory usage during graph construction---some graphs
+// can take up more than 100 MBs of memory, so eliminating unnecessary
+// data structures really is important.
+// 
+// So, the basic steps the user would take to create and populate an
+// H3Graph is as follows, in pseudo-code:
+// 
+//        Create an H3Graph instance.
+//        Iterate over the nodes in the user's data set [backing graph]:
+//             If the node has outgoing links:
+//                 Call startChildLinks().
+//                 For each child link [tree link] (can be zero):
+//                     Call addChildLink().
+//                 Call startNontreeLinks().
+//                 For each nontree link (can be zero):
+//                     Call addNontreeLink().
+//                 Call endNodeLinks().
+// 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 
+// This class refers to nodes and links using internally defined indices.
+// Suppose you create an instance with the following:
+// 
+//     H3Graph graph = new H3Graph(numNodes, numLinks);
+// 
+// Then, as far as H3Graph is concerned, the nodes are identified with
+// the indices 0, ..., numNodes-1, and links with 0, ..., numLinks-1.
+// The actual correspondence between these indices and the nodes and
+// links in the user's data set (backing graph) is entirely up to the
+// user; all that matters to H3Graph is that the user always handles the
+// correspondences consistently.  To help the user maintain the
+// correspondences, H3Graph can associate an external ID number with each
+// node or link.  This facility is provided through the methods
+// {get,set}NodeID() and {get,set}LinkID().  Also, addChildLink() and
+// addNontreeLink() take a parameter containing the external ID of the
+// link being added.  In summary, to use H3Graph, users must have some
+// way of mapping between their set of nodes and links and the IDs known
+// by H3Graph.
+// 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// 
+// Be sure to call setRootNode() at some point during construction so
+// that the rendering part of Walrus (and any other users of this data)
+// knows at which node to start its traversal.
+// 
+
 public class H3Graph
 {
     ////////////////////////////////////////////////////////////////////////
@@ -137,6 +212,28 @@ public class H3Graph
 	return m_nodes.parent[node];
     }
 
+    // The following methods--getNodeChildIndex(), getNodeNontreeIndex(),
+    // and getNodeLinksEndIndex()--provide a way of iterating over all
+    // the outgoing links of a node.
+    //
+    // You would iterate over the outgoing links in the following manner:
+    //
+    //     int start = graph.getNodeChildIndex(node);
+    //     int end = graph.getNodeLinksEndIndex(node);
+    //     int nontreeStart = graph.getNodeNontreeIndex();
+    //
+    //     for (int i = start; i < nontreeStart; i++)
+    //     {
+    //        /* i is the index of an outgoing child link */
+    //        graph.setLinkColor(i, Color.black);
+    //        /* ... */
+    //     }
+    //
+    //     for (int i = nontreeStart; i < end; i++)
+    //     {
+    //        /* i is the index of an outgoing nontree link */
+    //     }
+
     public int getNodeChildIndex(int node)
     {
 	return m_nodes.treeLinks[node];
@@ -188,6 +285,8 @@ public class H3Graph
     // PUBLIC MUTATOR METHODS
     ////////////////////////////////////////////////////////////////////////
 
+    // Computes new display coordinates for each node by transforming the
+    // layout coordinates of nodes with the supplied matrix.
     public void transformNodes(Matrix4d t)
     {
 	Point4d p = new Point4d();
@@ -267,7 +366,7 @@ public class H3Graph
 	m_nodes.layoutW[node] = p.w;
     }
 
-    // The following two functions, addNodeChild() and addNodeNontreeLink(),
+    // The following two methods, addChildLink() and addNodeNontreeLink(),
     // must be called in a disciplined manner.  The sequence of calls to
     // add the links of one node should never interleave with the sequence
     // of another node.  Additionally, for a particular node, all child links
@@ -276,9 +375,9 @@ public class H3Graph
     // The required calling sequence for a node is as follows:
     //
     //    startChildLinks()
-    //    addChildLink() ... addChildLink()  [zero or more]
+    //    addChildLink() ... addChildLink()  [zero or more times]
     //    startNontreeLinks()
-    //    addNontreeLink() ... addNontreeLink()  [zero or more]
+    //    addNontreeLink() ... addNontreeLink()  [zero or more times]
     //    endNodeLinks()
     //
     // There need not be a sequence of these calls for nodes without any links.
@@ -288,7 +387,8 @@ public class H3Graph
 	m_nodes.treeLinks[node] = m_links.nextIndex;
     }
 
-    // linkID is the ID of the corresponding link in the backing libsea graph.
+    // linkID is the ID of the corresponding link in the backing libsea graph
+    // (or whatever backing data store you're using).
     public void addChildLink(int node, int child, int linkID)
     {
 	++m_numTreeLinks;
@@ -306,7 +406,8 @@ public class H3Graph
 	m_nodes.nontreeLinks[node] = m_links.nextIndex;
     }
 
-    // linkID is the ID of the corresponding link in the backing libsea graph.
+    // linkID is the ID of the corresponding link in the backing libsea graph
+    // (or whatever backing data store you're using).
     public void addNontreeLink(int node, int target, int linkID)
     {
 	++m_numNontreeLinks;
@@ -513,7 +614,6 @@ public class H3Graph
     ////////////////////////////////////////////////////////////////////////
     // TEST METHODS
     ////////////////////////////////////////////////////////////////////////
-
     public void checkTreeReachability()
     {
 	checkTreeReachability(0);
