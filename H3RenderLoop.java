@@ -52,4 +52,5 @@ public interface H3RenderLoop
     H3DisplayPosition getDisplayPosition();
     void setDisplayPosition(H3DisplayPosition position);
     void shutdown();
+    void waitForShutdown();
 }
