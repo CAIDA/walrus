@@ -85,7 +85,7 @@ public class H3AdaptiveRenderLoop
 		}
 
 		m_parameters.refresh();
-		m_parameters.installDepthCueing();
+		m_parameters.installBackgroundRelatedAttributes();
 		m_state = STATE_REFRESH;
 	    }
 	}
