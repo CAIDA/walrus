@@ -2,7 +2,7 @@
 
                    The Walrus Graph Visualization Tool
 
-                               version 0.6
+                              version 0.6.1
 
                                ___ __, 2002
 
@@ -50,6 +50,11 @@ region, the user can examine every part of the graph in detail.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 CHANGES
+
+Since 0.6, released Apr 29, 2002:
+
+  * Re-implemented routines for hyperbolic transformations.
+    No new features.  Everything should work exactly as for v0.6.
 
 Since 0.5, released Apr 19, 2002:
 
