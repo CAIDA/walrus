@@ -173,51 +173,58 @@ public class H3PointRenderList
     // PUBLIC METHODS
     ////////////////////////////////////////////////////////////////////////
 
-    public BranchGroup makeBranchGraph()
+    public BranchGroup makeBranchGraph(double pointScale, double lineScale)
     {
 	BranchGroup retval = new BranchGroup();
 
 	if (m_numNearNodesDisplayed > 0)
 	{
 	    Appearance appearance = cloneAppearance(m_nearNodeAppearance);
-	    appearance.getPointAttributes().setPointSize(10.0f);
-
+	    scalePointSize(appearance, pointScale);
 	    retval.addChild(new Shape3D(m_nearNodes, appearance));
 	}
 
 	if (m_numMiddleNodesDisplayed > 0)
 	{
 	    Appearance appearance = cloneAppearance(m_middleNodeAppearance);
-	    appearance.getPointAttributes().setPointSize(6.0f);
-
+	    scalePointSize(appearance, pointScale);
 	    retval.addChild(new Shape3D(m_middleNodes, appearance));
 	}
 
 	if (m_numFarNodesDisplayed > 0)
 	{
 	    Appearance appearance = cloneAppearance(m_farNodeAppearance);
-	    appearance.getPointAttributes().setPointSize(2.0f);
-
+	    scalePointSize(appearance, pointScale);
 	    retval.addChild(new Shape3D(m_farNodes, appearance));
 	}
 
 	if (m_numTreeVerticesDisplayed > 0)
 	{
 	    Appearance appearance = cloneAppearance(m_treeLinkAppearance);
-	    appearance.getLineAttributes().setLineWidth(2.0f);
-
+	    scaleLineWidth(appearance, lineScale);
 	    retval.addChild(new Shape3D(m_treeLinks, appearance));
 	}
 
 	if (m_numNontreeVerticesDisplayed > 0)
 	{
 	    Appearance appearance = cloneAppearance(m_nontreeLinkAppearance);
-	    appearance.getLineAttributes().setLineWidth(2.0f);
-
+	    scaleLineWidth(appearance, lineScale);
 	    retval.addChild(new Shape3D(m_nontreeLinks, appearance));
 	}
 
 	return retval;
+    }
+
+    private void scalePointSize(Appearance appearance, double scale)
+    {
+	double size = appearance.getPointAttributes().getPointSize();
+	appearance.getPointAttributes().setPointSize((float)(scale * size));
+    }
+
+    private void scaleLineWidth(Appearance appearance, double scale)
+    {
+	double width = appearance.getLineAttributes().getLineWidth();
+	appearance.getLineAttributes().setLineWidth((float)(scale * width));
     }
 
     // NOTE: This doesn't clone all of the attributes of an Appearance.
