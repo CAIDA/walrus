@@ -346,6 +346,11 @@ and is not a requirement of Walrus.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ACKNOWLEDGEMENTS
 
+Walrus was originally developed by Young Hyun at the University of California,
+San Diego under the Cooperative Association for Internet Data Analysis (CAIDA)
+Program.  Support for this effort was provided by NSF grant ANI-9814421,
+DARPA NGI Contract N66001-98-2-8922, Sun Microsystems, and CAIDA members.
+
 CAIDA's LibSea graph library distributed with Walrus uses the excellent and
 free ANTLR parser generator (see http://www.antlr.org).  The file
 'antlrall-mod.jar' is ANTLR 2.7.1, slightly modified to improved parsing
