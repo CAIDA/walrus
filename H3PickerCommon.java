@@ -202,6 +202,12 @@ public abstract class H3PickerCommon
 	int numComputedPointsInEye = getNumComputedPointsInEye();
 	for (int i = 0; i < numComputedPointsInEye; i++)
 	{
+	    int node = getNodeInEye(i);
+	    if (!m_graph.checkNodeVisible(node))
+	    {
+		continue;
+	    }
+
 	    double pX = m_pointsInEyeX[i];
 	    double pY = m_pointsInEyeY[i];
 	    double pZ = m_pointsInEyeZ[i];
@@ -219,7 +225,7 @@ public abstract class H3PickerCommon
 	    double pickEquivalenceDistance = pickEquivalenceRadius;
 	    if (USE_NODE_RADIUS)
 	    {
-		double radiusScale = m_graph.getNodeRadius(getNodeInEye(i));
+		double radiusScale = m_graph.getNodeRadius(node);
 		pickDistance += nodeRadius * radiusScale;
 		pickEquivalenceDistance += nodeRadius * radiusScale;
 	    }

@@ -707,6 +707,74 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
+    private void selectNodes(ColorConfiguration configuration)
+    {
+	if (configuration.selectionAttribute == null)
+	{
+	    m_graph.resetNodeVisibility();
+	}
+	else
+	{
+	    int attribute = m_backingGraph.getAttributeDefinition
+		(configuration.selectionAttribute).getID();
+
+	    int numNodes = m_graph.getNumNodes();
+	    for (int i = 0; i < numNodes; i++)
+	    {
+		boolean isVisible = true;
+		try
+		{
+		    int nodeID = m_graph.getNodeID(i);
+		    isVisible = m_backingGraph.getBooleanAttribute
+			(ObjectType.NODE, nodeID, attribute);
+		}
+		catch (AttributeUnavailableException e)
+		{
+		    // Assume visibility.
+		}
+		m_graph.setNodeVisibility(i, isVisible);
+	    }
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void selectLinks
+	(ColorConfiguration configuration, boolean treeLink)
+    {
+	if (configuration.selectionAttribute == null)
+	{
+	    m_graph.resetLinkVisibility(treeLink);
+	}
+	else
+	{
+	    int attribute = m_backingGraph.getAttributeDefinition
+		(configuration.selectionAttribute).getID();
+
+	    int numLinks = m_graph.getTotalNumLinks();
+	    for (int i = 0; i < numLinks; i++)
+	    {
+		if (m_graph.checkTreeLink(i) == treeLink)
+		{
+		    boolean isVisible = true;
+		    try
+		    {
+			int linkID = m_graph.getLinkID(i);
+			isVisible = m_backingGraph.getBooleanAttribute
+			    (ObjectType.LINK, linkID, attribute);
+		    }
+		    catch (AttributeUnavailableException e)
+		    {
+			// Assume visibility.
+		    }
+		    m_graph.setLinkVisibility(i, isVisible);
+		}
+	    }
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
     private void handleStopRenderingRequest()
     {
 	stopRendering();
@@ -769,6 +837,10 @@ public class H3Main
 		colorNodes(renderingConfiguration.nodeColor);
 		colorTreeLinks(renderingConfiguration.treeLinkColor);
 		colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+
+		selectNodes(renderingConfiguration.nodeColor);
+		selectLinks(renderingConfiguration.treeLinkColor, true);
+		selectLinks(renderingConfiguration.nontreeLinkColor, false);
 	    }
 	    else
 	    {
@@ -776,18 +848,21 @@ public class H3Main
 		    .equalColoring(m_renderingConfiguration.nodeColor))
 		{
 		    colorNodes(renderingConfiguration.nodeColor);
+		    selectNodes(renderingConfiguration.nodeColor);
 		}
 
 		if (!renderingConfiguration.treeLinkColor
 		    .equalColoring(m_renderingConfiguration.treeLinkColor))
 		{
 		    colorTreeLinks(renderingConfiguration.treeLinkColor);
+		    selectLinks(renderingConfiguration.treeLinkColor, true);
 		}
 
 		if (!renderingConfiguration.nontreeLinkColor
 		    .equalColoring(m_renderingConfiguration.nontreeLinkColor))
 		{
 		    colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+		    selectLinks(renderingConfiguration.nontreeLinkColor,false);
 		}
 	    }
 

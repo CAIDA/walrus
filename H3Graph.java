@@ -254,6 +254,11 @@ public class H3Graph
 	return m_nodes.color[node];
     }
 
+    public boolean checkNodeVisible(int node)
+    {
+	return (m_nodes.isHidden == null || !m_nodes.isHidden.get(node));
+    }
+
     //======================================================================
 
     public int getLinkID(int link)
@@ -271,14 +276,19 @@ public class H3Graph
 	return m_links.destination[link];
     }
 
+    public int getLinkColor(int link)
+    {
+	return m_links.color[link];
+    }
+
     public boolean checkTreeLink(int link)
     {
 	return m_links.isTreeLink.get(link);
     }
 
-    public int getLinkColor(int link)
+    public boolean checkLinkVisible(int link)
     {
-	return m_links.color[link];
+	return (m_links.isHidden == null || !m_links.isHidden.get(link));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -446,6 +456,30 @@ public class H3Graph
 	setNodeDefaultColor(color);
     }
 
+    public void setNodeVisibility(int node, boolean isVisible)
+    {
+	if (m_nodes.isHidden == null)
+	{
+	    m_nodes.isHidden = new BitSet(m_numNodes);
+	}
+
+	if (isVisible)
+	{
+	    m_nodes.isHidden.clear(node);
+	}
+	else
+	{
+	    m_nodes.isHidden.set(node);
+	}
+    }
+
+    public void resetNodeVisibility()
+    {
+	m_nodes.isHidden = null;
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     public void setLinkID(int link, int id)
     {
 	m_links.id[link] = id;
@@ -470,6 +504,49 @@ public class H3Graph
     {
 	int color = (r << 16) | (g << 8) | b;
 	setLinkDefaultColor(color);
+    }
+
+    public void setLinkVisibility(int link, boolean isVisible)
+    {
+	if (m_links.isHidden == null)
+	{
+	    m_links.isHidden = new BitSet(m_numLinks);
+	}
+
+	if (isVisible)
+	{
+	    m_links.isHidden.clear(link);
+	}
+	else
+	{
+	    m_links.isHidden.set(link);
+	}
+    }
+
+    public void resetLinkVisibility()
+    {
+	m_links.isHidden = null;
+    }
+
+    public void resetLinkVisibility(boolean treeLink)
+    {
+	if (m_links.isHidden != null)
+	{
+	    int length = m_links.isHidden.length();
+	    for (int i = 0; i < length; i++)
+	    {
+		if (m_links.isHidden.get(i)
+		    && m_links.isTreeLink.get(i) == treeLink)
+		{
+		    m_links.isHidden.clear(i);
+		}
+	    }
+
+	    if (m_links.isHidden.length() == 0)
+	    {
+		m_links.isHidden = null;
+	    }
+	}
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -572,6 +649,12 @@ public class H3Graph
 
 	// Color in packed RGB format (R, G, and B in the lower three octets).
 	public int[] color;
+
+	// Whether a node should NOT be drawn.
+	// This will be null if all nodes should be visible.
+	// We use the inverted logic because BitSet is created with all its
+	// bits cleared.
+	public BitSet isHidden;
     }
 
     public static class Links
@@ -609,6 +692,12 @@ public class H3Graph
 
 	// Color in packed RGB format (R, G, and B in the lower three octets).
 	public int[] color;
+
+	// Whether a link should NOT be drawn.
+	// This will be null if all links should be visible.
+	// We use the inverted logic because BitSet is created with all its
+	// bits cleared.
+	public BitSet isHidden;
     }
 
     ////////////////////////////////////////////////////////////////////////
