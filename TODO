@@ -5,12 +5,8 @@
 BUGS & ISSUES
 =========================================================================
 
-* The transparency option in the Color Scheme menu doesn't work quite as
-  expected.  It makes the last selected color transparent, so users have
-  to take two steps to get the transparent color they want.  The problem
-  is that transparency should be an _attribute_ of a color and not a color
-  itself (the menu item should be turned into a checkbox that may be selected
-  in addition to a color).
+* Occasionally, the display fails to refresh after an overlying window
+  is moved out of the way.
 
 * Improve memory usage in H3RenderQueue and H3Transformer.  The use of longs
   was an expedient that is now past its usefulness.
@@ -40,10 +36,9 @@ BUGS & ISSUES
 FEATURES
 =========================================================================
 
-* Revamp the Color Scheme menu.  Add some perceptually uniform colorscales.
-  Make a better set of fixed colors and predefined color schemes.
+* Add some perceptually uniform colorscales.
 
-* Implement the Selection Attribute menu item in Color Scheme.
+* Implement the Selection Attribute menu item under the Color Scheme menu.
 
 * Selecting the nonadaptive rendering algorithm causes a fixed color scheme
   to take effect.  Change this to work like the adaptive algorithm.
