@@ -63,7 +63,7 @@ public class H3GraphLoader
     // PUBLIC METHODS
     ////////////////////////////////////////////////////////////////////////
 
-    public H3Graph load(Graph graph)
+    public H3Graph load(Graph graph, String spanningTree)
 	throws InvalidGraphDataException
     {
 	int numNodes = graph.getNumNodes();
@@ -71,7 +71,7 @@ public class H3GraphLoader
 
 	H3Graph retval = new H3Graph(numNodes, numLinks);
 
-	findSpanningTreeQualifierAttributes(graph);
+	findSpanningTreeQualifierAttributes(graph, spanningTree);
 	retval.setRootNode(findSpanningTreeRootNode(graph, m_rootAttribute));
 	populateLinks(retval, graph, m_treeLinkAttribute);
 
@@ -118,20 +118,17 @@ public class H3GraphLoader
     // PRIVATE METHODS
     ////////////////////////////////////////////////////////////////////////
 
-    private void findSpanningTreeQualifierAttributes(Graph graph)
+    private void findSpanningTreeQualifierAttributes
+	(Graph graph, String spanningTree)
 	throws InvalidGraphDataException
     {
-	QualifierIterator qualifierIterator =
-	    graph.getQualifiersByType(SPANNING_TREE_QUALIFIER);
+	QualifierIterator qualifierIterator = graph.getQualifier(spanningTree);
 	if (qualifierIterator.atEnd())
 	{
-	    String msg = "no qualifier of type `"
-		+ SPANNING_TREE_QUALIFIER + "' found";
-	    throw new InvalidGraphDataException(msg);
+	    String msg =
+		"spanning tree qualifier `" + spanningTree + "' not found";
+	    throw new IllegalArgumentException(msg);
 	}
-
-	System.out.println("Using qualifier `"
-			   + qualifierIterator.getName() + "'...");
 
 	boolean foundRootAttribute = false;
 	boolean foundTreeLinkAttribute = false;
@@ -140,8 +137,8 @@ public class H3GraphLoader
 	    qualifierIterator.getAttributes();
 	while (!qualifierAttributeIterator.atEnd())
 	{
-	    if (qualifierAttributeIterator.getName()
-		.equals(ROOT_ATTRIBUTE))
+	    String name = qualifierAttributeIterator.getName();
+	    if (name.equals(ROOT_ATTRIBUTE))
 	    {
 		foundRootAttribute = true;
 		m_rootAttribute =
@@ -150,8 +147,7 @@ public class H3GraphLoader
 		    (graph, SPANNING_TREE_QUALIFIER, ROOT_ATTRIBUTE,
 		     m_rootAttribute, ValueType.BOOLEAN);
 	    }
-	    else if (qualifierAttributeIterator.getName()
-		     .equals(TREE_LINK_ATTRIBUTE))
+	    else if (name.equals(TREE_LINK_ATTRIBUTE))
 	    {
 		foundTreeLinkAttribute = true;
 		m_treeLinkAttribute =
@@ -202,7 +198,7 @@ public class H3GraphLoader
     ///////////////////////////////////////////////////////////////////////
 
     private void checkAttributeType
-	(Graph graph, String qualifierName, String attributeName,
+	(Graph graph, String qualifierType, String attributeName,
 	 int attribute, ValueType type)
 	throws InvalidGraphDataException
     {
@@ -211,7 +207,7 @@ public class H3GraphLoader
 	if (iterator.getType() != type)
 	{
 	    String msg = "attribute `" + attributeName
-		+ "' of qualifier type `" + qualifierName
+		+ "' of qualifier type `" + qualifierType
 		+ "' must have type " + type.getName()
 		+ "; found " + iterator.getType().getName();
 	    throw new InvalidGraphDataException(msg);
