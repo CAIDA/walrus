@@ -217,9 +217,10 @@ public class H3ViewParameters
 	scalingTransform.set(scale);
 
 	m_canvas.getCenterEyeInImagePlate(m_eye);
-	m_canvas.getVworldToImagePlate(m_vworldToImage);
 
 	/*
+	m_canvas.getVworldToImagePlate(m_vworldToImage);
+
 	Transform3D transform = new Transform3D(m_vworldToImage);
 	transform.mul(scalingTransform);
 
@@ -250,6 +251,32 @@ public class H3ViewParameters
 	m_imageToVworld.transform(eye);
 	System.out.println("eye_vworld=" + eye);
 
+	Point3d pFar = new Point3d(0.0, 0.0, -1.0);
+	Point3d pNear = new Point3d(0.0, 0.0, 0.5);
+
+	System.out.println("pFar=" + pFar);
+	System.out.println("pNear=" + pNear);
+
+	/*
+	scalingTransform.transform(pFar);
+	scalingTransform.transform(pNear);
+
+	System.out.println("pFar_vw=" + pFar);
+	System.out.println("pNear_vw=" + pNear);
+	*/
+
+	pFar.sub(eye, pFar);
+	pNear.sub(eye, pNear);
+
+	System.out.println("pFar_eye=" + pFar);
+	System.out.println("pNear_eye=" + pNear);
+
+	double front = askForDistance("Front", pNear.z);
+	double back = askForDistance("Back", pFar.z);
+
+	m_depthCueing.setFrontDistance(front);
+	m_depthCueing.setBackDistance(back);
+
 	/*
 	double front;
 	if (scale > 1.0)
@@ -262,7 +289,7 @@ public class H3ViewParameters
 	}
 	double back = front +
 	    (DEPTH_CUEING_ENABLED_BACK - DEPTH_CUEING_ENABLED_FRONT) / scale;
-	*/
+
 
 	double frontScale = (scale > 1.0 ? scale * scale : scale);
 	double front = (eye.z - scale * (eye.z - DEPTH_CUEING_ENABLED_FRONT))
@@ -276,6 +303,29 @@ public class H3ViewParameters
 
 	m_depthCueing.setFrontDistance(front);
 	m_depthCueing.setBackDistance(back);
+	*/
+    }
+
+    private double askForDistance(String s, double value)
+    {
+	String response = (String)javax.swing.JOptionPane.showInputDialog
+	    (null, s + " Distance?", "Fog Parameter Request",
+	     javax.swing.JOptionPane.QUESTION_MESSAGE, null, null,
+	     Double.toString(value));
+
+	return parseDouble(response);
+    }
+
+    private double parseDouble(String s)
+    {
+	try
+	{
+	    return Double.parseDouble(s);
+	}
+	catch (NumberFormatException e)
+	{
+	    throw new RuntimeException();
+	}
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -669,6 +719,7 @@ public class H3ViewParameters
 
     // Some good combinations of front and back distances are
     // (1.0, 3.5), (1.25, 3.5), (1.0, 4.0), (1.25, 4.0), and (1.5, 4.0).
+
     private static final double DEPTH_CUEING_ENABLED_FRONT = 2.0;
     private static final double DEPTH_CUEING_ENABLED_BACK = 3.5;
 
