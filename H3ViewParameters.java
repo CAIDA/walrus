@@ -266,6 +266,11 @@ public class H3ViewParameters
 	return m_eye;
     }
 
+    public double getFrontClipDistance()
+    {
+	return m_frontClipDistance;
+    }
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
     public H3PickViewer getPickViewer()
