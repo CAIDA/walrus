@@ -312,6 +312,7 @@ public class H3Main
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
+	m_resetRenderingMenuItem.setEnabled(false);
 	m_recomputeLayoutExtendedMenuItem.setEnabled(false);
 
 	// Display menu.
@@ -816,6 +817,40 @@ public class H3Main
 	{
 	    reinstateSplashScreenContentPane();
 	    setupIdleRenderingMenu();
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleResetRenderingRequest()
+    {
+	boolean isRendering = (m_renderLoop != null);
+	if (isRendering)
+	{
+	    stopRendering();
+	}
+
+	m_rootNode = m_currentNode = m_previousNode = m_graph.getRootNode();
+	m_displayPosition = null;
+	m_savedDisplayPosition = null;
+	m_isDisplayNarrowed = false;
+
+	m_graph.setNodeDisplayability(true);
+	m_graph.setLinkDisplayability(true);
+	m_graph.computeVisibility();
+
+	m_graph.transformNodes(H3Transform.I4);
+	m_viewParameters.resetObjectTransform();
+
+	// Display menu.
+	m_widenSubtreeMenuItem.setEnabled(false);
+	m_widenTowardRootMenuItem.setEnabled(false);
+	m_widenToGraphMenuItem.setEnabled(false);
+	m_restorePositionMenuItem.setEnabled(false);
+
+	if (isRendering)
+	{
+	    startRendering(m_renderingConfiguration);
 	}
     }
 
@@ -1466,6 +1501,7 @@ public class H3Main
 	m_startMenuItem.setEnabled(true);
 	m_stopMenuItem.setEnabled(false);
 	m_updateMenuItem.setEnabled(false);
+	m_resetRenderingMenuItem.setEnabled(m_renderingConfiguration != null);
 	m_recomputeLayoutExtendedMenuItem.setEnabled
 	    (m_renderingConfiguration != null);
 
@@ -1495,6 +1531,7 @@ public class H3Main
 	m_startMenuItem.setEnabled(false);
 	m_stopMenuItem.setEnabled(true);
 	m_updateMenuItem.setEnabled(true);
+	m_resetRenderingMenuItem.setEnabled(true);
 	m_recomputeLayoutExtendedMenuItem.setEnabled(true);
 
 	// Display menu.
@@ -1632,6 +1669,16 @@ public class H3Main
 		}
 	    });
 
+	m_resetRenderingMenuItem = new JMenuItem("Reset Rendering");
+	m_resetRenderingMenuItem.setMnemonic(KeyEvent.VK_T);
+	m_resetRenderingMenuItem.setEnabled(false);
+	m_resetRenderingMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleResetRenderingRequest();
+		}
+	    });
+
 	m_recomputeLayoutExtendedMenuItem =
 	    new JMenuItem("Recompute Layout With Extended Precision");
 	m_recomputeLayoutExtendedMenuItem.setMnemonic(KeyEvent.VK_R);
@@ -1684,6 +1731,7 @@ public class H3Main
 	m_renderingMenu.add(m_stopMenuItem);
 	m_renderingMenu.add(m_updateMenuItem);
 	m_renderingMenu.addSeparator();
+	m_renderingMenu.add(m_resetRenderingMenuItem);
 	m_renderingMenu.add(m_recomputeLayoutExtendedMenuItem);
 	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
@@ -1988,6 +2036,7 @@ public class H3Main
     private JMenuItem m_startMenuItem;
     private JMenuItem m_stopMenuItem;
     private JMenuItem m_updateMenuItem;
+    private JMenuItem m_resetRenderingMenuItem;
     private JMenuItem m_recomputeLayoutExtendedMenuItem;
     private JCheckBoxMenuItem m_adaptiveMenuItem;
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
