@@ -315,6 +315,7 @@ public class H3Main
 	m_recomputeLayoutExtendedMenuItem.setEnabled(false);
 
 	// Display menu.
+	m_pruneDisplayMenuItem.setEnabled(false);
 	m_narrowDisplayMenuItem.setEnabled(false);
 	m_widenDisplayIncrementalMenuItem.setEnabled(false);
 	m_widenDisplayMenuItem.setEnabled(false);
@@ -723,7 +724,7 @@ public class H3Main
     {
 	if (configuration.selectionAttribute == null)
 	{
-	    m_graph.resetNodeSelectivity();
+	    m_graph.setNodeSelectivity(true);
 	}
 	else
 	{
@@ -756,7 +757,7 @@ public class H3Main
     {
 	if (configuration.selectionAttribute == null)
 	{
-	    m_graph.resetLinkSelectivity(treeLink);
+	    m_graph.setLinkSelectivity(treeLink, true);
 	}
 	else
 	{
@@ -884,6 +885,8 @@ public class H3Main
 		    selectLinks(renderingConfiguration.treeLinkColor, true);
 		    selectLinks(renderingConfiguration.nontreeLinkColor,false);
 
+		    m_graph.setNodeDisplayability(true);
+		    m_graph.setLinkDisplayability(true);
 		    m_graph.computeVisibility();
 		}
 	    }
@@ -917,16 +920,13 @@ public class H3Main
 
 		if (visibilityChanged)
 		{
-		    if (m_isDisplayNarrowed)
+		    if (!m_isDisplayNarrowed)
 		    {
-			m_graph.narrowVisibility(m_currentNode);
+			m_graph.setNodeDisplayability(true);
+			m_graph.setLinkDisplayability(true);
 		    }
-		    else
-		    {
-			m_graph.resetNodeVisibility();
-			m_graph.resetLinkVisibility();
-			m_graph.computeVisibility();
-		    }
+
+		    m_graph.computeVisibility();
 		}
 	    }
 
@@ -1378,6 +1378,7 @@ public class H3Main
 	    (m_renderingConfiguration != null);
 
 	// Display menu.
+	m_pruneDisplayMenuItem.setEnabled(false);
 	m_narrowDisplayMenuItem.setEnabled(false);
 	m_widenDisplayIncrementalMenuItem.setEnabled(false);
 	m_widenDisplayMenuItem.setEnabled(false);
@@ -1402,6 +1403,7 @@ public class H3Main
 	m_recomputeLayoutExtendedMenuItem.setEnabled(true);
 
 	// Display menu.
+	m_pruneDisplayMenuItem.setEnabled(true);
 	m_narrowDisplayMenuItem.setEnabled(true);
 	m_widenDisplayIncrementalMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenDisplayMenuItem.setEnabled(m_isDisplayNarrowed);
@@ -1596,11 +1598,9 @@ public class H3Main
 
 	// Create "Display" menu. ------------------------------------------
 
-	m_narrowDisplayMenuItem = new JMenuItem("Narrow to Subtree");
+	m_narrowDisplayMenuItem = new JMenuItem("Narrow to Path");
 	m_narrowDisplayMenuItem.setMnemonic(KeyEvent.VK_N);
 	m_narrowDisplayMenuItem.setEnabled(false);
-	m_narrowDisplayMenuItem.setAccelerator
-	    (KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK));
 	m_narrowDisplayMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
 		{
@@ -1634,7 +1634,7 @@ public class H3Main
 	    });
 
 	m_widenDisplayMenuItem = new JMenuItem("Widen to Graph");
-	m_widenDisplayMenuItem.setMnemonic(KeyEvent.VK_W);
+	m_widenDisplayMenuItem.setMnemonic(KeyEvent.VK_G);
 	m_widenDisplayMenuItem.setEnabled(false);
 	m_widenDisplayMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
@@ -1644,6 +1644,22 @@ public class H3Main
 		    m_widenDisplayMenuItem.setEnabled(false);
 
 		    m_graph.widenVisibility();
+		    m_eventHandler.refreshDisplay();
+		}
+	    });
+
+	m_pruneDisplayMenuItem = new JMenuItem("Prune Subtree");
+	m_pruneDisplayMenuItem.setMnemonic(KeyEvent.VK_P);
+	m_pruneDisplayMenuItem.setEnabled(false);
+	m_pruneDisplayMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    m_isDisplayNarrowed = true;
+		    m_widenDisplayIncrementalMenuItem.setEnabled(true);
+		    m_widenDisplayMenuItem.setEnabled(true);
+
+		    m_graph.pruneSubtreeVisibility
+			(m_eventHandler.getCurrentNode());
 		    m_eventHandler.refreshDisplay();
 		}
 	    });
@@ -1661,7 +1677,7 @@ public class H3Main
 	    });
 
 	m_wobbleDisplayMenuItem = new JMenuItem("Wobble");
-	m_wobbleDisplayMenuItem.setMnemonic(KeyEvent.VK_W);
+	m_wobbleDisplayMenuItem.setMnemonic(KeyEvent.VK_B);
 	m_wobbleDisplayMenuItem.setEnabled(false);
 	m_wobbleDisplayMenuItem.setAccelerator
 	    (KeyStroke.getKeyStroke(KeyEvent.VK_B, ActionEvent.CTRL_MASK));
@@ -1681,7 +1697,7 @@ public class H3Main
 	    });
 
 	m_showRootNodeMenuItem = new JMenuItem("Show Root Node");
-	m_showRootNodeMenuItem.setMnemonic(KeyEvent.VK_D);
+	m_showRootNodeMenuItem.setMnemonic(KeyEvent.VK_H);
 	m_showRootNodeMenuItem.setEnabled(false);
 	m_showRootNodeMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
@@ -1692,7 +1708,7 @@ public class H3Main
 	    });
 
 	m_showPreviousNodeMenuItem = new JMenuItem("Show Previous Node");
-	m_showPreviousNodeMenuItem.setMnemonic(KeyEvent.VK_N);
+	m_showPreviousNodeMenuItem.setMnemonic(KeyEvent.VK_V);
 	m_showPreviousNodeMenuItem.setEnabled(false);
 	m_showPreviousNodeMenuItem.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e)
@@ -1730,6 +1746,7 @@ public class H3Main
 	m_displayMenu.add(m_narrowDisplayMenuItem);
 	m_displayMenu.add(m_widenDisplayIncrementalMenuItem);
 	m_displayMenu.add(m_widenDisplayMenuItem);
+	m_displayMenu.add(m_pruneDisplayMenuItem);
 	m_displayMenu.addSeparator();
 	m_displayMenu.add(m_refreshDisplayMenuItem);
 	m_displayMenu.add(m_wobbleDisplayMenuItem);
@@ -1845,6 +1862,7 @@ public class H3Main
     private JCheckBoxMenuItem m_automaticExtendedPrecisionMenuItem;
 
     private JMenu m_displayMenu;
+    private JMenuItem m_pruneDisplayMenuItem;
     private JMenuItem m_narrowDisplayMenuItem;
     private JMenuItem m_widenDisplayIncrementalMenuItem;
     private JMenuItem m_widenDisplayMenuItem;
