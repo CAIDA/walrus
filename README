@@ -1,12 +1,18 @@
+
+
                    The Walrus Graph Visualization Tool
 
                              version 0.1
 
                              ___ __, 2001
 
+                         (c) 2001 CAIDA/UCSD
+
           (http://www.caida.org/tools/visualization/walrus/)
+                   Young Hyun <youngh@caida.org>
 
 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 DESCRIPTION
 
 Walrus is a tool for visualizing large directed graphs, where large is on
@@ -25,67 +31,123 @@ whole graph available as a frame of reference. The user examines the whole
 graph by interactively moving the focus.
 
 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+REQUIREMENTS
 
-============================================================================
-From youngh@caida.org Wed May 23 16:15:34 2001
-Date: Tue, 14 Nov 2000 13:16:26 -0800 (PST)
-From: Young Hyun <youngh@caida.org>
-To: yz47@cornell.edu
-Cc: tmm@pa.dec.com, dmoore@caida.org, kc@caida.org
-Subject: Walrus source
+Walrus requires Java3D v1.2.1 (or later) and JDK 1.3.0 (or later).  
 
-Justin, you may use the Walrus source for your work.  It's available
-at http://www.caida.org/~youngh/walrus/h3-src-14nov2000-1205.tar.gz.
-You'll also want the sample input files at
-http://www.caida.org/~youngh/walrus/h3-input.tar.gz.
+Java3D:  http://java.sun.com/products/java-media/3D/index.html
+JDK:     http://java.sun.com/j2se/
 
-You'll need Java3D v1.2 or later and JDK 1.2 or later.
+A hardware-accelerated graphics card is a must.  Software-based OpenGL
+packages like Mesa may produce poor results.  Also, you'll want a fairly
+speedy machine with lots of memory (128MB is probably a minimum; 256MB or
+more is better; 512MB for a million-node graph).
 
-Please take a look at the copyright notice in the source files.  Also,
-could you write up a few paragraphs on what you intend to use Walrus
-for?  We would like to know so that we can include it in our regular
-reports to DARPA, NSF, etc.
+Walrus was developed and tested on a Sun Ultra 60 with an Elite 3D card
+and 512MB of RAM, running Solaris 7, a box graciously donated by Sun.
 
-The source is your best documentation at present.  You'll want to get
-oriented with the classes by drawing a diagram that shows the various
-relationships, like subclassing.  The architecture will become clear once
-you do this.  There are two rendering loops, an adaptive one and a
-nonadaptive one.  These show up as two parallel structures in the
-architecture.
 
-The entry point for Walrus is H3Main.  I'm sorry to say that H3Main.java
-is a bit of a mess, since it is only meant to be scaffolding till a
-proper GUI is put in place.  The rest of the code is much cleaner and
-better organized than this.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+DOCUMENTATION
 
-You can try out Walrus by using one of the build scripts.  If you don't
-give Walrus a graph file, it will generate a graph on its own (you can
-specify the kind of graph to generate by tweaking the parameters in
-H3Main.java).  All interaction is with a (three-button) mouse.  Here is a
-list of what you can do:
+See the 'docs' subdirectory for documentation.
 
-  button  modifier   meaning
-  ------  --------   ----------------------------------------------------
-    L                drag to rotate display about the origin
-    M                click or drag to get visual feedback on picking
-    R                click on a node to bring it to the origin
-    
-    L      shift     drag to continuously rotate the display
-                      (only the initial drag amount and direction matters)
-    L     control    drag to wobble the display
-                      (only the initial drag matters)
 
-    M      shift     click to bring back previous node at origin
-    M      control   click to bring root node to origin
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+QUICK START
 
-    R      shift     click to begin recording movements for playback
-    R      shift     click to stop recording and replay movements
+Do the following to try out Walrus:
 
-You'll find the layout algorithm in H3GraphLayout.java.  There are
-currently several experimental tweaks to the algorithm in that class.  You
-can choose which to use by adjusting some variables near the beginning.
+1. Execute: java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
-If you have any questions, please feel free to ask.
+2. Select the menu item File->Open (that is, Open under the File menu),
+   and load the file 'champagne.graph' in the 'samples' subdirectory.
+   The window will be blank while the file loads.  This graph has
+   9175 nodes, 9174 tree links, and 6345 nontree links.  This should
+   load in a few seconds, but it can take several minutes to load some
+   graphs.
 
- --Young
+3. Select Rendering->Start, once the Walrus logo reappears.
 
+4. Click and drag with the left mouse button to rotate the display.
+   It is normal for parts of the graph to disappear during rotations.
+   Walrus uses an adaptive rendering algorithm that tries to maintain
+   a given framerate (currently hardcoded in the source) by rendering
+   only as much as it can within each time slot.
+
+5. Click on a node (yellow square) with the right mouse button to bring
+   the node to the center.  Parts of the graph may disappear during
+   these translations because of adaptive rendering.
+
+6. Select Color Scheme->Nontree Link Color->Grey.
+
+7. Select Rendering->Update.
+
+8. Select Color Scheme->Nontree Link Color->Transparent.
+
+9. Select Rendering->Update.
+
+At this point, you should have a display with nodes in yellow, tree links
+in green, and nontree links in a cobweb-like transparent grey.  This is
+a good color scheme for exploring graphs with nontree links.
+
+Two other features you may wish to try are wobbling and continous
+rotations.  To activate wobbling, hold down the control key and briefly
+drag with the left mouse button (the location and direction of the drag
+don't matter).  The display will wobble after you end the drag and release
+the control key.  To stop the wobbling, click anywhere in the window with
+the left mouse button.  To activate continous rotations, hold down the
+shift key and briefly drag with the left mouse button (the location of the
+drag doesn't matter).  After the drag ends, the display will continously
+rotate in the direction of the drag and at a velocity roughly proportional
+to the drag velocity.
+
+As mentioned earlier, Walrus uses an adaptive rendering algorithm that
+tries to maintain a given framerate.  You may try out the nonadaptive
+rendering algorithm for comparison by de-selecting Rendering->Adaptive
+Rendering and then selecting Rendering->Update (the color scheme will
+change, and currently can't be overridden in this mode).  The nonadaptive
+algorithm can be smoother for small graphs.
+
+See 'guide.txt' in the 'docs' subdirectory for information on additional
+commands and menus not covered here.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+LICENSE
+
+Copyright 2000-2001 The Regents of the University of California
+All Rights Reserved
+
+Permission to use, copy, modify and distribute any part of this
+Walrus software package for educational, research and non-profit
+purposes, without fee, and without a written agreement is hereby
+granted, provided that the above copyright notice, this paragraph
+and the following paragraphs appear in all copies.
+  
+Those desiring to incorporate this into commercial products or use
+for commercial purposes should contact the Technology Transfer
+Office, University of California, San Diego, 9500 Gilman Drive, La
+Jolla, CA 92093-0910, Ph: (858) 534-5815, FAX: (858) 534-7345.
+
+IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY
+PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+ 
+THE SOFTWARE PROVIDED HEREIN IS ON AN "AS IS" BASIS, AND THE
+UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
+SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS. THE UNIVERSITY
+OF CALIFORNIA MAKES NO REPRESENTATIONS AND EXTENDS NO WARRANTIES
+OF ANY KIND, EITHER IMPLIED OR EXPRESS, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A
+PARTICULAR PURPOSE, OR THAT THE USE OF THE SOFTWARE WILL NOT INFRINGE
+ANY PATENT, TRADEMARK OR OTHER RIGHTS.
+ 
+The Walrus software is developed by the Walrus Team at the
+University of California, San Diego under the Cooperative Association
+for Internet Data Analysis (CAIDA) Program.  Support for this effort
+is provided by NSF grant ANI-9814421, DARPA NGI Contract N66001-98-2-8922,
+Sun Microsystems, and CAIDA members.
