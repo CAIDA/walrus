@@ -63,6 +63,12 @@ public class H3ViewParameters
 	m_nodeRadius = NODE_RADIUS_PIXELS * m_pixelToMeterScale;
 
 	m_pickViewer = new H3PickViewer(m_pickRadius);
+
+	m_depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
+	m_depthCueing.setFrontDistance(DEPTH_CUEING_ENABLED_FRONT);
+	m_depthCueing.setBackDistance(DEPTH_CUEING_ENABLED_BACK);
+	m_depthCueing.setInfluencingBounds
+	    (new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -171,30 +177,27 @@ public class H3ViewParameters
 
     public void installDepthCueing()
     {
-	if (m_depthCueingEnabled && m_depthCueing == null)
-	{
-	    m_depthCueing = new LinearFog(0.0f, 0.0f, 0.0f);
-	    m_depthCueing.setFrontDistance(DEPTH_CUEING_FRONT);
-	    m_depthCueing.setBackDistance(DEPTH_CUEING_BACK);
-	    m_depthCueing.setInfluencingBounds
-		(new BoundingSphere(new Point3d(0.0, 0.0, 0.0), 100.0));
-	}
-
 	GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
-
-	// XXX: GraphicsContext3D.setFog(null) is throwing a
-	//      NullPointerException contrary to the documentation.
-	//      For the moment, therefore, there is no way to disable
-	//      the fog once installed.
-	if (m_depthCueingEnabled) gc.setFog(m_depthCueing);
+	gc.setFog(m_depthCueing);
     }
 
     public void setDepthCueingEnabled(boolean enable)
     {
 	m_depthCueingEnabled = enable;
-	if (!enable)
+	if (enable)
 	{
-	    m_depthCueing = null;
+	    m_depthCueing.setFrontDistance(DEPTH_CUEING_ENABLED_FRONT);
+	    m_depthCueing.setBackDistance(DEPTH_CUEING_ENABLED_BACK);
+	}
+	else
+	{
+	    // XXX: In versions of Java3D prior to 1.3.1,
+            //      GraphicsContext3D.setFog(null) throws a
+	    //      NullPointerException contrary to its specification.
+	    //      Therefore, we disable fog by simply using a very distant
+	    //      front and back distances.
+	    m_depthCueing.setFrontDistance(DEPTH_CUEING_DISABLED_FRONT);
+	    m_depthCueing.setBackDistance(DEPTH_CUEING_DISABLED_BACK);
 	}
     }
 
@@ -583,8 +586,11 @@ public class H3ViewParameters
 
     // Some good combinations of front and back distances are
     // (1.0, 3.5), (1.25, 3.5), (1.0, 4.0), (1.25, 4.0), and (1.5, 4.0).
-    private static final double DEPTH_CUEING_FRONT = 1.25;
-    private static final double DEPTH_CUEING_BACK = 3.5;
+    private static final double DEPTH_CUEING_ENABLED_FRONT = 2.0;
+    private static final double DEPTH_CUEING_ENABLED_BACK = 3.5;
+
+    private static final double DEPTH_CUEING_DISABLED_FRONT = 100.0;
+    private static final double DEPTH_CUEING_DISABLED_BACK = 105.0;
 
     private boolean m_depthCueingEnabled = true;
     private LinearFog m_depthCueing;
