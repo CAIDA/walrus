@@ -101,7 +101,8 @@ the left mouse button.  To activate continous rotations, hold down the
 shift key and briefly drag with the left mouse button (the location of the
 drag doesn't matter).  After the drag ends, the display will continously
 rotate in the direction of the drag and at a velocity roughly proportional
-to the drag velocity.
+to the drag velocity.  To stop the rotation, click anywhere in the window
+with the left mouse button.
 
 As mentioned earlier, Walrus uses an adaptive rendering algorithm that
 tries to maintain a given framerate.  You may try out the nonadaptive
