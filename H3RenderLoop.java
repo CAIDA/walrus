@@ -49,4 +49,5 @@ public interface H3RenderLoop
     void saveDisplayPosition();
     void discardDisplayPosition();
     void restoreDisplayPosition();
+    void shutdown();
 }
