@@ -1563,48 +1563,68 @@ public class H3Main
 	{
 	    System.out.println("mousePressed");
 
+	    int x = e.getX();
+	    int y = e.getY();
 	    int modifiers = e.getModifiers();
+
 	    switch (m_state)
 	    {
 	    case STATE_IDLE:
 		if (checkModifiers(modifiers, InputEvent.BUTTON1_MASK))
 		{
+		    m_lastX = x;
+		    m_lastY = y;
+
 		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
 		    {
-			// Continuous rotations...
+			m_state = STATE_ROTATING_CONTINUOUS;
+			m_repeatingRequest.start();
+			m_repeatingRequest.rotate(0, 0);
+			m_renderLoop.rotateDisplay(m_repeatingRequest);
 		    }
 		    else
 		    {
-			// Interactive rotation...
+			m_state = STATE_ROTATING_INTERACTIVE;
+			m_interactiveRequest.start();
+			m_interactiveRequest.rotate(0, 0);
+			m_renderLoop.rotateDisplay(m_interactiveRequest);
 		    }
 		}
 		else if (checkModifiers(modifiers, InputEvent.BUTTON2_MASK))
 		{
-		    // Attribute display...
+		    m_state = STATE_DISPLAYING_ATTRIBUTES;
+		    displayAttributes(x, y);
 		}
-		else if (checkModifiers(modifiers, InputEvent.BUTTON3_MASK))
+		else //if (checkModifiers(modifiers, InputEvent.BUTTON3_MASK))
 		{
 		    if (checkModifiers(modifiers, InputEvent.SHIFT_MASK))
 		    {
-			// Attribute display...
+			m_state = STATE_DISPLAYING_ATTRIBUTES;
+			displayAttributes(x, y);
+		    }
+		    else if (checkModifiers(modifiers, InputEvent.CTRL_MASK))
+		    {
+		        m_renderLoop.translate(swapCenterNodes());
 		    }
 		    else
 		    {
-			// Picking for translation...
+			translateDisplay(x, y);
 		    }
 		}
 		break;
 
 	    case STATE_WOBBLING:
-		// Stop wobbling...
+		m_state = STATE_IDLE;
+		m_wobblingRequest.end();
 		break;
 
 	    case STATE_REPLAYING:
-		// Cancel replay...
+		// XXX: Cancel replay...
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
-		// Stop rotations...
+		m_state = STATE_IDLE;
+		m_repeatingRequest.end();
 		break;
 
 	    case STATE_DISPLAYING_ATTRIBUTES:
@@ -1630,11 +1650,12 @@ public class H3Main
 		break;
 
 	    case STATE_DISPLAYING_ATTRIBUTES:
-		// Stop displaying...
+		m_state = STATE_IDLE;
 		break;
 
 	    case STATE_ROTATING_INTERACTIVE:
-		// Stop rotating...
+		m_state = STATE_IDLE;
+		m_interactiveRequest.end();
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
@@ -1658,6 +1679,9 @@ public class H3Main
 	{
 	    System.out.println("mouseDragged");
 
+	    int x = e.getX();
+	    int y = e.getY();
+
 	    switch (m_state)
 	    {
 	    case STATE_IDLE:
@@ -1665,15 +1689,26 @@ public class H3Main
 		break;
 
 	    case STATE_DISPLAYING_ATTRIBUTES:
-		// Display attributes...
+		displayAttributes(x, y);
 		break;
 
 	    case STATE_ROTATING_INTERACTIVE:
-		// Rotate display...
+		computeDragAngles(x, y);
+		m_interactiveRequest.rotate(m_dxRadians, m_dyRadians);
 		break;
 
 	    case STATE_ROTATING_CONTINUOUS:
-		// Adjust rotation parameters...
+		computeDragAngles(x, y);
+		System.out.println("dxRad =" + m_dxRadians
+				   + "; dyRad =" + m_dyRadians);
+
+		m_dxRadians = Math.atan(150.0 * m_dxRadians) / ROTATION_SCALE;
+		m_dyRadians = Math.atan(150.0 * m_dyRadians) / ROTATION_SCALE;
+
+		System.out.println("dxRad' =" + m_dxRadians
+				   + "; dyRad' =" + m_dyRadians);
+
+		m_repeatingRequest.rotate(m_dxRadians, m_dyRadians);
 		break;
 
 	    case STATE_WOBBLING:
@@ -1687,7 +1722,18 @@ public class H3Main
 	    }
 	}
 
-	public void mouseMoved(MouseEvent e) {}
+	public void mouseMoved(MouseEvent e)
+	{
+	    /*
+		    int dx = (x - m_canvas.getWidth() / 2) / 50;
+		    int dy = (y - m_canvas.getHeight() / 2) / 50;
+
+		    double dxRad = Math.toRadians(dx);
+		    double dyRad = Math.toRadians(dy);
+
+		    m_repeatingRequest.rotate(dxRad, dyRad);
+	    */
+	}
 
 	// KeyListener - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1713,7 +1759,7 @@ public class H3Main
 		char c = e.getKeyChar();
 		if (c == CTRL_R)
 		{
-		    if (!m_isRotating)
+		    if (m_state == STATE_IDLE)
 		    {
 			m_renderLoop.refreshDisplay();
 		    }
@@ -1723,9 +1769,24 @@ public class H3Main
 
 	//---------------------------------------------------------------
 
-	private void highlightNode(int x, int y)
+	private void translateDisplay(int x, int y)
 	{
-	    //System.out.println("Highlighting ...");
+	    System.out.println("Picking ...");
+	    int node = m_renderLoop.pickNode(x, y, m_center);
+	    if (node >= 0)
+	    {
+		System.out.println("Picked node " + node + ".");
+		m_renderLoop.translate(node);
+		shiftCenterNodes(node);
+	    }
+	    else
+	    {
+		System.out.println("No node picked.");
+	    }
+	}
+
+	private void displayAttributes(int x, int y)
+	{
 	    m_renderLoop.highlightNode(x, y);
 	    if (m_nodeLabelAttributes.length > 0)
 	    {
@@ -1754,6 +1815,18 @@ public class H3Main
 	private boolean checkModifiers(int modifiers, int mask)
 	{
 	    return (modifiers & mask) == mask; 
+	}
+
+	private void computeDragAngles(int x, int y)
+	{
+	    int dx = (x - m_lastX) / MOUSE_SENSITIVITY;
+	    int dy = (y - m_lastY) / MOUSE_SENSITIVITY;
+
+	    m_lastX = x;
+	    m_lastY = y;
+
+	    m_dxRadians = Math.toRadians(dx);
+	    m_dyRadians = Math.toRadians(dy);
 	}
 
 	//---------------------------------------------------------------
@@ -1885,6 +1958,8 @@ public class H3Main
 
 	//---------------------------------------------------------------
 
+	private static final double ROTATION_SCALE = 10.0 * Math.PI;
+
 	private static final int STATE_IDLE = 0;
 	private static final int STATE_DISPLAYING_ATTRIBUTES = 1;
 	private static final int STATE_ROTATING_INTERACTIVE = 2;
@@ -1914,10 +1989,11 @@ public class H3Main
 
 	private Point2d m_center = new Point2d();
 
-	private int m_lastX = 0;
-	private int m_lastY = 0;
+	private int m_lastX;
+	private int m_lastY;
+	private double m_dxRadians;
+	private double m_dyRadians;
 
-	private boolean m_isRotating = false;
 	private boolean m_isCapturing = false;
 	private boolean m_savedDisplay = false;
 
@@ -1947,7 +2023,7 @@ public class H3Main
 	{
 	    public void update(Observable o, Object arg)
 	    {
-		if (!m_isRotating)
+		if (m_state == STATE_IDLE)
 		{
 		    m_renderLoop.refreshDisplay();
 		}
@@ -1961,7 +2037,7 @@ public class H3Main
 	{
 	    public void componentResized(ComponentEvent e)
 	    {
-		if (!m_isRotating)
+		if (m_state == STATE_IDLE)
 		{
 		    m_renderLoop.refreshDisplay();
 		}
