@@ -276,7 +276,7 @@ public class H3Axes
 	    lineAttributes.setLineAntialiasingEnable(ANTIALIASING);
 
 	    ColoringAttributes coloringAttributes =
-		new ColoringAttributes(0.5f, 0.5f, 0.5f,
+		new ColoringAttributes(0.3f, 0.6f, 0.3f,
 				       ColoringAttributes.FASTEST);
       
 	    m_axisAppearance = new Appearance();
@@ -289,7 +289,7 @@ public class H3Axes
 	    lineAttributes.setLineAntialiasingEnable(ANTIALIASING);
 
 	    ColoringAttributes coloringAttributes =
-		new ColoringAttributes(0.5f, 0.5f, 0.5f,
+		new ColoringAttributes(0.3f, 0.6f, 0.3f,
 				       ColoringAttributes.FASTEST);
 
 	    m_circleAppearance = new Appearance();
