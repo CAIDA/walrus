@@ -3427,7 +3427,21 @@ public class H3Main
 	    m_fixedColors.add
 		(new FixedColor("Turquoise", packRGB(173, 234, 234)));
 	    m_fixedColors.add
-		(new FixedColor("Grey", packRGB(178, 178, 178)));
+		(new FixedColor("Blue", packRGB(0, 0, 255)));
+	    m_fixedColors.add
+		(new FixedColor("Axes Red", packRGB(128, 26, 26)));
+	    m_fixedColors.add
+		(new FixedColor("Axes Green", packRGB(26, 128, 26)));
+	    m_fixedColors.add
+		(new FixedColor("Axes Blue", packRGB(26, 26, 128)));
+	    m_fixedColors.add
+		(new FixedColor("Black", packRGB(0, 0, 0)));
+	    m_fixedColors.add
+		(new FixedColor("Dark Grey", packRGB(64, 64, 64)));
+	    m_fixedColors.add
+		(new FixedColor("Grey", packRGB(128, 128, 128)));
+	    m_fixedColors.add
+		(new FixedColor("Light Grey", packRGB(192, 192, 192)));
 	    m_fixedColors.add
 		(new FixedColor("White", packRGB(255, 225, 255)));
 	}
