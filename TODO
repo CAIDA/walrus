@@ -5,14 +5,6 @@
 BUGS & ISSUES
 =========================================================================
 
-* Sometimes the display is only partially redrawn after the user changes
-  the configuration and selects Rendering->Update.  I suspect Walrus is
-  losing track of the node currently at the center of the display.  The
-  renderer traverses the graph starting at this central node.
-
-  A workaround is to right-click the node at center of the display (or even
-  any visible node).
-
 * The transparency option in the Color Scheme menu doesn't work quite as
   expected.  It makes the last selected color transparent, so users have
   to take two steps to get the transparent color they want.  The problem
@@ -24,16 +16,31 @@ BUGS & ISSUES
   was an expedient that is now past its usefulness.
 
 * Owing to a AWT/Java3D/Swing bug, none of the keyboard accelerators for
-  the menu items work.
+  the menus work.
 
-* Owing to a Java3D bug, the display may flicker when a user interacts with
-  the menus.
+* Owing to a Java3D bug, the display tends to flicker when a user interacts
+  with the menus.
 
 * Owing to a Java3D bug, depth cueing can't be disabled with
   Rendering->Depth Cueing.
 
 * Owing to a Java3D bug, antialiasing doesn't work in immediate mode,
-  which is the mode used by Walrus.
+  the mode used by Walrus.
+
+* The code that writes screenshots to files uses a hardcoded image size.
+
+* Node labels of list type aren't currently displayed in the status bar.
+
+* Doing Rendering->Update causes information about the previously visited
+  node (for bringing back to the center with shift-middle-mouse button)
+  to be lost.
+
+* With very large graphs (~1 million nodes), precision problems can corrupt
+  the display during naviagation.
+
+* It can be slow loading large (50-80MB) graphs, and Walrus provides no
+  feedback during the load (such as with a progress bar).
+
 
 =========================================================================
 FEATURES
@@ -42,8 +49,7 @@ FEATURES
 * Add menu items and/or keyboard commands to control wobbling, screen
   capture, and recording.  Remove the current bindings to mouse controls.
 
-* Revamp the Color Scheme menu.  Remove 'Hot to Cold', 'Logarithmic HtoC',
-  and 'Hue' menu items.  Add some perceptually uniform colorscales.
+* Revamp the Color Scheme menu.  Add some perceptually uniform colorscales.
   Make a better set of fixed colors and predefined color schemes.
 
 * Implement the Selection Attribute menu item in Color Scheme.
