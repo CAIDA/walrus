@@ -177,6 +177,13 @@ public class H3ViewParameters
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+    public TransparencyAttributes getTransparencyAttributes()
+    {
+	return m_transparencyAttributes;
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
     public Appearance getPointAppearance()
     {
 	return m_pointAppearance;
@@ -307,6 +314,11 @@ public class H3ViewParameters
 	m_lineAppearance.setLineAttributes(lineAttributes);
 	m_lineAppearance.setPointAttributes(pointAttributes);
 	m_lineAppearance.setColoringAttributes(lineColoringAttributes);
+
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	m_transparencyAttributes =
+	    new TransparencyAttributes(TransparencyAttributes.BLENDED, 0.95f);
     }
 
     private void initializeGraphAppearances()
@@ -330,9 +342,6 @@ public class H3ViewParameters
 	    new ColoringAttributes(0.7f, 0.7f, 0.7f,
 				   ColoringAttributes.FASTEST);
 
-	TransparencyAttributes transparencyAttributes =
-	    new TransparencyAttributes(TransparencyAttributes.BLENDED, 0.95f);
-
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	m_nodeAppearance = new Appearance();
@@ -354,17 +363,6 @@ public class H3ViewParameters
 	m_nontreeLinkAppearance.setPointAttributes(pointAttributes);
 	m_nontreeLinkAppearance
 	    .setColoringAttributes(nontreeColoringAttributes);
-	m_nontreeLinkAppearance
-	    .setTransparencyAttributes(transparencyAttributes);
-
-	if (false)
-	{
-	    LineAttributes nontreeLineAttributes = new LineAttributes();
-	    nontreeLineAttributes.setLineAntialiasingEnable(ANTIALIASING);
-	    nontreeLineAttributes.setLineWidth(5.0f);
-
-	    m_nontreeLinkAppearance.setLineAttributes(nontreeLineAttributes);
-	}
     }
 
     private void initializeGradedNodeAppearances()
@@ -475,6 +473,8 @@ public class H3ViewParameters
     private LinearFog m_depthCueing;
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private TransparencyAttributes m_transparencyAttributes;
 
     private Appearance m_pointAppearance;
     private Appearance m_lineAppearance;
