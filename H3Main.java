@@ -1171,8 +1171,17 @@ public class H3Main
 	    System.out.println("Started H3NonadaptiveRenderLoop.");
 	}
 
+	ScreenCapturer capturer = new ScreenCapturer()
+	    {
+		public void captureScreen()
+		{
+		    System.out.println("Capturing screen...");
+		    handleCaptureScreenRequest();
+		}
+	    };
+
 	m_eventHandler = new EventHandler
-	    (m_canvas, m_renderLoop, m_rootNode, m_currentNode,
+	    (m_canvas, m_renderLoop, capturer, m_rootNode, m_currentNode,
 	     m_previousNode, m_graph, m_backingGraph,
 	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
 	     renderingConfiguration.automaticRefresh);
@@ -1880,6 +1889,11 @@ public class H3Main
 	void cancelled();
     }
 
+    private static interface ScreenCapturer
+    {
+	void captureScreen();
+    }
+
     ///////////////////////////////////////////////////////////////////////
 
     // NOTE: The public methods of EventHandler aren't synchronized.
@@ -1893,6 +1907,7 @@ public class H3Main
     {
 	public EventHandler
 	    (H3Canvas3D canvas, H3RenderLoop renderLoop,
+	     ScreenCapturer capturer,
 	     int rootNode, int currentNode, int previousNode,
 	     H3Graph graph, Graph backingGraph,
 	     int[] nodeLabelAttributes, JTextField statusBar,
@@ -1920,6 +1935,8 @@ public class H3Main
 	    }
 
 	    m_renderLoop = renderLoop;
+	    m_capturer = capturer;
+
 	    m_rootNode = rootNode;
 	    m_currentNode = currentNode;
 	    m_previousNode = previousNode;
@@ -2440,6 +2457,10 @@ public class H3Main
 			m_renderLoop.refreshDisplay();
 		    }
 		}
+		else if (c == CTRL_T)
+		{
+		    m_capturer.captureScreen();
+		}
 	    }
 	}
 
@@ -2700,12 +2721,14 @@ public class H3Main
 	private static final int STATE_WOBBLING = 7;
 
 	private static final char CTRL_R = 'r' - 'a' + 1;
+	private static final char CTRL_T = 't' - 'a' + 1;
 
 	private static final int MOUSE_SENSITIVITY = 2;
 
 	private int m_state;
 	private H3Canvas3D m_canvas;
 	private H3RenderLoop m_renderLoop;
+	private ScreenCapturer m_capturer;
 
 	private int m_rootNode;
 	private int m_currentNode;
