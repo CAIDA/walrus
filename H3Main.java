@@ -2779,6 +2779,34 @@ public class H3Main
 		    m_narrowingHandler.pruneToNeighborhood
 			(m_currentNode, distance);
 		}
+		else if (c == ',')
+		{
+		    Matrix4d scale = new Matrix4d();
+		    scale.set(0.8);
+
+		    forceIdleState();
+		    m_parameters.extendObjectTransform(scale);
+		    m_parameters.updateDepthCueing();
+		    m_renderLoop.resizeDisplay();
+		    refreshDisplay();
+		}
+		else if (c == '.')
+		{
+		    Matrix4d scale = new Matrix4d();
+		    scale.set(1.25);
+
+		    forceIdleState();
+		    m_parameters.extendObjectTransform(scale);
+		    m_parameters.updateDepthCueing();
+		    m_renderLoop.resizeDisplay();
+		    refreshDisplay();
+		}
+		else if (c == '/')
+		{
+		    forceIdleState();
+		    m_parameters.updateDepthCueing();
+		    refreshDisplay();
+		}
 	    }
 	}
 
