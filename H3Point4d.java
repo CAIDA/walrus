@@ -164,6 +164,25 @@ public final class H3Point4d
 	return tx.add(ty).add(tz).add(tw);
     }
 
+    // The usual vector dot product computed from x, y, and z only.
+    public MPReal vectorDot3(H3Point4d v1)
+    {
+	MPReal tx = x.multiply(v1.x);
+	MPReal ty = y.multiply(v1.y);
+	MPReal tz = z.multiply(v1.z);
+	return tx.add(ty).add(tz);
+    }
+
+    // Returns the Minkowski inner product of this with y.
+    public MPReal minkowski(H3Point4d v)
+    {
+	MPReal tx = x.multiply(v.x);
+	MPReal ty = y.multiply(v.y);
+	MPReal tz = z.multiply(v.z);
+	MPReal tw = w.multiply(v.w);
+	return tx.add(ty).add(tz).subtract(tw);
+    }
+
     public void print()
     {
 	System.out.println("[" + x + ", " + y + ", " + z + ", " + w + "]");
