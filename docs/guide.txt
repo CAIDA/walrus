@@ -9,27 +9,28 @@ TABLE OF CONTENTS
  Usage
  Menus
  Mouse Controls
+ Keyboard Controls
  File Format
 
 ===========================================================================
 INSTALLATION
 ===========================================================================
 
-Extract 'walrus-0.4.tar.gz' or 'walrus-0.4.zip' anywhere you wish.  This
-will create a subdirectory named 'walrus-0.4' containing several JAR files,
+Extract 'walrus-0.5.tar.gz' or 'walrus-0.5.zip' anywhere you wish.  This
+will create a subdirectory named 'walrus-0.5' containing several JAR files,
 among other things.
 
  For UNIX users...
 
-   The file walrus-0.4.tar.gz was packaged with the standard TAR utility
+   The file walrus-0.5.tar.gz was packaged with the standard TAR utility
    and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
    it with the following command:
 
-       gzip -cd walrus-0.4.tar.gz | tar xvf -
+       gzip -cd walrus-0.5.tar.gz | tar xvf -
 
  For Windows users...
 
-   The file walrus-0.4.zip was packaged in the common ZIP format.  You
+   The file walrus-0.5.zip was packaged in the common ZIP format.  You
    can unpack it using a program like WinZip (http://www.winzip.com/).
 
 
@@ -47,7 +48,7 @@ impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
 To run Walrus on a UNIX system (such as Solaris or Linux), enter the
-following at a shell prompt from within the 'walrus-0.4' subdirectory:
+following at a shell prompt from within the 'walrus-0.5' subdirectory:
 
    java -cp mp.jar:antlrall-mod.jar:libsea.jar:walrus.jar H3Main
 
@@ -95,6 +96,13 @@ Rendering
       --- Updates rendering to current configuration.  You must select
           this menu item to make configuration changes (such as changing
           the color of nodes) take effect.
+   Reset Rendering
+      --- Reverts the display to a pristine state.  Nodes are displayed
+          under the initial layout, and the axes are in the initial
+          orientation.  This feature is sometimes needed to fix irrevocable
+          corruption of the display caused by loss of floating-point
+          precision, which can occasionally happen while navigating very
+          large graphs.
    Recompute Layout with Extended Precision
       --- Recomputes the layout of the entire graph using extended precision
           arithmetic.  Intermediate calculations are carried out with
@@ -162,8 +170,43 @@ Rendering
 
 Display
 
+   Narrow To Subtree
+      --- Temporarily hides all but the subtree rooted at the node currently
+          at the center of the display.  The path leading back to the root
+          node from the central node is also preserved.  Pressing the 'n'
+          key has the same effect.  Clicking on a node with the middle mouse
+          button while holding down the control key will narrow the display
+          to the subtree rooted at that node.
+   Widen Subtree
+      --- Unhides the subtree rooted at the current central node.
+          Pressing the 'w' key has the same effect.
+   Widen Toward Root
+      --- Unhides the subtree rooted at the nearest ancestor of the current
+          central node at which some branching occurs.  That is, the nearest
+          ancestor with more than one child is found, and then the subtree
+          rooted at that ancestor is widened, in the manner of
+         'Widen Subtree'.
+   Widen To Entire Graph
+      --- Unhides the entire graph.  Any previously hidden parts are
+          revealed.
+   Prune Subtree
+      --- Temporarily hides the subtree rooted at the current central node.
+          The current central node and its parent link are also hidden.
+          Clicking on a node with the middle mouse button while holding down
+          the shift key will prune the subtree rooted at that node.
+   Prune To Children
+      --- Temporarily hides most of the subtree rooted at the current central
+          node.  Only the immediate children of the current node are left.
+          Pressing the '1' (numeral 1) key has the same effect.
+   Prune To Neighborhood
+      --- Temporarily hides most of the subtree rooted at the current central
+          node.  Only descendants of the current node that lie within the
+          distance selected from the submenu are left.
+          Pressing the keys '0' to '9' causes pruning to occur at the
+          corresponding distance (for example, the '2' key prunes to a
+          distance of 2, and so on).
    Refresh
-      --- Clears and redraws the display.  This is most useful when
+      --- Clears and redraws the display.  This is particularly useful when
           'Automatic Refresh' (see above) is turned off.
    Wobble
       --- Causes the display to wobble gently.  To stop the wobbling, click
@@ -177,6 +220,10 @@ Display
       --- Brings the root node of the current spanning tree to the center
           of the display.  This re-establishes a known display and thus
           can be useful when one gets lost in the graph.
+   Show Parent Node
+      --- Brings the parent of the node currently at the center of the display
+          to the center.  This makes it possible to quickly navigate up
+          the tree toward the root.  Pressing the 'p' key has the same effect.
    Show Previous Node
       --- Brings the node previously at the center of the display back to
           the center.  This provides a simple mechanism for taking a single
@@ -295,6 +342,12 @@ Summary of Mouse Controls:
   control     L     click anywhere in the display to initiate continuous
                       rotations that track mouse movements
 
+   shift      M     click on a node to temporarily hide the subtree rooted
+                      at that node
+  control     M     click on a node to temporarily hide all but the subtree
+                      rooted at that node and the path leading back to the
+                      root node
+
    shift      R     same as for M above; this alternative is provided for
                       users without a middle mouse button
   control     R     click anywhere to bring back the node previously
@@ -360,10 +413,39 @@ control L:
     holding down the control key.  To stop the rotations, click anywhere
     in the display with the left mouse button.
 
+shift M:
+    Click on a node to temporarily hide the subtree rooted at that node.
+    This has an effect similar to selecting Display->Prune Subtree, except
+    with this mouse control, the affected node need not be the central node.
+
+control M:
+    Click on a node to temporarily hide all but the subtree rooted at that
+    node and the path leading back to the root node.   This has an effect
+    similar to selecting Display->Narrow To Subtree, except with this mouse
+    control, the affected node need not be the central node.
+
 control R:
     Click anywhere to bring back the node previously at the center of the
     display.  You can bounce back and forth between the current node and
     the previous node by clicking 'shift M' multiple times.
+
+
+===========================================================================
+KEYBOARD CONTROLS
+===========================================================================
+
+Summary of Keyboard Controls:
+
+  key         meaning
+  ----------  -------------------------------------------------------------
+   n          Display->Narrow To Subtree
+   w          Display->Widen Subtree
+   p          Display->Show Parent Node
+   0          Temporarily hide all descendants of the current central node.
+                The current central node is preserved, however, unlike the
+                situation after Display->Prune Subtree.
+   1          Display->Prune To Children
+   2 ... 9    Display->Prune To Neighborhood->distance <= #
 
 
 ===========================================================================

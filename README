@@ -2,54 +2,70 @@
 
                    The Walrus Graph Visualization Tool
 
-                             version 0.4
+                               version 0.5
 
-                             ___ __, 2002
+                               ___ __, 2002
 
-                         (c) 2000,2001,2002 CAIDA/UCSD
+                      (c) 2000,2001,2002 CAIDA/UCSD
 
-          (http://www.caida.org/tools/visualization/walrus/)
-                   Young Hyun <youngh@caida.org>
+            (http://www.caida.org/tools/visualization/walrus/)
+                      Young Hyun <youngh@caida.org>
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 DESCRIPTION
 
 Walrus is a tool for interactively visualizing large directed graphs in
-three-dimensional space. Although Walrus can display graphs containing a
-million nodes or more, visual clutter and occlusion greatly diminish the
-effectiveness of the visualization as the number of nodes, or the degree of
-their connectivity, increases.  The greater the connectivity, the more
-occlusion becomes a problem. Thus, in practice, Walrus is best suited to
-visualizing moderately sized graphs that are nearly trees. A graph with a
-hundred thousand nodes and a slightly greater number of links is likely to
-be comfortable to work with.
+three-dimensional space.  It is technically possible to display graphs
+containing a million nodes or more, but visual clutter, occlusion, and
+other factors can diminish the effectiveness of Walrus as the number of
+nodes, or the degree of their connectivity, increases.  Thus, in practice,
+Walrus is best suited to visualizing moderately sized graphs that are
+nearly trees.  A graph with a few hundred thousand nodes and only a
+slightly greater number of links is likely to be comfortable to work with.
 
-Walrus computes its layout based on a user-supplied spanning tree. Because
+Walrus computes its layout based on a user-supplied spanning tree.  Because
 the specifics of the supplied spanning tree greatly affect the resulting
-display, it is crucial that graphs contain a meaningful spanning tree. In
-particular, the prominence and orderliness that Walrus gives to the links
-in the spanning tree, in contrast to all other links, means that an
-arbitrarily chosen spanning tree may create a misleading display. This
-implies that graphs should ideally be inherently hierarchical.
+display, it is crucial that the user supply a spanning tree that is both
+meaningful for the underlying data and appropriate for the desired insight.
+The prominence and orderliness that Walrus gives to the links in the
+spanning tree, in contrast to all other links, means that an arbitrarily
+chosen spanning tree may create a misleading or ineffective visualization.
+This means that, ideally, the input graphs should be inherently
+hierarchical.
 
 Walrus uses 3D hyperbolic geometry to display graphs under a fisheye-like
-distortion. The amount of magnification, and thus the level of visible
-detail, varies across the display. This allows the user to examine the fine
-details of a small area while always having a view of the whole graph
-available as a frame of reference.  Graphs are rendered inside a sphere
-that contains the Euclidean projection of 3D hyperbolic space. Points
-within the sphere are magnified according to their radial distance from the
-center. Objects near the center are magnified, while those near the
-boundary are shrunk. The amount of magnification decreases continuously and
-at an accelerated rate from the center to the boundary, until objects are
-reduced to zero size at the latter, which represents infinity. By bringing
-different parts of a graph to the magnified central region, the user can
-examine every part of the graph in detail.
+distortion.  At any moment, the amount of magnification, and thus the level
+of visible detail, varies across the display.  This allows the user to
+examine the fine details of a small area while always having a view of the
+whole graph available as a frame of reference.  Graphs are rendered inside
+a sphere that contains the Euclidean projection of 3D hyperbolic space.
+Points within the sphere are magnified according to their radial distance
+from the center.  Objects near the center are magnified, while those near
+the boundary are shrunk.  The amount of magnification decreases
+continuously and at an accelerated rate from the center to the boundary,
+until objects are reduced to zero size at the latter, which represents
+infinity.  By bringing different parts of a graph to the magnified central
+region, the user can examine every part of the graph in detail.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 CHANGES
+
+Since 0.4, released Apr 12, 2002:
+
+  * Added support for temporarily hiding parts of the graph.
+       For example, the user can display only the subtree rooted at the
+       current central node.  It should now be much easier to navigate
+       and examine large complicated graphs, since occlusion can be
+       eliminated by selective pruning.
+  * Added code to detect and warn about malformed spanning trees.
+  * Added support for quickly navigating to the parent of the current
+    central node.
+  * Added support for resetting the rendering state.
+       Loss of floating-point precision can cause the display to become
+       wholly useless.  This sometimes happens while navigating very large
+       graphs.
 
 Since 0.3, released Apr 1, 2002:
 
@@ -151,24 +167,24 @@ QUICK START
 
 You can give Walrus a quick try by doing the following:
 
-1. Extract 'walrus-0.4.tar.gz' or 'walrus-0.4.zip' anywhere you wish.  This
-   will create a subdirectory named 'walrus-0.4' containing several JAR,
-   files among other things.
+1. Extract 'walrus-0.5.tar.gz' or 'walrus-0.5.zip' anywhere you wish.
+   This will create a subdirectory named 'walrus-0.5' containing several
+   JAR files, among other things.
 
     For UNIX users...
 
-      The file walrus-0.4.tar.gz was packaged with the standard TAR utility
+      The file walrus-0.5.tar.gz was packaged with the standard TAR utility
       and compressed with GNU GZIP (http://www.gzip.org).  You can unpack
       it with the following command:
 
-          gzip -cd walrus-0.4.tar.gz | tar xvf -
+          gzip -cd walrus-0.5.tar.gz | tar xvf -
 
     For Windows users...
 
-      The file walrus-0.4.zip was packaged in the common ZIP format.  You
+      The file walrus-0.5.zip was packaged in the common ZIP format.  You
       can unpack it using a program like WinZip (http://www.winzip.com/).
 
-1. From the 'walrus-0.4' subdirectory, enter the following at a shell
+1. From the 'walrus-0.5' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
@@ -209,16 +225,28 @@ in olive green, and nontree links in a cobweb-like transparent blue.  Using
 transparency like this is often a good way of exploring graphs with nontree
 links.
 
-Two other features you may wish to try are wobbling and continuous
-rotations.  To activate wobbling, select Display->Wobble.  To stop the
-wobbling, click anywhere in the window with the left mouse button.  To
-activate continuous rotations, hold down the control key and click the left
-mouse button anywhere in the window.  Now simply move the mouse (without
-pressing or holding down any buttons and without holding down the control
-key) to change the direction and speed of the rotations.  The rotation
-vector is determined by the position of the mouse pointer relative to the
-center of the window.  To stop the rotations, click anywhere in the window
-with the left mouse button.
+Another feature you may wish to try is continuous rotation.  To activate
+continuous rotation, hold down the control key and click the left mouse
+button anywhere in the window.  Now simply move the mouse (without pressing
+or holding down any buttons or any keys) to change the direction and speed
+of the rotation.  The rotation vector is determined by the position of the
+mouse pointer relative to the center of the window.  To stop the rotation,
+click anywhere in the window with the left mouse button.
+
+There are a number of ways of hiding parts of the graph temporarily.
+Selective hiding is indispensable for navigating and examining complicated
+graphs.  The Display menu contains the full list of operations for hiding
+and revealing parts of the graph.  There are also convenient key bindings
+for some of these.  Suppose, for example, that you wanted to focus your
+attention on a single subtree.  You could hide all of the graph except that
+subtree by first right clicking on the root node of the subtree (to bring
+it to the center of the display) and then choosing Display->Narrow To
+Subtree.  If the subtree was large and tall, you could hide all but the
+descendants that lie within a certain distance from the root node of the
+subtree to reduce the clutter and occlusion.  You could do this by either
+choosing an item from the menu Display->Prune To Neighborhood or by
+pressing one of the keys '0' to '9'.  Pressing '2', for example, would hide
+all but the descendants that lie within two hops of the root node.
 
 As mentioned earlier, Walrus uses an adaptive rendering algorithm that
 tries to maintain a given framerate.  You may try out the nonadaptive
@@ -245,11 +273,11 @@ The directory 'samples' contains the following sample graphs.
      champagne.graph for an example of an input file without these).
 
  * walrus-directory.graph
-    [364 nodes, 364 links; 12 attributes]
+    [1103 nodes, 1105 links; 12 attributes]
 
      A graph file generated from the UNIX directory tree containing the
      Walrus source files.  This was generated using the perl scripts
-     included in 'walrus-0.4/docs/dirgraph'.
+     included in 'walrus-0.5/docs/dirgraph'.
 
      Many of the values shown in a directory listing are included in this
      graph file as attributes.  For example, the attribute 'full_name'
