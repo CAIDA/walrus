@@ -94,6 +94,7 @@ public class H3Main
     public H3Main()
     {
 	initializeCanvas3D();
+	initializeCapturing(2048, 2048);
 
 	m_frame = new JFrame(WALRUS_TITLE);
 	m_frame.setBackground(Color.black);
@@ -357,23 +358,20 @@ public class H3Main
 	m_view.removeCanvas3D(m_canvas);
 	handleStopRenderingRequest();
 	{
-	    Canvas3D canvas = makeCaptureCanvas3D
-		(resolution.width, resolution.height);
-	    BranchGroup scene = makeCaptureUniverse
-		(canvas, renderList, displayPosition);
-
-	    captureScreen(canvas, resolution.width, resolution.height);
-	    
+	    BranchGroup scene = makeBranchGraph(renderList, displayPosition);
+	    captureScreen(resolution.width, resolution.height);
 	    scene.detach();
 	}
 	m_view.addCanvas3D(m_canvas);
 	m_canvas.stopRenderer();
 	handleStartRenderingRequest();
+
+
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private void captureScreen(Canvas3D canvas, int width, int height)
+    private void captureScreen(int width, int height)
     {
 	Screen3D onScreen = m_canvas.getScreen3D();
 	double screenWidthPixelToMeterScale =
@@ -384,64 +382,24 @@ public class H3Main
 	double screenPhysicalWidth = width * screenWidthPixelToMeterScale;
 	double screenPhysicalHeight = height * screenHeightPixelToMeterScale;
 
-	Screen3D screen = canvas.getScreen3D();
+	Screen3D screen = m_captureCanvas.getScreen3D();
 	screen.setSize(width, height);
 	screen.setPhysicalScreenWidth(screenPhysicalWidth);
 	screen.setPhysicalScreenHeight(screenPhysicalHeight);
 
-	canvas.setOffScreenBuffer(makeOffScreenBuffer(width, height));
-	canvas.renderOffScreenBuffer();
-	canvas.waitForOffScreenRendering();
+	m_captureCanvas.renderOffScreenBuffer();
+	m_captureCanvas.waitForOffScreenRendering();
 
-	BufferedImage image = canvas.getOffScreenBuffer().getImage();
+	BufferedImage image = m_captureCanvas.getOffScreenBuffer().getImage();
 	writeImage(image, width, height);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    private ImageComponent2D makeOffScreenBuffer(int width, int height)
-    {
-	BufferedImage image =
-	    new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-
-	return new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    private Canvas3D makeCaptureCanvas3D(int width, int height)
-    {
-	GraphicsConfiguration config =
-	    SimpleUniverse.getPreferredConfiguration();
-
-	Canvas3D retval = new Canvas3D(config, true);
-	retval.setSize(width, height); // probably not necessary
-
-	return retval;
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    private BranchGroup makeCaptureUniverse
-	(Canvas3D canvas, H3PointRenderList renderList,
-	 H3DisplayPosition displayPosition)
+    private BranchGroup makeBranchGraph
+	(H3PointRenderList renderList, H3DisplayPosition displayPosition)
     {
 	CaptureScales scales = computeCaptureScales();
-
-	SimpleUniverse univ = new SimpleUniverse(canvas);
-	univ.getViewingPlatform().setNominalViewingTransform();
-
-	// Move eye back in +z direction a tad so that the whole
-	// sphere fits within the window.
-	if (true)
-	{
-	    TransformGroup eyeTG =
-		univ.getViewingPlatform().getViewPlatformTransform();
-	    Transform3D transform = new Transform3D();
-	    eyeTG.getTransform(transform);
-	    transform.setTranslation(new Vector3d(0.0, 0.0, 2.9));
-	    eyeTG.setTransform(transform);
-	}
 
 	BranchGroup retval = new BranchGroup();
 	retval.setCapability(BranchGroup.ALLOW_DETACH);
@@ -468,9 +426,47 @@ public class H3Main
 	    TG.addChild(depthCueing);
 	}
 
-	univ.addBranchGraph(retval);
+	m_captureUniverse.addBranchGraph(retval);
 
 	return retval;
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private void initializeCapturing(int width, int height)
+    {
+	m_offScreenBuffer = makeOffScreenBuffer(width, height);
+
+	GraphicsConfiguration config =
+	    SimpleUniverse.getPreferredConfiguration();
+
+	m_captureCanvas = new Canvas3D(config, true);
+	m_captureCanvas.setOffScreenBuffer(m_offScreenBuffer);
+
+	m_captureUniverse = new SimpleUniverse(m_captureCanvas);
+	m_captureUniverse.getViewingPlatform().setNominalViewingTransform();
+
+	// Move eye back in +z direction a tad so that the whole
+	// sphere fits within the window.
+	if (true)
+	{
+	    TransformGroup eyeTG = m_captureUniverse.getViewingPlatform()
+		.getViewPlatformTransform();
+	    Transform3D transform = new Transform3D();
+	    eyeTG.getTransform(transform);
+	    transform.setTranslation(new Vector3d(0.0, 0.0, 2.9));
+	    eyeTG.setTransform(transform);
+	}
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    private ImageComponent2D makeOffScreenBuffer(int width, int height)
+    {
+	BufferedImage image =
+	    new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+	return new ImageComponent2D(ImageComponent.FORMAT_RGBA, image);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1493,42 +1489,6 @@ public class H3Main
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	JRadioButtonMenuItem captureScreenResolutionMenuItem
-	    = new JRadioButtonMenuItem("Screen Resolution");
-	captureScreenResolutionMenuItem.setSelected(true);
-	captureScreenResolutionMenuItem.addActionListener
-	    (new ActionListener() {
-		    public void actionPerformed(ActionEvent e)
-		    {
-			m_captureResolution = CAPTURE_SCREEN_RESOLUTION;
-		    }
-		});
-
-	JRadioButtonMenuItem capture1500ResolutionMenuItem
-	    = new JRadioButtonMenuItem("1500x1500 Resolution");
-	capture1500ResolutionMenuItem.addActionListener
-	    (new ActionListener() {
-		    public void actionPerformed(ActionEvent e)
-		    {
-			m_captureResolution = CAPTURE_1500_RESOLUTION;
-		    }
-		});
-
-	JRadioButtonMenuItem capture2048ResolutionMenuItem
-	    = new JRadioButtonMenuItem("2048x2048 Resolution");
-	capture2048ResolutionMenuItem.addActionListener
-	    (new ActionListener() {
-		    public void actionPerformed(ActionEvent e)
-		    {
-			m_captureResolution = CAPTURE_2048_RESOLUTION;
-		    }
-		});
-
-	m_captureResolutionButtonGroup = new ButtonGroup();
-	m_captureResolutionButtonGroup.add(captureScreenResolutionMenuItem);
-	m_captureResolutionButtonGroup.add(capture1500ResolutionMenuItem);
-	m_captureResolutionButtonGroup.add(capture2048ResolutionMenuItem);
-
 	JRadioButtonMenuItem captureScreenDPIMenuItem
 	    = new JRadioButtonMenuItem("Screen DPI");
 	captureScreenDPIMenuItem.setSelected(true);
@@ -1566,10 +1526,6 @@ public class H3Main
 	m_captureDPIButtonGroup.add(capture600DPIMenuItem);
 
 	JMenu captureSettingsMenu = new JMenu("Capture Settings"); 
-	captureSettingsMenu.add(captureScreenResolutionMenuItem);
-	captureSettingsMenu.add(capture1500ResolutionMenuItem);
-	captureSettingsMenu.add(capture2048ResolutionMenuItem);
-	captureSettingsMenu.addSeparator();
 	captureSettingsMenu.add(captureScreenDPIMenuItem);
 	captureSettingsMenu.add(capture300DPIMenuItem);
 	captureSettingsMenu.add(capture600DPIMenuItem);
@@ -1842,6 +1798,10 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
+    private SimpleUniverse m_captureUniverse;
+    private Canvas3D m_captureCanvas;
+    private ImageComponent2D m_offScreenBuffer;
+
     // The following, m_renderingConfiguration, will be non-null if a graph
     // has been loaded and rendered (at least once).
     private RenderingConfiguration m_renderingConfiguration;
@@ -1860,7 +1820,7 @@ public class H3Main
     private EventHandler m_eventHandler; // ...non-null when ...being rendered.
     private MemoryUsage m_memoryUsage = new MemoryUsage();
     private H3GraphLoader m_graphLoader = new H3GraphLoader();
-    private int m_captureResolution = CAPTURE_SCREEN_RESOLUTION;
+    private int m_captureResolution = CAPTURE_2048_RESOLUTION;
     private int m_captureDPI = CAPTURE_SCREEN_DPI;
 
     private JFrame m_frame;
