@@ -27,13 +27,7 @@ BUGS & ISSUES
 * Owing to a Java3D bug, antialiasing doesn't work in immediate mode,
   the mode used by Walrus.
 
-* The code that writes screenshots to files uses a hardcoded image size.
-
 * Node labels of list type aren't currently displayed in the status bar.
-
-* Doing Rendering->Update causes information about the previously visited
-  node (for bringing back to the center with shift-middle-mouse button)
-  to be lost.
 
 * With very large graphs (~1 million nodes), precision problems can corrupt
   the display during naviagation.
@@ -45,9 +39,6 @@ BUGS & ISSUES
 =========================================================================
 FEATURES
 =========================================================================
-
-* Add menu items and/or keyboard commands to control wobbling, screen
-  capture, and recording.  Remove the current bindings to mouse controls.
 
 * Revamp the Color Scheme menu.  Add some perceptually uniform colorscales.
   Make a better set of fixed colors and predefined color schemes.
