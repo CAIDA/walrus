@@ -703,6 +703,63 @@ public class H3Graph
     ////////////////////////////////////////////////////////////////////////
     // TEST METHODS
     ////////////////////////////////////////////////////////////////////////
+
+    // Returns the number of nodes with valid (not NaN or infinite) layout
+    // coordinates.
+    public int checkLayoutCoordinates()
+    {
+	int numXNaNs = 0;
+	int numYNaNs = 0;
+	int numZNaNs = 0;
+	int numWNaNs = 0;
+
+	int numXInfs = 0;
+	int numYInfs = 0;
+	int numZInfs = 0;
+	int numWInfs = 0;
+
+	int retval = 0;
+
+	Point4d p = new Point4d();
+	for (int i = 0; i < m_numNodes; i++)
+	{
+	    getNodeLayoutCoordinates(i, p);
+	    if (isGood(p.x) && isGood(p.y) && isGood(p.z) && isGood(p.w))
+	    {
+		++retval;
+	    }
+
+	    numXNaNs += (Double.isNaN(p.x) ? 1 : 0);
+	    numYNaNs += (Double.isNaN(p.y) ? 1 : 0);
+	    numZNaNs += (Double.isNaN(p.z) ? 1 : 0);
+	    numWNaNs += (Double.isNaN(p.w) ? 1 : 0);
+
+	    numXInfs += (Double.isInfinite(p.x) ? 1 : 0);
+	    numYInfs += (Double.isInfinite(p.y) ? 1 : 0);
+	    numZInfs += (Double.isInfinite(p.z) ? 1 : 0);
+	    numWInfs += (Double.isInfinite(p.w) ? 1 : 0);
+	}
+
+	System.out.println("numXNaNs = " + numXNaNs);
+	System.out.println("numYNaNs = " + numYNaNs);
+	System.out.println("numZNaNs = " + numZNaNs);
+	System.out.println("numWNaNs = " + numWNaNs);
+
+	System.out.println("numXInfs = " + numXInfs);
+	System.out.println("numYInfs = " + numYInfs);
+	System.out.println("numZInfs = " + numZInfs);
+	System.out.println("numWInfs = " + numWInfs);
+
+	return retval;
+    }
+
+    private boolean isGood(double x)
+    {
+	return !Double.isNaN(x) && !Double.isInfinite(x);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
     public void checkTreeReachability()
     {
 	checkTreeReachability(0);
