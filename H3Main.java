@@ -201,6 +201,7 @@ public class H3Main
 	retval.multipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
 	retval.depthCueing = m_depthCueingMenuItem.isSelected();
 	retval.axes = m_axesMenuItem.isSelected();
+	retval.onScreenLabels = m_onScreenLabelsMenuItem.isSelected();
 	retval.automaticRefresh = m_automaticRefreshMenuItem.isSelected();
 	retval.nodeColor =
 	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
@@ -211,6 +212,7 @@ public class H3Main
 
 	int numSelected = countNumSelectedItems(m_nodeLabelMenu);
 	retval.nodeLabelAttributes = new int[numSelected];
+	retval.nodeLabelAttributeNames = new String[numSelected];
 
 	int numAdded = 0;
 	int numAttributes = m_nodeLabelMenu.getItemCount();
@@ -219,15 +221,17 @@ public class H3Main
 	    JMenuItem menuItem = m_nodeLabelMenu.getItem(i);
 	    if (menuItem != null && menuItem.isSelected())
 	    {
+		String name = menuItem.getText();
 		AttributeDefinitionIterator iterator =
-		    m_backingGraph.getAttributeDefinition(menuItem.getText());
+		    m_backingGraph.getAttributeDefinition(name);
 		if (iterator.atEnd())
 		{
-		    String msg = "no attribute named `" + menuItem.getText()
-			+ "' found";
+		    String msg = "no attribute named `" + name + "' found";
 		    throw new RuntimeException(msg);
 		}
-		retval.nodeLabelAttributes[numAdded++] = iterator.getID();
+		retval.nodeLabelAttributes[numAdded] = iterator.getID();
+		retval.nodeLabelAttributeNames[numAdded] = name;
+		++numAdded;
 	    }
 	}
 
@@ -246,7 +250,8 @@ public class H3Main
 	    while (iterator.hasNext())
 	    {
 		String name = (String)iterator.next();
-		JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem(name);
+		JRadioButtonMenuItem menuItem =
+		    new JRadioButtonMenuItem(name);
 		m_spanningTreeMenu.add(menuItem);
 		m_spanningTreeButtonGroup.add(menuItem);
 	    }
@@ -1055,9 +1060,13 @@ public class H3Main
 	}
 
 	m_eventHandler = new EventHandler
-	    (m_canvas, m_renderLoop, m_rootNode, m_currentNode,
-	     m_previousNode, m_graph, m_backingGraph,
-	     renderingConfiguration.nodeLabelAttributes, m_statusBar,
+	    (m_viewParameters, m_canvas, m_renderLoop,
+	     m_rootNode, m_currentNode, m_previousNode,
+	     m_graph, m_backingGraph,
+	     renderingConfiguration.nodeLabelAttributes,
+	     renderingConfiguration.nodeLabelAttributeNames,
+	     m_statusBar,
+	     renderingConfiguration.onScreenLabels,
 	     renderingConfiguration.automaticRefresh);
 
 	System.out.println("EventHandler installed.");
@@ -1398,6 +1407,11 @@ public class H3Main
 	m_axesMenuItem.setMnemonic(KeyEvent.VK_X);
 	m_axesMenuItem.setSelected(true);
 
+	m_onScreenLabelsMenuItem =
+	    new JCheckBoxMenuItem("On-Screen Labels");
+	m_onScreenLabelsMenuItem.setMnemonic(KeyEvent.VK_L);
+	m_onScreenLabelsMenuItem.setSelected(true);
+
 	m_automaticRefreshMenuItem
 	    = new JCheckBoxMenuItem("Automatic Refresh");
 	m_automaticRefreshMenuItem.setMnemonic(KeyEvent.VK_F);
@@ -1413,6 +1427,7 @@ public class H3Main
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
 	m_renderingMenu.add(m_depthCueingMenuItem);
 	m_renderingMenu.add(m_axesMenuItem);
+	m_renderingMenu.add(m_onScreenLabelsMenuItem);
 	m_renderingMenu.add(m_automaticRefreshMenuItem);
 
 	// Create "Display" menu. ------------------------------------------
@@ -1603,6 +1618,7 @@ public class H3Main
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
     private JCheckBoxMenuItem m_depthCueingMenuItem;
     private JCheckBoxMenuItem m_axesMenuItem;
+    private JCheckBoxMenuItem m_onScreenLabelsMenuItem;
     private JCheckBoxMenuItem m_automaticRefreshMenuItem;
 
     private JMenu m_displayMenu;
@@ -1649,12 +1665,15 @@ public class H3Main
 	implements KeyListener, MouseListener, MouseMotionListener
     {
 	public EventHandler
-	    (H3Canvas3D canvas, H3RenderLoop renderLoop,
+	    (H3ViewParameters parameters,
+	     H3Canvas3D canvas, H3RenderLoop renderLoop,
 	     int rootNode, int currentNode, int previousNode,
 	     H3Graph graph, Graph backingGraph,
-	     int[] nodeLabelAttributes, JTextField statusBar,
-	     boolean automaticRefresh)
+	     int[] nodeLabelAttributes, String[] nodeLabelAttributeNames,
+	     JTextField statusBar,
+	     boolean onScreenLabels, boolean automaticRefresh)
 	{
+	    m_parameters = parameters;
 	    m_canvas = canvas;
 	    m_canvas.addKeyListener(this);
 	    m_canvas.addMouseListener(this);
@@ -1684,7 +1703,11 @@ public class H3Main
 	    m_graph = graph;
 	    m_backingGraph = backingGraph;
 	    m_nodeLabelAttributes = nodeLabelAttributes;
+	    m_nodeLabelAttributeNames = nodeLabelAttributeNames;
 	    m_statusBar = statusBar;
+	    m_onScreenLabels = onScreenLabels;
+	    m_labelConstructor =
+		new NodeLabelConstructor(backingGraph, nodeLabelAttributes);
 	}
 
 	public void dispose()
@@ -2226,9 +2249,24 @@ public class H3Main
 		int node = m_renderLoop.pickNode(x, y, m_center);
 		if (node >= 0)
 		{
-		    showNodeLabels(node);
+		    String statusBarLabel = createStatusBarLabel(node);
+		    m_statusBar.setText(statusBarLabel);
+
+		    if (m_onScreenLabels)
+		    {
+			String onScreenLabel = createOnScreenLabel(node);
+			displayOnScreenLabel(x, y, onScreenLabel);
+		    }
 		}
 	    }
+	}
+
+	private void displayOnScreenLabel(int x, int y, String label)
+	{
+	    GraphicsContext3D gc = m_canvas.getGraphicsContext3D();
+	    Point3d position = new Point3d();
+	    m_canvas.getPixelLocationInImagePlate(x, y, position);
+	    m_parameters.drawLabel(gc, position.x, position.y, label);
 	}
 
 	private void shiftCenterNodes(int node)
@@ -2292,10 +2330,12 @@ public class H3Main
 
 	//---------------------------------------------------------------
 
-	private void showNodeLabels(int node)
+	private String createStatusBarLabel(int node)
 	{
-	    StringBuffer buffer = new StringBuffer();
+	    int nodeID = m_graph.getNodeID(node);
+	    String[] values = m_labelConstructor.extractValues(node, true);
 
+	    StringBuffer buffer = new StringBuffer();
 	    for (int i = 0; i < m_nodeLabelAttributes.length; i++)
 	    {
 		if (i > 0)
@@ -2303,118 +2343,28 @@ public class H3Main
 		    buffer.append("  ");
 		}
 
-		int attribute = m_nodeLabelAttributes[i];
-		AttributeDefinitionIterator iterator =
-		    m_backingGraph.getAttributeDefinition(attribute);
-		buffer.append(iterator.getName());
+		buffer.append(m_nodeLabelAttributeNames[i]);
 		buffer.append(": ");
-
-		ValueType type = iterator.getType();
-		if (type.isListType())
-		{
-		    buffer.append("<<skipped>>"); // XXX Implement this.
-		}
-		else
-		{
-		    int nodeID = m_graph.getNodeID(node);
-		    addAttributeValue(buffer, type, nodeID, attribute);
-		}
+		buffer.append(values[i]);
 	    }
-
-	    m_statusBar.setText(buffer.toString());
+	    return buffer.toString();
 	}
 
-	// The parameter {node} should be the ID of a node in the libsea Graph.
-	private void addAttributeValue(StringBuffer buffer, ValueType type,
-				       int node, int attribute)
+	private String createOnScreenLabel(int node)
 	{
-	    try
+	    int nodeID = m_graph.getNodeID(node);
+	    String[] values = m_labelConstructor.extractValues(node, false);
+
+	    StringBuffer buffer = new StringBuffer();
+	    for (int i = 0; i < m_nodeLabelAttributes.length; i++)
 	    {
-		switch (type.getBaseType())
+		if (i > 0)
 		{
-		case ValueType._BOOLEAN:
-		    {
-			boolean value = m_backingGraph.getBooleanAttribute
-			    (ObjectType.NODE, node, attribute);
-			buffer.append(value ? 'T' : 'F');
-		    }
-		    break;
-
-		case ValueType._INTEGER:
-		    {
-			int value = m_backingGraph.getIntegerAttribute
-			    (ObjectType.NODE, node, attribute);
-			buffer.append(value);
-		    }
-		    break;
-
-		case ValueType._FLOAT:
-		    {
-			float value = m_backingGraph.getFloatAttribute
-			    (ObjectType.NODE, node, attribute);
-			buffer.append(value);
-		    }
-		    break;
-
-		case ValueType._DOUBLE:
-		    {
-			double value = m_backingGraph.getDoubleAttribute
-			    (ObjectType.NODE, node, attribute);
-			buffer.append(value);
-		    }
-		    break;
-
-		case ValueType._STRING:
-		    {
-			String value = m_backingGraph.getStringAttribute
-			    (ObjectType.NODE, node, attribute);
-			buffer.append('"');
-			buffer.append(value);
-			buffer.append('"');
-		    }
-		    break;
-
-		case ValueType._FLOAT3:
-		    m_backingGraph.getFloat3Attribute
-			(ObjectType.NODE, node, attribute, m_float3LabelData);
-		    buffer.append('{');
-		    buffer.append(m_float3LabelData[0]);
-		    buffer.append(", ");
-		    buffer.append(m_float3LabelData[1]);
-		    buffer.append(", ");
-		    buffer.append(m_float3LabelData[2]);
-		    buffer.append('}');
-		    break;
-
-		case ValueType._DOUBLE3:
-		    m_backingGraph.getDouble3Attribute
-			(ObjectType.NODE, node, attribute, m_double3LabelData);
-		    buffer.append('{');
-		    buffer.append(m_double3LabelData[0]);
-		    buffer.append(", ");
-		    buffer.append(m_double3LabelData[1]);
-		    buffer.append(", ");
-		    buffer.append(m_double3LabelData[2]);
-		    buffer.append('}');
-		    break;
-
-		case ValueType._ENUMERATION:
-		    {
-			int value = m_backingGraph.getEnumerationAttribute
-			    (ObjectType.NODE, node, attribute);
-			ReadOnlyEnumeratorIterator iterator =
-			    m_backingGraph.getEnumerator(value);
-			buffer.append(iterator.getName());
-		    }
-		    break;
-
-		default: throw new RuntimeException();
+		    buffer.append("; ");
 		}
+		buffer.append(values[i]);
 	    }
-	    catch (AttributeUnavailableException e)
-	    {
-		buffer.append("<<unavailable>>");
-	    }
+	    return buffer.toString();
 	}
 
 	private void dumpMouseEvent(String name, MouseEvent e)
@@ -2461,6 +2411,7 @@ public class H3Main
 	private static final int MOUSE_SENSITIVITY = 2;
 
 	private int m_state;
+	private H3ViewParameters m_parameters;
 	private H3Canvas3D m_canvas;
 	private H3RenderLoop m_renderLoop;
 
@@ -2471,9 +2422,10 @@ public class H3Main
 	private H3Graph m_graph;
 	private Graph m_backingGraph;
 	private int[] m_nodeLabelAttributes;
+	private String[] m_nodeLabelAttributeNames;
 	private JTextField m_statusBar;
-	private float[] m_float3LabelData = new float[3];
-	private double[] m_double3LabelData = new double[3];
+	private boolean m_onScreenLabels;
+	private NodeLabelConstructor m_labelConstructor;
 
 	private Point2d m_center = new Point2d();
 
@@ -2527,6 +2479,150 @@ public class H3Main
 		}
 	    }
 	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class NodeLabelConstructor
+    {
+	public NodeLabelConstructor
+	    (Graph backingGraph, int[] nodeLabelAttributes)
+	{
+	    m_backingGraph = backingGraph;
+	    m_nodeLabelAttributes = nodeLabelAttributes;
+	}
+
+	// The parameter {node} should be the ID of a node in the
+	// backing libsea Graph.  It should not be the ID (index) of a node
+	// in H3Graph.
+	public String[] extractValues(int node, boolean quoteStrings)
+	{
+	    String[] retval = new String[m_nodeLabelAttributes.length];
+
+	    for (int i = 0; i < m_nodeLabelAttributes.length; i++)
+	    {
+		StringBuffer buffer = new StringBuffer();
+
+		int attribute = m_nodeLabelAttributes[i];
+		ValueIterator iterator = null;
+		try
+		{
+		    iterator =
+			m_backingGraph.getNodeAttribute(node, attribute);
+		}
+		catch (AttributeUnavailableException e)
+		{
+		    String msg =
+			"INTERNAL ERROR: attribute '" + attribute
+			+ "' not found in backing graph.";
+		    throw new RuntimeException(msg);
+		}
+
+		boolean isListType = iterator.getType().isListType();
+		if (isListType)
+		{
+		    buffer.append('[');
+		}
+
+		int k = 0;
+		while (!iterator.atEnd())
+		{
+		    if (k++ > 0)
+		    {
+			buffer.append(", ");
+		    }
+		    addAttributeValue(buffer, iterator, quoteStrings);
+		    iterator.advance();
+		}
+
+		if (isListType)
+		{
+		    buffer.append(']');
+		}
+
+		retval[i] = buffer.toString();
+	    }
+
+	    return retval;
+	}
+
+	private void addAttributeValue
+	    (StringBuffer buffer, ValueIterator iterator,
+	     boolean quoteStrings)
+	{
+	    switch (iterator.getType().getBaseType())
+	    {
+	    case ValueType._BOOLEAN:
+		buffer.append(iterator.getBooleanValue() ? 'T' : 'F');
+		break;
+
+	    case ValueType._INTEGER:
+		buffer.append(iterator.getIntegerValue());
+		break;
+
+	    case ValueType._FLOAT:
+		buffer.append(iterator.getFloatValue());
+		break;
+
+	    case ValueType._DOUBLE:
+		buffer.append(iterator.getDoubleValue());
+		break;
+
+	    case ValueType._STRING:
+		{
+		    String value = iterator.getStringValue();
+		    if (quoteStrings)
+		    {
+			buffer.append('"');
+			buffer.append(value);
+			buffer.append('"');
+		    }
+		    else
+		    {
+			buffer.append(value);
+		    }
+		}
+		break;
+
+	    case ValueType._FLOAT3:
+		iterator.getFloat3Value(m_float3LabelData);
+		buffer.append('{');
+		buffer.append(m_float3LabelData[0]);
+		buffer.append(", ");
+		buffer.append(m_float3LabelData[1]);
+		buffer.append(", ");
+		buffer.append(m_float3LabelData[2]);
+		buffer.append('}');
+		break;
+
+	    case ValueType._DOUBLE3:
+		iterator.getDouble3Value(m_double3LabelData);
+		buffer.append('{');
+		buffer.append(m_double3LabelData[0]);
+		buffer.append(", ");
+		buffer.append(m_double3LabelData[1]);
+		buffer.append(", ");
+		buffer.append(m_double3LabelData[2]);
+		buffer.append('}');
+		break;
+
+	    case ValueType._ENUMERATION:
+		{
+		    int value = iterator.getEnumerationValue();
+		    ReadOnlyEnumeratorIterator enumerator =
+			m_backingGraph.getEnumerator(value);
+		    buffer.append(enumerator.getName());
+		}
+		break;
+
+	    default: throw new RuntimeException();
+	    }
+	}
+
+	private Graph m_backingGraph;
+	private int[] m_nodeLabelAttributes;
+	private float[] m_float3LabelData = new float[3];
+	private double[] m_double3LabelData = new double[3];
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -3466,6 +3562,7 @@ public class H3Main
 	public boolean multipleNodeSizes;
 	public boolean depthCueing;
 	public boolean axes;
+	public boolean onScreenLabels;
 	public boolean automaticRefresh;
 
 	public ColorConfiguration nodeColor;
@@ -3473,6 +3570,7 @@ public class H3Main
 	public ColorConfiguration nontreeLinkColor;
 
 	public int[] nodeLabelAttributes;
+	public String[] nodeLabelAttributeNames;
 
 	public void print()
 	{
@@ -3483,6 +3581,7 @@ public class H3Main
 	    System.out.println("\tmultipleNodeSizes = " + multipleNodeSizes);
 	    System.out.println("\tdepthCueing = " + depthCueing);
 	    System.out.println("\taxes = " + axes);
+	    System.out.println("\tonScreenLabels = " + onScreenLabels);
 	    System.out.println("\tautomaticRefresh = " + automaticRefresh);
 
 	    System.out.print("(Node) ");
@@ -3495,7 +3594,8 @@ public class H3Main
 	    System.out.println("Node Label Attributes:");
 	    for (int i = 0; i < nodeLabelAttributes.length; i++)
 	    {
-		System.out.println("\t" + nodeLabelAttributes[i]);
+		System.out.println("\t" + nodeLabelAttributeNames[i]
+				   + " (" + nodeLabelAttributes[i] + ")");
 	    }
 	    System.out.println("------------------------------------------\n");
 	}
