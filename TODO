@@ -23,7 +23,7 @@ BUGS & ISSUES
 * Node labels of list type aren't currently displayed in the status bar.
 
 * With very large graphs (~1 million nodes), precision problems can corrupt
-  the display during naviagation.
+  the display during navigation.
 
 * It can be slow loading large (50-80MB) graphs, and Walrus provides no
   feedback during the load (such as with a progress bar).
