@@ -25,8 +25,6 @@ walrus_sources = H3AdaptivePicker.java \
 	H3Circle.java \
 	H3CircleRenderer.java \
 	H3Graph.java \
-	H3GraphBuffer.java \
-	H3GraphGenerator.java \
 	H3GraphLayout.java \
 	H3GraphLoader.java \
 	H3InteractiveRotationRequest.java \
@@ -54,8 +52,7 @@ walrus_sources = H3AdaptivePicker.java \
 
 walrus_classes = $(walrus_sources:.java=.class)
 
-tester_sources = H3GraphRelatedTester.java \
-	H3TransformQueueTester.java
+tester_sources = H3TransformQueueTester.java
 
 tester_classes = $(tester_sources:.java=.class)
 
