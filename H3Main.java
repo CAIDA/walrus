@@ -316,6 +316,7 @@ public class H3Main
 
 	// Display menu.
 	m_narrowToPathMenuItem.setEnabled(false);
+	m_narrowToNeighborhoodMenuItem.setEnabled(false);
 	m_widenSubtreeMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
@@ -858,6 +859,16 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
+    private void handleNarrowToNeighborhoodRequest(int node, int distance)
+    {
+	m_graph.narrowVisibilityToNeighborhood(node, distance);
+	updateNarrowedDisplayMenus();
+	m_eventHandler.forceIdleState();
+	m_eventHandler.refreshDisplay();
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
     private void handleWidenSubtreeRequest(int node)
     {
 	m_graph.widenSubtreeVisibility(node);
@@ -1267,6 +1278,9 @@ public class H3Main
 		public void narrowToPath(int node)
 		{ handleNarrowToPathRequest(node); }
 
+		public void narrowToNeighborhood(int node, int distance)
+		{ handleNarrowToNeighborhoodRequest(node, distance); }
+
 		public void widenSubtree(int node)
 		{ handleWidenSubtreeRequest(node); }
 
@@ -1466,6 +1480,7 @@ public class H3Main
 
 	// Display menu.
 	m_narrowToPathMenuItem.setEnabled(false);
+	m_narrowToNeighborhoodMenuItem.setEnabled(false);
 	m_widenSubtreeMenuItem.setEnabled(false);
 	m_widenTowardRootMenuItem.setEnabled(false);
 	m_widenToGraphMenuItem.setEnabled(false);
@@ -1492,6 +1507,7 @@ public class H3Main
 
 	// Display menu.
 	m_narrowToPathMenuItem.setEnabled(true);
+	m_narrowToNeighborhoodMenuItem.setEnabled(true);
 	m_widenSubtreeMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenTowardRootMenuItem.setEnabled(m_isDisplayNarrowed);
 	m_widenToGraphMenuItem.setEnabled(m_isDisplayNarrowed);
@@ -1698,6 +1714,18 @@ public class H3Main
 		}
 	    });
 
+	m_narrowToNeighborhoodMenuItem =
+	    new JMenuItem("Narrow To Neighborhood");
+	m_narrowToNeighborhoodMenuItem.setMnemonic(KeyEvent.VK_N);
+	m_narrowToNeighborhoodMenuItem.setEnabled(false);
+	m_narrowToNeighborhoodMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    int node = m_eventHandler.getCurrentNode();
+		    handleNarrowToNeighborhoodRequest(node, 1);
+		}
+	    });
+
 	m_widenSubtreeMenuItem = new JMenuItem("Widen Subtree");
 	m_widenSubtreeMenuItem.setMnemonic(KeyEvent.VK_U);
 	m_widenSubtreeMenuItem.setEnabled(false);
@@ -1823,6 +1851,7 @@ public class H3Main
 	m_displayMenu = new JMenu("Display");
 	m_displayMenu.setMnemonic(KeyEvent.VK_D);
 	m_displayMenu.add(m_narrowToPathMenuItem);
+	m_displayMenu.add(m_narrowToNeighborhoodMenuItem);
 	m_displayMenu.add(m_widenSubtreeMenuItem);
 	m_displayMenu.add(m_widenTowardRootMenuItem);
 	m_displayMenu.add(m_widenToGraphMenuItem);
@@ -1943,6 +1972,7 @@ public class H3Main
 
     private JMenu m_displayMenu;
     private JMenuItem m_narrowToPathMenuItem;
+    private JMenuItem m_narrowToNeighborhoodMenuItem;
     private JMenuItem m_widenSubtreeMenuItem;
     private JMenuItem m_widenTowardRootMenuItem;
     private JMenuItem m_widenToGraphMenuItem;
@@ -1981,6 +2011,7 @@ public class H3Main
     private static interface NarrowingEventHandler
     {
 	void narrowToPath(int node);
+	void narrowToNeighborhood(int node, int distance);
 	void widenSubtree(int node);
 	void widenTowardRoot(int node);
 	void widenToGraph();
