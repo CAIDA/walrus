@@ -20,6 +20,15 @@ immediately updating the rendering upon each configuration change is
 impracticable since some changes have dramatic and expensive effects on the
 rendering.
 
+To run Walrus, do something like the following:
+
+ $ java -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+
+When viewing large graphs, you'll want to increase the maximum heap size, as
+in the following with Sun's JDK:
+
+ $ java -Xmx128M -cp antlrall-mod.jar:libsea.jar:walrus.jar H3Main
+
 
 ===========================================================================
 MENUS
