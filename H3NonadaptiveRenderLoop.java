@@ -48,21 +48,18 @@ public class H3NonadaptiveRenderLoop
     
     public H3NonadaptiveRenderLoop(H3Graph graph, H3Canvas3D canvas,
 				   H3ViewParameters parameters,
-				   boolean transformNontreeLinks)
+				   H3RenderList renderList,
+				   boolean useNodeSizes)
     {
+	USE_NODE_SIZES = useNodeSizes;
+
 	m_graph = graph;
 	m_canvas = canvas;
 	m_parameters = parameters;
-	m_transformNontreeLinks = transformNontreeLinks;
+	m_renderList = renderList;
+	m_numNodes = graph.getNumNodes();
 
 	m_picker = new H3NonadaptivePicker(graph, canvas, parameters);
-
-	m_numNodes = graph.getNumNodes();
-	m_nodeArray = new PointArray(m_numNodes, PointArray.COORDINATES);
-
-	int numLines = graph.getTotalNumLinks();
-	m_lineArray = new LineArray(numLines * 2, LineArray.COORDINATES);
-
 	m_translation.setIdentity();
     }
 
@@ -542,41 +539,46 @@ public class H3NonadaptiveRenderLoop
 
     private void render(GraphicsContext3D gc)
     {
-	Point3d source = new Point3d();
-	Point3d target = new Point3d();
-
-	int numVertices = 0;
-	for (int i = 0; i < m_numNodes; i++)
+	m_renderList.beginFrame();
 	{
-	    m_graph.getNodeCoordinates(i, source);
-	    m_nodeArray.setCoordinate(i, source);
-
-	    int childIndex = m_graph.getNodeChildIndex(i);
-	    int endIndex = (m_transformNontreeLinks 
-			    ? m_graph.getNodeLinksEndIndex(i)
-			    : m_graph.getNodeNontreeIndex(i));
-
-	    while (childIndex < endIndex)
+	    for (int i = 0; i < m_numNodes; i++)
 	    {
-		int child = m_graph.getLinkDestination(childIndex);
-		m_graph.getNodeCoordinates(child, target);
+		if (USE_NODE_SIZES)
+		{
+		    computeNodeRadius(i);
+		}
 
-		m_lineArray.setCoordinate(numVertices++, source);
-		m_lineArray.setCoordinate(numVertices++, target);
+		m_renderList.addNode(i);
 
-		++childIndex;
+		int childIndex = m_graph.getNodeChildIndex(i);
+		int nontreeIndex = m_graph.getNodeNontreeIndex(i);
+		int endIndex = m_graph.getNodeLinksEndIndex(i);
+
+		for (int j = childIndex; j < nontreeIndex; j++)
+		{
+		    m_renderList.addTreeLink(j);
+		}
+
+		for (int j = nontreeIndex; j < endIndex; j++)
+		{
+		    m_renderList.addNontreeLink(j);
+		}
 	    }
 	}
+	m_renderList.endFrame();
+	m_renderList.render(gc);
+    }
 
-	m_lineArray.setValidVertexCount(numVertices);
+    // The same radius calculation is done in
+    // H3Transformer.transformNode(int node).
+    // The two methods should be kept in sync to ensure a consistent display
+    // when the user turns adaptive rendering on/off.
+    private void computeNodeRadius(int node)
+    {
+	m_graph.getNodeCoordinates(node, m_nodeCoordinates);
 
-	m_parameters.putModelTransform(gc);
-
-	gc.setAppearance(m_parameters.getNodeAppearance());
-	gc.draw(m_nodeArray);
-
-	gc.setAppearance(m_parameters.getLineAppearance());
-	gc.draw(m_lineArray);
+	double radius = H3Math.computeRadiusEuclidean(m_nodeCoordinates);
+	m_graph.setNodeRadius(node, radius);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -637,6 +639,14 @@ public class H3NonadaptiveRenderLoop
 	"STATE_TRANSLATE", "STATE_REFRESH"
     };
 
+    // USE_NODE_SIZES is set in the constructor.
+    //
+    // Specifies whether we should render nodes at three sizes.
+    // For the nonadaptive render loop, this only determines whether we
+    // should calculate the radii of nodes before rendering the display,
+    // as H3PointRenderList expects the radii in H3Graph to be up-to-date.
+    private final boolean USE_NODE_SIZES;
+
     private int m_state = STATE_IDLE;
     private int m_numPendingRequests = 0;
     private boolean m_isRequestTurn = false;
@@ -649,19 +659,12 @@ public class H3NonadaptiveRenderLoop
     private H3Graph m_graph;
     private H3Canvas3D m_canvas;
     private H3ViewParameters m_parameters;
+    private H3RenderList m_renderList;
     private H3NonadaptivePicker m_picker;
-
-    private boolean m_transformNontreeLinks;
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
     private int m_numNodes;
-    private PointArray m_nodeArray;
-    private LineArray m_lineArray;
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
     private H3RotationRequest m_rotationRequest;
+
+    private Point4d m_nodeCoordinates = new Point4d(); // scratch variable
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
