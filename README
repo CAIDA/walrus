@@ -353,7 +353,7 @@ DARPA NGI Contract N66001-98-2-8922, Sun Microsystems, and CAIDA members.
 
 CAIDA's LibSea graph library distributed with Walrus uses the excellent and
 free ANTLR parser generator (see http://www.antlr.org).  The file
-'antlrall-mod.jar' is ANTLR 2.7.1, slightly modified to improved parsing
+'antlrall-mod.jar' is ANTLR 2.7.1, slightly modified to improve parsing
 time (specifically, the use of Class.newInstance() to allocate token
 objects was replaced with a compile-time object-allocation expression).
 The modifications reduced parsing time by 1-3 minutes (corresponding to a
