@@ -5,11 +5,21 @@
 BUGS & ISSUES
 =========================================================================
 
-* Rotations stop working when you turn off the display of coordinate
-  axes under the nonadaptive render loop.
+* It can be slow (say, 5 minutes) loading large (50-80MB) graphs, and
+  Walrus provides no feedback during the load (such as with a progress bar).
 
-* Improve memory usage in H3RenderQueue and H3Transformer.  The use of longs
-  was an expedient that is now past its usefulness.
+* Rotations stop working when you disable coordinate axes while using
+  the nonadaptive render loop.
+
+* With very large graphs (~1 million nodes), precision problems can corrupt
+  the display during navigation.
+
+* After a user resizes the Walrus window by clicking the zoom
+  (or minimize/maximize) button on the window, picking may become
+  inaccurate, and depth cueing may disappear.  This is likely caused by
+  an apparent bug in Java3D in which a movement of the viewer's eye isn't
+  immediately reflected in internal transformation matrices.  Simply
+  navigating around the graph usually fixes this problem.
 
 * Owing to a AWT/Java3D/Swing bug, none of the keyboard accelerators for
   the menus work.
@@ -23,13 +33,7 @@ BUGS & ISSUES
 * Owing to a Java3D bug, antialiasing doesn't work in immediate mode,
   the mode used by Walrus.
 
-* Node labels of list type aren't currently displayed in the status bar.
-
-* With very large graphs (~1 million nodes), precision problems can corrupt
-  the display during navigation.
-
-* It can be slow loading large (50-80MB) graphs, and Walrus provides no
-  feedback during the load (such as with a progress bar).
+* Improve memory usage in H3RenderQueue and H3Transformer.
 
 
 =========================================================================
@@ -37,8 +41,6 @@ FEATURES
 =========================================================================
 
 * Add some perceptually uniform colorscales.
-
-* Implement the Selection Attribute menu item under the Color Scheme menu.
 
 * Implement File->Save with Layout and File->Save with Layout As.
 
