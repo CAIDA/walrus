@@ -1,4 +1,13 @@
 ===========================================================================
+TABLE OF CONTENTS
+===========================================================================
+
+ Usage
+ Menus
+ Mouse Controls
+ File Format
+
+===========================================================================
 USAGE
 ===========================================================================
 
@@ -250,3 +259,87 @@ shift R:
     the movements are not.  The recorded movements are played back once
     immediately after the second 'shift R'.  Click anywhere with the middle
     mouse button to abandon an ongoing recording.
+
+
+===========================================================================
+FILE FORMAT
+===========================================================================
+
+Walrus uses the LibSea graph library to read and write graph files.  Please
+see the documentation accompanying LibSea for a detailed description of the
+file format.  However, the LibSea file format is by design open-ended.  It
+provides flexible mechanisms by which application-specific conventions and
+policies may be implemented.  This section describes the conventions
+employed by Walrus.
+
+The only convention currently employed by Walrus is the specification of
+spanning trees with qualifiers.  Every graph file must have at least one
+spanning tree, but there can be more than one.  A spanning tree provides
+the crucial information necessary to layout a graph.  The following excerpt
+from a graph file shows the form of the spanning tree qualifier:
+
+   @qualifiers=[
+      {
+         @type=$spanning_tree;
+         @name=$weighted_spanning_tree;
+         @description=;
+         @attributes=[
+            { @attribute=0; @alias=$root; },
+            { @attribute=1; @alias=$tree_link; }
+         ];
+      },
+      {
+         @type=$spanning_tree;
+         @name=$breadth_first_spanning_tree;
+         @description=;
+         @attributes=[
+            { @attribute=3; @alias=$root; },
+            { @attribute=4; @alias=$tree_link; }
+         ];
+      }
+   ];
+
+The qualifiers must have type 'spanning_tree' and contain attributes
+named 'root' and 'tree_link'.  In situations where the attributes
+referenced by the qualifiers are not named 'root' or 'tree_link', you
+can provide '@alias=' values that specify qualifier-specific alternate
+names that match the required ones.  The use of '@alias=' values is
+required when more than one spanning tree is included in a file, since
+attribute names (outside of qualifiers) must be unique.
+
+The referenced attributes must have boolean type.  The 'root' attribute
+specifies the root node of the spanning tree, and the 'tree_link' attribute
+specifies the subset of included links that make up the spanning tree.
+The following shows how these attributes might be defined in a graph file:
+
+   @attributeDefinitions=[
+      {
+         @name=$root;
+         @type=bool;
+         @default=|| false ||;
+         @nodeValues=[ { @id=0; @value=T; } ];
+         @linkValues=;
+         @pathValues=;
+      },
+      {
+         @name=$tree_link;
+         @type=bool;
+         @default=|| false ||;
+         @nodeValues=;
+         @linkValues=[
+            { @id=0; @value=T; },
+            { @id=1; @value=T; },
+            { @id=2; @value=T; },
+                  ...
+            { @id=361; @value=T; },
+            { @id=362; @value=T; },
+            { @id=363; @value=T; }
+         ];
+         @pathValues=;
+      }
+   ]
+
+To save space both in the file and in the internal representation, it is
+recommended that these attributes be defined with a default value of false
+and that explicit values be supplied only for nodes and links that have
+true values.
