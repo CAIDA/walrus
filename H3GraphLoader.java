@@ -37,10 +37,22 @@
 
 import java.io.*;
 import java.util.BitSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 import org.caida.libsea.*;
 
 public class H3GraphLoader
 {
+    ///////////////////////////////////////////////////////////////////////
+    // PUBLIC INTERFACES
+    ///////////////////////////////////////////////////////////////////////
+
+    public interface AttributeTypeMatcher
+    {
+	boolean match(ValueType type);
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // CONSTRUCTORS
     ////////////////////////////////////////////////////////////////////////
@@ -63,6 +75,42 @@ public class H3GraphLoader
 	retval.setRootNode(findSpanningTreeRootNode(graph, m_rootAttribute));
 	populateLinks(retval, graph, m_treeLinkAttribute);
 
+	return retval;
+    }
+
+    // Returns List<String>.
+    public List loadSpanningTreeQualifiers(Graph graph)
+    {
+	List retval = new ArrayList();
+
+	QualifierIterator iterator =
+	    graph.getQualifiersByType(SPANNING_TREE_QUALIFIER);
+	while (!iterator.atEnd())
+	{
+	    retval.add(iterator.getName());
+	    iterator.advance();
+	}
+
+	Collections.sort(retval);
+	return retval;
+    }
+
+    // Returns List<String>.
+    public List loadAttributes(Graph graph, AttributeTypeMatcher matcher)
+    {
+	List retval = new ArrayList();
+
+	AttributeDefinitionIterator iterator = graph.getAttributeDefinitions();
+	while (!iterator.atEnd())
+	{
+	    if (matcher.match(iterator.getType()))
+	    {
+		retval.add(iterator.getName());
+	    }
+	    iterator.advance();
+	}
+
+	Collections.sort(retval);
 	return retval;
     }
 
