@@ -259,6 +259,12 @@ public class H3Graph
 	return m_nodes.color[node];
     }
 
+    // Returns true iff all nodes are visible.
+    public boolean checkNodesVisible()
+    {
+	return m_nodes.isVisible.check();
+    }
+
     public boolean checkNodeVisible(int node)
     {
 	return m_nodes.isVisible.check(node);
@@ -299,6 +305,12 @@ public class H3Graph
     public boolean checkTreeLink(int link)
     {
 	return m_links.isTreeLink.get(link);
+    }
+
+    // Returns true iff all links are visible.
+    public boolean checkLinksVisible()
+    {
+	return m_links.isVisible.check();
     }
 
     public boolean checkLinkVisible(int link)
@@ -623,6 +635,13 @@ public class H3Graph
 	computeVisibility();
     }
 
+    public void widenSubtreeVisibility(int node)
+    {
+	setNodeDisplayability(node, true);
+	setSubtreeDisplayability(node, true);
+	computeVisibility();
+    }
+
     // Widen visibility to the first ancestor of the given node that
     // has more than one child--that is, to the closest branching point
     // in the path back to the root node.
@@ -644,10 +663,13 @@ public class H3Graph
 	    parent = getNodeParent(parent);
 	}
 
-	narrowVisibility(currentNode);
+	setSubtreeDisplayability(currentNode, true);
+	computeVisibility();
+
 	return currentNode;
     }
 
+    // Show all nodes and links, modified only by selectivity.
     public void widenVisibility()
     {
 	setNodeDisplayability(true);
@@ -870,6 +892,29 @@ public class H3Graph
 	    m_numNodes = numNodes;
 	}
 
+	public int count()
+	{
+	    int retval = m_numNodes;
+	    if (m_property != null)
+	    {
+		int length = m_property.length();
+		for (int i = 0; i < length; i++)
+		{
+		    if (m_property.get(i))
+		    {
+			--retval;
+		    }
+		}
+	    }
+	    return retval;
+	}
+
+	// Returns true iff all nodes are visible.
+	public boolean check()
+	{
+	    return (m_property == null || m_property.length() == 0);
+	}
+
 	public boolean check(int node)
 	{
 	    return (m_property == null || !m_property.get(node));
@@ -955,6 +1000,29 @@ public class H3Graph
 	{
 	    m_numLinks = numLinks;
 	    m_isTreeLink = isTreeLink;
+	}
+
+	public int count()
+	{
+	    int retval = m_numLinks;
+	    if (m_property != null)
+	    {
+		int length = m_property.length();
+		for (int i = 0; i < length; i++)
+		{
+		    if (m_property.get(i))
+		    {
+			--retval;
+		    }
+		}
+	    }
+	    return retval;
+	}
+
+	// Returns true iff all links are visible.
+	public boolean check()
+	{
+	    return (m_property == null || m_property.length() == 0);
 	}
 
 	public boolean check(int link)
@@ -1113,12 +1181,7 @@ public class H3Graph
 
     ////////////////////////////////////////////////////////////////////////
 
-    public void checkTreeReachability()
-    {
-	checkTreeReachability(0);
-    }
-
-    public void checkTreeReachability(int node)
+    public int checkTreeReachability(int node)
     {
 	BitSet visited = new BitSet();
 	int numReachable = checkReachability(visited, node);
@@ -1143,10 +1206,9 @@ public class H3Graph
 		    System.out.println("\t" + i);
 		}
 	    }
-
-	    dumpForTesting();
-	    dumpForTesting2();
 	}
+
+	return numReachable;
     }
 
     private int checkReachability(BitSet visited, int node)
@@ -1155,7 +1217,9 @@ public class H3Graph
 
 	if (visited.get(node))
 	{
-	    String msg = "ERROR: Encountered cycle in tree at node " + node;
+	    String msg = "ERROR: Encountered node " + node
+		+ " more than once in the spanning tree; there could be"
+		+ " cycles or parallel links.";
 	    System.out.println(msg);
 	    return 0;
 	}
