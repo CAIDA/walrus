@@ -76,6 +76,12 @@ public class H3Transform
 	t2.transform(pb);
 
 	/* calculate spherical coordinates (rho, phi, theta) of pb */
+
+	// Projection to affine coordinates is necessary so that we can
+	// directly reference the x, y, and z components in the following
+	// calculations.
+	pb.project(pb);
+
 	double rho = H3Math.vectorLength(pb);
 	double phi = Math.acos(pb.x / rho);
 	double theta = Math.atan2(pb.z, pb.y);
