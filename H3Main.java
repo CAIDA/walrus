@@ -42,6 +42,11 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.Observer;
 import java.util.Observable;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ListIterator;
 import javax.swing.*;
 import com.sun.j3d.utils.universe.*;
 import org.caida.libsea.*;
@@ -105,7 +110,6 @@ public class H3Main
 		    new ASCIIInputStreamReader(new FileInputStream(file));
 
 		Graph backingGraph = loadGraph(file, reader);
-		m_graph = new H3GraphLoader().load(backingGraph);
 
 		if (DEBUG_PRINT_LOAD_MEMORY) { m_memoryUsage.gatherAtPeak(); }
 		if (DEBUG_PRINT_LOAD_MEMORY)
@@ -114,9 +118,16 @@ public class H3Main
 		    m_memoryUsage.printUsage();
 		}
 
+		populateMenus(backingGraph);
+
 		m_file = file;
 		m_backingGraph = backingGraph;
 
+		m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
+		m_statusBar.setText(MSG_GRAPH_LOADED);
+		m_closeMenuItem.setEnabled(true);
+
+		/*
 		m_frame.getContentPane().remove(m_splashLabel);
 		m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
 		m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
@@ -125,6 +136,7 @@ public class H3Main
 		m_frame.validate();
 
 		startRendering();
+		*/
 	    }
 	    catch (FileNotFoundException e)
 	    {
@@ -133,6 +145,7 @@ public class H3Main
 		dialog.showMessageDialog(null, msg, "File Not Found",
 					 JOptionPane.ERROR_MESSAGE);
 	    }
+	    /*
 	    catch (H3GraphLoader.InvalidGraphDataException e)
 	    {
 		String msg = "Graph file lacks needed data: "
@@ -141,6 +154,7 @@ public class H3Main
 		dialog.showMessageDialog(null, msg, "Open Failed",
 					 JOptionPane.ERROR_MESSAGE);
 	    }
+	    */
 
 	    if (m_backingGraph == null)
 	    {
@@ -149,6 +163,13 @@ public class H3Main
 	}
 
 	System.out.println("Finished handleOpenFileRequest()");
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void populateMenus(Graph graph)
+    {
+
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -167,10 +188,32 @@ public class H3Main
 	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 	m_statusBar.setText(MSG_NO_GRAPH_LOADED);
 
-	// XXX: Clear menu items here.
+	m_spanningTreeMenu.removeAll();
+	m_nodeLabelFromAttributesMenu.removeAll();
 
 	m_frame.getContentPane().validate();
 	System.out.println("Finished handleCloseFileRequest()");
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleStartRenderingRequest()
+    {
+
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleStopRenderingRequest()
+    {
+
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private void handleUpdateRenderingRequest()
+    {
+
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -453,15 +496,49 @@ public class H3Main
 	m_fileMenu.addSeparator();
 	m_fileMenu.add(exitMenuItem);
 
+	// Create "Rendering" menu. ----------------------------------------
+
+	m_startMenuItem = new JMenuItem("Start");
+	m_startMenuItem.setEnabled(false);
+	m_startMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleStartRenderingRequest();
+		}
+	    });
+
+	m_stopMenuItem = new JMenuItem("Stop");
+	m_stopMenuItem.setEnabled(false);
+	m_stopMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleStopRenderingRequest();
+		}
+	    });
+
+	m_updateMenuItem = new JMenuItem("Update");
+	m_updateMenuItem.setEnabled(false);
+	m_updateMenuItem.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e)
+		{
+		    handleUpdateRenderingRequest();
+		}
+	    });
+
+	m_renderingMenu = new JMenu("Rendering");
+	m_renderingMenu.add(m_startMenuItem);
+	m_renderingMenu.add(m_stopMenuItem);
+	m_renderingMenu.add(m_updateMenuItem);
+
 	// Create "Spanning Tree" menu. ------------------------------------
 
 	m_spanningTreeMenu = new JMenu("Spanning Tree");
 
 	// Create "Color Scheme" menu. -------------------------------------
 
-	m_colorSchemeMenu = new JMenu("Color Scheme");
+	m_colorSchemeMenu = new ColorSchemeMenu();
 
-	// Create "Color Scheme" menu. -------------------------------------
+	// Create "Node Label" menu. -------------------------------------
 
 	m_nodeLabelMenu = new JMenu("Node Label");
 
@@ -469,8 +546,9 @@ public class H3Main
 
 	JMenuBar retval = new JMenuBar();
 	retval.add(m_fileMenu);
+	retval.add(m_renderingMenu);
 	retval.add(m_spanningTreeMenu);
-	retval.add(m_colorSchemeMenu);
+	retval.add(m_colorSchemeMenu.getColorSchemeMenu());
 	retval.add(m_nodeLabelMenu);
 	return retval;
     }
@@ -510,114 +588,19 @@ public class H3Main
     private JMenuItem m_saveWithLayoutMenuItem;
     private JMenuItem m_saveWithLayoutAsMenuItem;
     private JMenuItem m_closeMenuItem;
+
+    private JMenu m_renderingMenu;
+    private JMenuItem m_startMenuItem;
+    private JMenuItem m_stopMenuItem;
+    private JMenuItem m_updateMenuItem;
+
     private JMenu m_spanningTreeMenu;
-    private JMenu m_colorSchemeMenu;
+    private ColorSchemeMenu m_colorSchemeMenu;
     private JMenu m_nodeLabelMenu;
+    private JMenu m_nodeLabelFromAttributesMenu;
 
     ///////////////////////////////////////////////////////////////////////
     // PRIVATE CLASSES
-    ///////////////////////////////////////////////////////////////////////
-
-    private static class MemoryUsage
-    {
-	public MemoryUsage()
-	{
-	}
-
-	public void startGathering()
-	{
-	    System.gc();
-	    m_baseTotalMemory = Runtime.getRuntime().totalMemory();
-	    m_baseFreeMemory = Runtime.getRuntime().freeMemory();
-
-	    m_bufferTotalMemory = 0;
-	    m_bufferFreeMemory = 0;
-	    m_peakTotalMemory = 0;
-	    m_peakFreeMemory = 0;
-	    m_finalTotalMemory = 0;
-	    m_finalFreeMemory = 0;
-	}
-
-	public void gatherAfterBufferLoaded()
-	{
-	    System.gc();
-	    m_bufferTotalMemory = Runtime.getRuntime().totalMemory();
-	    m_bufferFreeMemory = Runtime.getRuntime().freeMemory();
-	}
-
-	public void gatherAtPeak()
-	{
-	    System.gc();
-	    m_peakTotalMemory = Runtime.getRuntime().totalMemory();
-	    m_peakFreeMemory = Runtime.getRuntime().freeMemory();
-	}
-
-	public void gatherAtFinal()
-	{
-	    System.gc();
-	    m_finalTotalMemory = Runtime.getRuntime().totalMemory();
-	    m_finalFreeMemory = Runtime.getRuntime().freeMemory();
-	}
-
-	public void printUsage()
-	{
-	    long baseUsed = m_baseTotalMemory - m_baseFreeMemory;
-	    long bufferUsed = m_bufferTotalMemory - m_bufferFreeMemory;
-	    long peakUsed = m_peakTotalMemory - m_peakFreeMemory;
-	    long finalUsed = m_finalTotalMemory - m_finalFreeMemory;
-
-	    System.out.println("===========================================");
-	    System.out.println("baseTotalMemory = " + M(m_baseTotalMemory));
-	    System.out.println("baseFreeMemory = " + M(m_baseFreeMemory));
-	    System.out.println("baseUsed = " + M(baseUsed));
-	    System.out.println("bufferTotalMemory = " +M(m_bufferTotalMemory));
-	    System.out.println("bufferFreeMemory = " + M(m_bufferFreeMemory));
-	    System.out.println("bufferUsed = " + M(bufferUsed));
-	    System.out.println("peakTotalMemory = " + M(m_peakTotalMemory));
-	    System.out.println("peakFreeMemory = " + M(m_peakFreeMemory));
-	    System.out.println("peakUsed = " + M(peakUsed));
-	    System.out.println("finalTotalMemory = " + M(m_finalTotalMemory));
-	    System.out.println("finalFreeMemory = " + M(m_finalFreeMemory));
-	    System.out.println("finalUsed = " + M(finalUsed));
-	    System.out.println();
-	    System.out.println("bufferUsed - baseUsed = "
-			       + M(bufferUsed - baseUsed));
-	    System.out.println("peakUsed - baseUsed = "
-			       + M(peakUsed - baseUsed));
-	    System.out.println("peakUsed - bufferUsed = "
-			       + M(peakUsed - bufferUsed));
-	    System.out.println("finalUsed - baseUsed = "
-			       + M(finalUsed - baseUsed));
-	    System.out.println("finalUsed - peakUsed = "
-			       + M(finalUsed - peakUsed));
-	    System.out.println("===========================================");
-	}
-
-	private String M(long n)
-	{
-	    long x = n / 100000;
-	    long mega = x / 10;
-	    long kilo = Math.abs(x % 10);
-	    return "" + n + " (" + mega + "." + kilo + "e6)";
-	}
-
-	// At start.
-	private long m_baseTotalMemory;
-	private long m_baseFreeMemory;
-
-	// After loading into graph buffer.
-	private long m_bufferTotalMemory;
-	private long m_bufferFreeMemory;
-
-	// After populating graph, but before freeing the graph buffer.
-	private long m_peakTotalMemory;  
-	private long m_peakFreeMemory;
-
-	// After freeing graph buffer, and leaving only graph.
-	private long m_finalTotalMemory;
-	private long m_finalFreeMemory;
-    }
-
     ///////////////////////////////////////////////////////////////////////
 
     private static class EventHandler
@@ -1009,5 +992,667 @@ public class H3Main
 
 	private H3ScreenCapturer m_capturer;
 	private H3NonadaptiveRenderLoop m_renderLoop;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class ColorSchemeMenu
+    {
+	public ColorSchemeMenu()
+	{
+	    createFixedColors();
+
+	    Map nodeMenuMap = new HashMap();
+	    m_nodeColorMenu = new JMenu("Node Color");
+	    m_nodeColorSelection = new ColorSelection
+		(m_nodeColorMenu, nodeMenuMap, m_fixedColors);
+
+	    Map treeLinkMenuMap = new HashMap();
+	    m_treeLinkColorMenu = new JMenu("Tree Link Color");
+	    m_treeLinkColorSelection = new ColorSelection
+		(m_treeLinkColorMenu, treeLinkMenuMap, m_fixedColors);
+
+	    Map nontreeLinkMenuMap = new HashMap();
+	    m_nontreeLinkColorMenu = new JMenu("Nontree Link Color");
+	    m_nontreeLinkColorSelection = new ColorSelection
+		(m_nontreeLinkColorMenu, nontreeLinkMenuMap, m_fixedColors);
+
+	    createPredefinedColorSchemes
+		(nodeMenuMap, treeLinkMenuMap, nontreeLinkMenuMap);
+	    {
+		m_predefinedColorSchemeMenu = new JMenu("Predefined");
+		ListIterator iterator =
+		    m_predefinedColorSchemes.listIterator();
+		while (iterator.hasNext())
+		{
+		    PredefinedColorScheme scheme =
+			(PredefinedColorScheme)iterator.next();
+		    JMenuItem menuItem = new JMenuItem(scheme.name);
+		    menuItem.addActionListener(scheme);
+		    m_predefinedColorSchemeMenu.add(menuItem);
+		}
+	    }
+
+	    m_colorSchemeMenu = new JMenu("Color Scheme");
+	    m_colorSchemeMenu.add(m_predefinedColorSchemeMenu);
+	    m_colorSchemeMenu.addSeparator();
+	    m_colorSchemeMenu.add(m_nodeColorMenu);
+	    m_colorSchemeMenu.add(m_treeLinkColorMenu);
+	    m_colorSchemeMenu.add(m_nontreeLinkColorMenu);
+	}
+
+	public JMenu getColorSchemeMenu()
+	{
+	    return m_colorSchemeMenu;
+	}
+
+	private void createPredefinedColorSchemes
+	    (Map nodeMenuMap, Map treeLinkMenuMap, Map nontreeLinkMenuMap)
+	{
+	    ColorSchemeMaker maker = new ColorSchemeMaker
+		(nodeMenuMap, treeLinkMenuMap, nontreeLinkMenuMap);
+	    m_predefinedColorSchemes = new ArrayList();
+	    m_predefinedColorSchemes.add
+		(maker.make("Yellow-Green", "Yellow", "Green", "Green"));
+	    m_predefinedColorSchemes.add
+		(maker.make("Yellow-Green/Invisible", "Yellow", "Green",
+			    ColorSelection.INVISIBLE));
+	    m_predefinedColorSchemes.add
+		(maker.make("Yellow-Green/Transparent", "Yellow", "Green",
+			    ColorSelection.TRANSPARENT));
+	    m_predefinedColorSchemes.add
+		(maker.make("Gold-Violet/Transparent", "Gold", "Violet",
+			    ColorSelection.TRANSPARENT));
+	    m_predefinedColorSchemes.add
+		(maker.make("Orange-Gold/Transparent", "Orange", "Gold",
+			    ColorSelection.TRANSPARENT));
+	    m_predefinedColorSchemes.add
+		(maker.make("Snow-Gold/Transparent", "Snow", "Gold",
+			    ColorSelection.TRANSPARENT));
+	    m_predefinedColorSchemes.add
+		(maker.make("Violet-Gold/Transparent", "Violet", "Gold",
+			    ColorSelection.TRANSPARENT));
+	}
+
+	private void createFixedColors()
+	{
+	    m_fixedColors = new ArrayList();
+	    m_fixedColors.add
+		(new FixedColor("Yellow", packRGB(255, 255, 0)));
+	    m_fixedColors.add
+		(new FixedColor("Green", packRGB(30, 150, 25)));
+	    m_fixedColors.add
+		(new FixedColor("Grey", packRGB(178, 178, 178)));
+	    m_fixedColors.add
+		(new FixedColor("Unknown 1", packRGB(30, 150, 25)));
+	    m_fixedColors.add
+		(new FixedColor("Unknown 3", packRGB(255, 48, 48)));
+	    m_fixedColors.add
+		(new FixedColor("Unknown 4", packRGB(255, 246, 143)));
+	    m_fixedColors.add
+		(new FixedColor("Green 2", packRGB(0, 139, 0)));
+	    m_fixedColors.add
+		(new FixedColor("Violet", packRGB(199, 21, 133)));
+	    m_fixedColors.add
+		(new FixedColor("Olive Green", packRGB(202, 255, 112)));
+	    m_fixedColors.add
+		(new FixedColor("Orange", packRGB(255, 140, 0)));
+	    m_fixedColors.add
+		(new FixedColor("Snow", packRGB(255, 225, 255)));
+	    m_fixedColors.add
+		(new FixedColor("Gold", packRGB(255, 215, 0)));
+	    m_fixedColors.add
+		(new FixedColor("Red", packRGB(255, 0, 0)));
+	}
+
+	private int packRGB(int r, int g, int b)
+	{
+	    return (r << 16) | (g << 8) | b;
+	}
+
+	private JMenu m_colorSchemeMenu;
+	private JMenu m_nodeColorMenu;
+	private JMenu m_treeLinkColorMenu;
+	private JMenu m_nontreeLinkColorMenu;
+	private JMenu m_predefinedColorSchemeMenu;
+
+	private ColorSelection m_nodeColorSelection;
+	private ColorSelection m_treeLinkColorSelection;
+	private ColorSelection m_nontreeLinkColorSelection;
+	private List m_fixedColors; // ArrayList<FixedColor>
+	// ArrayList<PredefinedColorScheme>
+	private List m_predefinedColorSchemes;
+
+	private class ColorSchemeMaker
+	{
+	    public ColorSchemeMaker
+		(Map nodeMenuMap, Map treeLinkMenuMap, Map nontreeLinkMenuMap)
+	    {
+		m_nodeMenuMap = nodeMenuMap;
+		m_treeLinkMenuMap = treeLinkMenuMap;
+		m_nontreeLinkMenuMap = nontreeLinkMenuMap;
+	    }
+
+	    public PredefinedColorScheme make
+		(String name, String nodeColor, String treeLinkColor,
+		 String nontreeLinkColor)
+	    {
+		JMenuItem nodeMenuItem = findColor(m_nodeMenuMap, nodeColor);
+		JMenuItem treeLinkMenuItem =
+		    findColor(m_treeLinkMenuMap, treeLinkColor);
+		JMenuItem nontreeLinkMenuItem =
+		    findColor(m_nontreeLinkMenuMap, nontreeLinkColor);
+
+		return new PredefinedColorScheme
+		    (name, nodeMenuItem, treeLinkMenuItem,
+		     nontreeLinkMenuItem);
+	    }
+
+	    private JMenuItem findColor(Map map, String color)
+	    {
+		JMenuItem retval = (JMenuItem)map.get(color);
+		if (retval == null)
+		{
+		    String msg = "INTERNAL ERROR: color[" + color
+			+ "] not found";
+		    throw new RuntimeException(msg);
+		}
+		return retval;
+	    }
+
+	    private Map m_nodeMenuMap;
+	    private Map m_treeLinkMenuMap;
+	    private Map m_nontreeLinkMenuMap;
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class ColorSelection
+    {
+	public static final String INVISIBLE = "Invisible";
+	public static final String TRANSPARENT = "Transparent";
+	public static final String HOT_TO_COLD = "Hot to Cold";
+	public static final String LOG_HOT_TO_COLD = "Logarithmic HtoC";
+	public static final String HUE = "Hue";
+	public static final String RGB = "RGB";
+
+	// List<FixedColor> fixedColors
+	public ColorSelection(JMenu menu, Map map, List fixedColors)
+	{
+	    m_invisibleMenuItem = new JRadioButtonMenuItem(INVISIBLE);
+	    m_invisibleMenuItem.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			handleInvisibleColorRequest();
+		    }
+		});
+
+	    m_transparentMenuItem = new JRadioButtonMenuItem(TRANSPARENT);
+	    m_transparentMenuItem.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			handleTransparentColorRequest();
+		    }
+		});
+
+	    m_hotToColdMenuItem = new JRadioButtonMenuItem(HOT_TO_COLD);
+	    m_hotToColdMenuItem.setEnabled(false);
+	    m_hotToColdMenuItem.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			handleHotToColdColorRequest();
+		    }
+		});
+
+	    m_logHotToColdMenuItem = new JRadioButtonMenuItem(LOG_HOT_TO_COLD);
+	    m_logHotToColdMenuItem.setEnabled(false);
+	    m_logHotToColdMenuItem.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			handleLogHotToColdColorRequest();
+		    }
+		});
+
+	    m_hueMenuItem = new JRadioButtonMenuItem(HUE);
+	    m_hueMenuItem.setEnabled(false);
+	    m_hueMenuItem.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			handleHueColorRequest();
+		    }
+		});
+
+	    m_RGBMenuItem = new JRadioButtonMenuItem(RGB);
+	    m_RGBMenuItem.setEnabled(false);
+	    m_RGBMenuItem.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e)
+		    {
+			handleRGBColorRequest();
+		    }
+		});
+
+	    m_colorAttributeMenu = new JMenu("Color Attribute");
+	    m_colorAttributeMenu.setEnabled(false);
+
+	    m_selectiveVisibilityMenuItem =
+		new JCheckBoxMenuItem("Selective Visibility");
+	    m_selectiveVisibilityMenuItem.setEnabled(false);
+
+	    m_selectionAttributeMenu = new JMenu("Selection Attribute");
+	    m_selectionAttributeMenu.setEnabled(false);
+
+	    m_colorSchemeButtonGroup = new ButtonGroup();
+	    m_colorSchemeButtonGroup.add(m_invisibleMenuItem);
+	    m_colorSchemeButtonGroup.add(m_transparentMenuItem);
+	    m_colorSchemeButtonGroup.add(m_hotToColdMenuItem);
+	    m_colorSchemeButtonGroup.add(m_logHotToColdMenuItem);
+	    m_colorSchemeButtonGroup.add(m_hueMenuItem);
+	    m_colorSchemeButtonGroup.add(m_RGBMenuItem);
+
+	    putChecked(map, INVISIBLE, m_invisibleMenuItem);
+	    putChecked(map, TRANSPARENT, m_transparentMenuItem);
+	    putChecked(map, HOT_TO_COLD, m_hotToColdMenuItem);
+	    putChecked(map, LOG_HOT_TO_COLD, m_logHotToColdMenuItem);
+	    putChecked(map, HUE, m_hueMenuItem);
+	    putChecked(map, RGB, m_RGBMenuItem);
+
+	    menu.add(m_invisibleMenuItem);
+	    menu.add(m_transparentMenuItem);
+	    menu.addSeparator();
+	    {
+		int numFixedColors = fixedColors.size();
+		m_fixedColors = new int[numFixedColors];
+		m_fixedColorMenuItems =
+		    new JRadioButtonMenuItem[numFixedColors];
+
+		int index = 0;
+		ListIterator iterator = fixedColors.listIterator();
+		while (iterator.hasNext())
+		{
+		    FixedColor fixedColor = (FixedColor)iterator.next();
+		    JRadioButtonMenuItem menuItem =
+			new JRadioButtonMenuItem(fixedColor.name);
+		    menuItem.addActionListener(new FixedColorListener(index));
+
+		    putChecked(map, fixedColor.name, menuItem);
+		    m_colorSchemeButtonGroup.add(menuItem);
+		    menu.add(menuItem);
+
+		    m_fixedColors[index] = fixedColor.color;
+		    m_fixedColorMenuItems[index] = menuItem;
+
+		    ++index;
+		}
+	    }
+	    menu.addSeparator();
+	    menu.add(m_hotToColdMenuItem);
+	    menu.add(m_logHotToColdMenuItem);
+	    menu.add(m_hueMenuItem);
+	    menu.add(m_RGBMenuItem);
+	    menu.add(m_colorAttributeMenu);
+	    menu.addSeparator();
+	    menu.add(m_selectiveVisibilityMenuItem);
+	    menu.add(m_selectionAttributeMenu);
+
+	    m_invisibleMenuItem.setSelected(true);
+	}
+
+	public void colorGraph(H3Graph graph, Graph backingGraph,
+			       H3ViewParameters parameters)
+	{
+
+	}
+
+	// List<String> attributes
+	//
+	// NOTE: If {attributes} is empty, then this removes all attributes,
+	//       and makes m_invisibleMenuItem the current selection.
+	public void setColorAttributes(List attributes)
+	{
+	    if (attributes.size() == 0)
+	    {
+		removeColorAttributes();
+	    }
+	    else
+	    {
+		m_colorAttributeButtonGroup = new ButtonGroup();
+
+		ListIterator iterator = attributes.listIterator();
+		while (iterator.hasNext())
+		{
+		    String name = (String)iterator.next();
+		    JRadioButtonMenuItem menuItem =
+			new JRadioButtonMenuItem(name);
+		    m_colorAttributeButtonGroup.add(menuItem);
+		    m_colorAttributeMenu.add(menuItem);
+		}
+		m_colorAttributeMenu.getItem(0).setSelected(true);
+
+		setColorAttributesRelatedEnabled(true);
+	    }
+	}
+
+	// List<String> attributes
+	public void setSelectionAttributes(List attributes)
+	{
+	    if (attributes.size() == 0)
+	    {
+		removeSelectionAttributes();
+	    }
+	    else
+	    {
+		m_selectionAttributeButtonGroup = new ButtonGroup();
+
+		ListIterator iterator = attributes.listIterator();
+		while (iterator.hasNext())
+		{
+		    String name = (String)iterator.next();
+		    JRadioButtonMenuItem menuItem =
+			new JRadioButtonMenuItem(name);
+		    m_selectionAttributeButtonGroup.add(menuItem);
+		    m_selectionAttributeMenu.add(menuItem);
+		}
+		m_selectionAttributeMenu.getItem(0).setSelected(true);
+
+		setSelectionAttributesRelatedEnabled(true);
+	    }
+	}
+
+	// NOTE: This makes m_invisibleMenuItem the current selection.
+	public void removeColorAttributes()
+	{
+	    m_invisibleMenuItem.setSelected(true);
+	    setColorAttributesRelatedEnabled(false);
+
+	    m_colorAttributeMenu.removeAll();
+	    m_colorAttributeButtonGroup = null;
+	}
+
+	public void removeSelectionAttributes()
+	{
+	    setSelectionAttributesRelatedEnabled(false);
+
+	    // Clear selected status so that the user is not surprised
+	    // when selective visibility is re-enabled (when selection
+	    // attributes are added).
+	    m_selectiveVisibilityMenuItem.setSelected(false);
+
+	    m_selectionAttributeMenu.removeAll();
+	    m_selectionAttributeButtonGroup = null;
+	}
+
+	private void handleInvisibleColorRequest()
+	{
+	    setupForMinimalColorChoice();
+	}
+
+	private void handleTransparentColorRequest()
+	{
+	    setupForMinimalColorChoice();
+	}
+
+	private void handleHotToColdColorRequest()
+	{
+	    setupForArbitraryColorChoice();
+	}
+
+	private void handleLogHotToColdColorRequest()
+	{
+	    setupForArbitraryColorChoice();
+	}
+
+	private void handleHueColorRequest()
+	{
+	    setupForArbitraryColorChoice();
+	}
+
+	private void handleRGBColorRequest()
+	{
+	    setupForArbitraryColorChoice();
+	}
+
+	private void handleFixedColorRequest(int index)
+	{
+	    setupForFixedColorChoice();
+	}
+
+	private void setupForMinimalColorChoice()
+	{
+	    m_colorAttributeMenu.setEnabled(false);
+	    m_selectiveVisibilityMenuItem.setEnabled(false);
+	    m_selectionAttributeMenu.setEnabled(false);
+	}
+
+	private void setupForFixedColorChoice()
+	{
+	    m_colorAttributeMenu.setEnabled(false);
+
+	    if (m_selectionAttributeMenu.getItemCount() > 0)
+	    {
+		m_selectiveVisibilityMenuItem.setEnabled(true);
+		boolean isSelected =
+		    m_selectiveVisibilityMenuItem.isSelected();
+		m_selectionAttributeMenu.setEnabled(isSelected);
+	    }
+	}
+
+	private void setupForArbitraryColorChoice()
+	{
+	    m_colorAttributeMenu.setEnabled(true);
+
+	    if (m_selectionAttributeMenu.getItemCount() > 0)
+	    {
+		m_selectiveVisibilityMenuItem.setEnabled(true);
+		boolean isSelected =
+		    m_selectiveVisibilityMenuItem.isSelected();
+		m_selectionAttributeMenu.setEnabled(isSelected);
+	    }
+	}
+
+	private void setColorAttributesRelatedEnabled(boolean value)
+	{
+	    m_hotToColdMenuItem.setEnabled(value);
+	    m_logHotToColdMenuItem.setEnabled(value);
+	    m_hueMenuItem.setEnabled(value);
+	    m_RGBMenuItem.setEnabled(value);
+	    m_colorAttributeMenu.setEnabled(value);
+	}
+
+	private void setSelectionAttributesRelatedEnabled(boolean value)
+	{
+	    m_selectiveVisibilityMenuItem.setEnabled(value);
+
+	    // Show menu only if selective visibility is enabled and selected.
+	    boolean enableMenu =
+		value && m_selectiveVisibilityMenuItem.isSelected();
+	    m_selectionAttributeMenu.setEnabled(enableMenu);
+	}
+
+	private void putChecked(Map map, String name, Object data)
+	{
+	    if (map.put(name, data) != null)
+	    {
+		String msg = "INTERNAL ERROR: mapping already exists for `"
+		    + name + "'";
+		throw new RuntimeException(msg);
+	    }
+	}
+
+	private ButtonGroup m_colorSchemeButtonGroup;
+	private ButtonGroup m_colorAttributeButtonGroup;
+	private ButtonGroup m_selectionAttributeButtonGroup;
+	private JRadioButtonMenuItem m_invisibleMenuItem;
+	private JRadioButtonMenuItem m_transparentMenuItem;
+	private JRadioButtonMenuItem m_hotToColdMenuItem;
+	private JRadioButtonMenuItem m_logHotToColdMenuItem;
+	private JRadioButtonMenuItem m_hueMenuItem;
+	private JRadioButtonMenuItem m_RGBMenuItem;
+	private JMenu m_colorAttributeMenu;
+	private JCheckBoxMenuItem m_selectiveVisibilityMenuItem;
+	private JMenu m_selectionAttributeMenu;
+
+	private int[] m_fixedColors;
+	private JRadioButtonMenuItem[] m_fixedColorMenuItems;
+
+	private class FixedColorListener
+	    implements ActionListener
+	{
+	    public FixedColorListener(int index)
+	    {
+		m_index = index;
+	    }
+
+	    public void actionPerformed(ActionEvent e)
+	    {
+		handleFixedColorRequest(m_index);
+	    }
+
+	    private int m_index;
+	}
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class PredefinedColorScheme
+	implements ActionListener
+    {
+	public PredefinedColorScheme(String name, JMenuItem nodeMenuItem,
+				     JMenuItem treeLinkMenuItem,
+				     JMenuItem nontreeLinkMenuItem)
+	{
+	    this.name = name;
+	    this.nodeMenuItem = nodeMenuItem;
+	    this.treeLinkMenuItem = treeLinkMenuItem;
+	    this.nontreeLinkMenuItem = nontreeLinkMenuItem;
+	}
+
+	public void actionPerformed(ActionEvent e)
+	{
+	    nodeMenuItem.doClick();
+	    treeLinkMenuItem.doClick();
+	    nontreeLinkMenuItem.doClick();
+	}
+
+	public String name;
+	public JMenuItem nodeMenuItem;
+	public JMenuItem treeLinkMenuItem;
+	public JMenuItem nontreeLinkMenuItem;
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class FixedColor
+    {
+	public FixedColor(String name, int color)
+	{
+	    this.name = name;
+	    this.color = color;
+	}
+
+	public String name;
+	public int color;   // packed RGB
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private static class MemoryUsage
+    {
+	public MemoryUsage()
+	{
+	}
+
+	public void startGathering()
+	{
+	    System.gc();
+	    m_baseTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_baseFreeMemory = Runtime.getRuntime().freeMemory();
+
+	    m_bufferTotalMemory = 0;
+	    m_bufferFreeMemory = 0;
+	    m_peakTotalMemory = 0;
+	    m_peakFreeMemory = 0;
+	    m_finalTotalMemory = 0;
+	    m_finalFreeMemory = 0;
+	}
+
+	public void gatherAfterBufferLoaded()
+	{
+	    System.gc();
+	    m_bufferTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_bufferFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
+	public void gatherAtPeak()
+	{
+	    System.gc();
+	    m_peakTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_peakFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
+	public void gatherAtFinal()
+	{
+	    System.gc();
+	    m_finalTotalMemory = Runtime.getRuntime().totalMemory();
+	    m_finalFreeMemory = Runtime.getRuntime().freeMemory();
+	}
+
+	public void printUsage()
+	{
+	    long baseUsed = m_baseTotalMemory - m_baseFreeMemory;
+	    long bufferUsed = m_bufferTotalMemory - m_bufferFreeMemory;
+	    long peakUsed = m_peakTotalMemory - m_peakFreeMemory;
+	    long finalUsed = m_finalTotalMemory - m_finalFreeMemory;
+
+	    System.out.println("===========================================");
+	    System.out.println("baseTotalMemory = " + M(m_baseTotalMemory));
+	    System.out.println("baseFreeMemory = " + M(m_baseFreeMemory));
+	    System.out.println("baseUsed = " + M(baseUsed));
+	    System.out.println("bufferTotalMemory = " +M(m_bufferTotalMemory));
+	    System.out.println("bufferFreeMemory = " + M(m_bufferFreeMemory));
+	    System.out.println("bufferUsed = " + M(bufferUsed));
+	    System.out.println("peakTotalMemory = " + M(m_peakTotalMemory));
+	    System.out.println("peakFreeMemory = " + M(m_peakFreeMemory));
+	    System.out.println("peakUsed = " + M(peakUsed));
+	    System.out.println("finalTotalMemory = " + M(m_finalTotalMemory));
+	    System.out.println("finalFreeMemory = " + M(m_finalFreeMemory));
+	    System.out.println("finalUsed = " + M(finalUsed));
+	    System.out.println();
+	    System.out.println("bufferUsed - baseUsed = "
+			       + M(bufferUsed - baseUsed));
+	    System.out.println("peakUsed - baseUsed = "
+			       + M(peakUsed - baseUsed));
+	    System.out.println("peakUsed - bufferUsed = "
+			       + M(peakUsed - bufferUsed));
+	    System.out.println("finalUsed - baseUsed = "
+			       + M(finalUsed - baseUsed));
+	    System.out.println("finalUsed - peakUsed = "
+			       + M(finalUsed - peakUsed));
+	    System.out.println("===========================================");
+	}
+
+	private String M(long n)
+	{
+	    long x = n / 100000;
+	    long mega = x / 10;
+	    long kilo = Math.abs(x % 10);
+	    return "" + n + " (" + mega + "." + kilo + "e6)";
+	}
+
+	// At start.
+	private long m_baseTotalMemory;
+	private long m_baseFreeMemory;
+
+	// After loading into graph buffer.
+	private long m_bufferTotalMemory;
+	private long m_bufferFreeMemory;
+
+	// After populating graph, but before freeing the graph buffer.
+	private long m_peakTotalMemory;  
+	private long m_peakFreeMemory;
+
+	// After freeing graph buffer, and leaving only graph.
+	private long m_finalTotalMemory;
+	private long m_finalFreeMemory;
     }
 }
