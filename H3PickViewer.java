@@ -46,6 +46,7 @@ public class H3PickViewer
 	createCircle(radius);
     }
 
+    // (x, y) in image-plate coordinates
     public void draw(GraphicsContext3D gc, double x, double y)
     {
 	Vector3d t = new Vector3d(x, y, 0.0);
