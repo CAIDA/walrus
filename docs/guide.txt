@@ -351,10 +351,10 @@ aspects of the LibSea file format (explanations that should help the
 user get up to speed quickly) and describes the conventions employed
 by Walrus.
 
-To aid understanding, the discussion in this section refer to the following
-graph, which is 'samples/simple.graph' slightly modified and with lines
-numbered.  Note: The '#' character introduces one-line comments that are
-ignored by the parser.  Similarly, text of the form '@....=' are inline
+To aid understanding, the discussion in this section make references to the
+following graph, which is 'samples/simple.graph' slightly modified and with
+lines numbered.  Note: The '#' character introduces one-line comments that
+are ignored by the parser.  Similarly, text of the form '@....=' are inline
 comments that have no significance; they are somewhat analogous to
 C/C++/Java comments of the form /* ... */.
 
@@ -462,22 +462,29 @@ total number of nodes, links, and paths in the file, and the total number
 of links in all paths.  Note that Walrus does not currently support paths.
 
 Nodes, links, and paths have an implicitly assigned ID or index which is
-used to connect together instances of objects in the file (such as between
-a link and its endpoints).  The ID's range from 0 to one minus the count
-without gaps.  So in the sample graph, nodes have ID's 0, 1, ..., 14; links
-have ID's 0, 1, ..., 16; and so on.  The ID is assigned in the order of
-textual appearance in the file.
+used to connect together the objects in a file, such as between a link and
+its endpoints.  The ID's of the different object types (such as nodes and
+links) range independently from 0 to their maximum.  Specifically, the ID's
+range, without gaps, from 0 to object_count - 1, where object_count is the
+total number of objects of a particular type included in a file.  So in the
+sample graph, nodes have ID's 0, 1, ..., 14; links have ID's 0, 1, ..., 16;
+and so on.  ID's are assigned according to the order in which objects
+appear in a file.  That is, the link that appears first textually is
+assigned an ID of 0, the link that appears next is assigned 1, and so on
+with the remainder of the links and with the other object types.
 
-However, because nodes, unlike other objects, are not defined in a file in
-any way, a graph file doesn't actually contain any information about the
-ultimate correspondence between nodes and ID's.  In contrast, a simple
-examination of the file will yield the correspondence between links and
-their ID's.  The creator of the graph file must instead choose some
-ordering of the nodes and use this ordering consistently whenever data
-about nodes is written to the file, such as when specifying the endpoints
-of links or when associating attribute values to nodes.
+However, because nodes, unlike other objects, are not explicitly defined in
+a graph file, no information is actually stored, or available, about the
+ultimate correspondence between nodes and ID's (that is, because
+information about nodes does not appear in a file, "textual order" has no
+meaning).  In contrast, a simple examination of a file will yield the
+correspondence between links and their ID's.  The important implication is
+that the creator of a graph file must choose some arbitrary ordering of the
+nodes and use this ordering consistently whenever data about nodes is
+written to the file, such as when specifying the endpoints of links or when
+associating attribute values to nodes.
 
-The following example should clarify the point about node ID's.  Suppose
+The following example should clarify this point about node ID's.  Suppose
 you have three nodes A, B, and C, with links from A to B and from A to C.
 Suppose further that you have a node attribute called 'size', with A having
 the value 123, B having 456, and C having 789.  Now, for the purposes of
@@ -485,9 +492,10 @@ creating a graph file, you might make the arbitrary ordering A(=0), B(=1),
 C(=2).  The only requirement on the ordering is that it start at zero and
 increase without gap until all nodes are accounted for.
 
-This assignment--A to 0, B to 1, and C to 2--is not explicitly recorded
-in the file.  Instead, the ordering determines how other data is written
-out.  For example, the links would be specified as
+This assignment--A to 0, B to 1, and C to 2--is not explicitly recorded in
+the file.  However, the chosen ordering affects the contents of the file.
+For example, with this particular ordering of nodes, the links would be
+specified as
 
      ...
    @links=[
@@ -514,9 +522,9 @@ And the 'size' attribute would be specified as
       },
      ...
 
-The example shows that node ID's are really assigned by the creator of
-the graph whereas the ID's of links (and other objects) are implicitly
-determined by their order of appearance in a file.
+This example should reinforce the idea that node ID's are really assigned
+by the creator of the graph whereas the ID's of links (and other objects)
+are implicitly determined by their order of appearance in a file.
 
 
 ---------------------------------------------------------------------------
@@ -525,20 +533,20 @@ Structural Data
 
 Links in LibSea are always directed and are specified by listing the ID's
 of the source and destination nodes, as on lines 13 to 29.  The first pair
-of nodes on line 13 is assigned link ID 0, the second pair on line 14 is ID
+of nodes on line 13 is assigned link ID 0, the second pair on line 14 has ID
 1, and so on.  There is only a single list which includes all links,
 whether tree link or nontree link.  The distinction between tree and nontree
-links is made instead with attributes.
+links is made instead with attributes (see below).
 
 
 ---------------------------------------------------------------------------
 Attributes
 ---------------------------------------------------------------------------
 
-Attributes are the means by which data can be associated with nodes, links,
-or paths.  A file may contain any number of attributes, and each attribute
-may be one of eight basic types.  The scalar types are boolean, integer,
-float, double, string, triples of floats ('float3'), triples of doubles
+Attributes are the means by which data is associated with nodes, links, or
+paths.  A file may contain any number of attributes, and each attribute may
+be one of eight basic types.  The scalar types are boolean, integer, float,
+double, string, triples of floats ('float3'), triples of doubles
 ('double3'), and enumerations.  The remaining supported types are lists of
 each scalar type.  Lists of lists are not supported, and each list must
 contain elements of a single type.
