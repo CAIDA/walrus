@@ -148,6 +148,13 @@ Node Label
 MOUSE CONTROLS
 ===========================================================================
 
+Most interactions are carried out with the mouse, either alone or in
+combination with the shift or control key.  It is hoped that future
+versions of Walrus will have an improved interaction model that employs
+menus and keyboard commands for many of the tasks currently carried out
+with a mouse.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Summary of Mouse Controls:
 
   modifier  button  meaning
@@ -166,6 +173,7 @@ Summary of Mouse Controls:
   control     M     click to bring root node to origin
 
    shift      R     click to begin recording movements for playback
+              M     click to abandon an ongoing recording of movements
    shift      R     click to stop recording and replay movements
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -235,3 +243,10 @@ control M:
     center of the display.  This is a good way to start over if you ever
     get lost.
 
+shift R:
+    Click anywhere to start or stop recording all movements for later
+    playback.  All intervening rotations, translations of nodes to the
+    center, and wobblings are recorded, although the human pauses between
+    the movements are not.  The recorded movements are played back once
+    immediately after the second 'shift R'.  Click anywhere with the middle
+    mouse button to abandon an ongoing recording.
