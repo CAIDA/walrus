@@ -2170,22 +2170,6 @@ public class H3Main
 	    m_canvas.addMouseListener(this);
 	    m_canvas.addMouseMotionListener(this);
 
-	    // This is a tradeoff between seeing flicker and having to
-	    // manually refresh the display in some cases.  There's some
-	    // problem deep in Java3D which makes a satisfactory solution
-	    // impossible.
-	    m_automaticRefresh = automaticRefresh;
-	    if (automaticRefresh)
-	    {
-		m_canvas.addPaintObserver(m_paintObserver);
-	    }
-	    else
-	    {
-		// Resize events are generated during the initial layout
-		// and when the enclosing frame is resized.
-		m_canvas.addComponentListener(m_resizeListener);
-	    }
-
 	    m_renderLoop = renderLoop;
 	    m_narrowingHandler = narrowingHandler;
 	    m_rootNode = rootNode;
@@ -2200,6 +2184,20 @@ public class H3Main
 	    m_onScreenLabels = onScreenLabels;
 	    m_labelConstructor =
 		new NodeLabelConstructor(backingGraph, nodeLabelAttributes);
+
+	    // This is a tradeoff between seeing flicker and having to
+	    // manually refresh the display in some cases.  There's some
+	    // problem deep in Java3D which makes a satisfactory solution
+	    // impossible.
+	    m_automaticRefresh = automaticRefresh;
+	    if (automaticRefresh)
+	    {
+		m_canvas.addPaintObserver(m_paintObserver);
+	    }
+
+	    // Resize events are generated during the initial layout
+	    // and when the enclosing frame is resized.
+	    m_canvas.addComponentListener(m_resizeListener);
 	}
 
 	public void dispose()
@@ -2212,10 +2210,8 @@ public class H3Main
 	    {
 		m_canvas.removePaintObserver(m_paintObserver);
 	    }
-	    else
-	    {
-		m_canvas.removeComponentListener(m_resizeListener);
-	    }
+
+	    m_canvas.removeComponentListener(m_resizeListener);
 	}
 
 	public int getCurrentNode()
@@ -3051,7 +3047,7 @@ public class H3Main
 		if (m_state == STATE_IDLE
 		    || m_state == STATE_ROTATING_INTERACTIVE_START)
 		{
-		    m_renderLoop.refreshDisplay();
+		    m_renderLoop.resizeDisplay();
 		}
 	    }
 	}
