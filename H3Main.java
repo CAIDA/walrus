@@ -124,6 +124,7 @@ public class H3Main
 		    populateMenus(backingGraph);
 
 		    m_backingGraph = backingGraph;
+		    m_viewParameters.resetObjectTransform();
 
 		    m_frame.setTitle(WALRUS_TITLE + " -- " + file.getPath());
 		    m_statusBar.setText(MSG_GRAPH_LOADED);
@@ -167,7 +168,8 @@ public class H3Main
 	}
 
 	retval.isAdaptive = m_adaptiveMenuItem.isSelected();
-	retval.hasMultipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
+	retval.useMultipleNodeSizes = m_multipleNodeSizesMenuItem.isSelected();
+	retval.supportScreenCapture = m_screenCaptureMenuItem.isSelected();
 	retval.nodeColor =
 	    m_colorSchemeMenu.createNodeColorConfigurationSnapshot();
 	retval.treeLinkColor =
@@ -223,6 +225,7 @@ public class H3Main
 	m_renderingConfiguration = null;
 	m_backingGraph = null;
 	m_graph = null;
+	m_displayPosition = null;
 	if (m_renderLoop != null)
 	{
 	    stopRendering();
@@ -275,6 +278,7 @@ public class H3Main
 		|| !renderingConfiguration.spanningTree.equals
 		(m_renderingConfiguration.spanningTree))
 	    {
+		m_displayPosition = null;
 		m_graph = m_graphLoader.load
 		    (m_backingGraph, renderingConfiguration.spanningTree);
 
@@ -282,6 +286,30 @@ public class H3Main
 		layout.layoutHyperbolic(m_graph);
 
 		System.out.println("Finished graph layout.");
+
+		colorNodes(renderingConfiguration.nodeColor);
+		colorTreeLinks(renderingConfiguration.treeLinkColor);
+		colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+	    }
+	    else
+	    {
+		if (!renderingConfiguration.nodeColor
+		    .equalColoring(m_renderingConfiguration.nodeColor))
+		{
+		    colorNodes(renderingConfiguration.nodeColor);
+		}
+
+		if (!renderingConfiguration.treeLinkColor
+		    .equalColoring(m_renderingConfiguration.treeLinkColor))
+		{
+		    colorTreeLinks(renderingConfiguration.treeLinkColor);
+		}
+
+		if (!renderingConfiguration.nontreeLinkColor
+		    .equalColoring(m_renderingConfiguration.nontreeLinkColor))
+		{
+		    colorNontreeLinks(renderingConfiguration.nontreeLinkColor);
+		}
 	    }
 
 	    m_renderingConfiguration = renderingConfiguration;
@@ -294,7 +322,7 @@ public class H3Main
 	    m_frame.getContentPane().add(m_canvas, BorderLayout.CENTER);
 	    m_frame.validate();
 
-	    startRendering();
+	    startRendering(renderingConfiguration);
 	}
 	catch (H3GraphLoader.InvalidGraphDataException e)
 	{
@@ -307,12 +335,182 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
+    private void colorNodes(ColorConfiguration configuration)
+    {
+	switch (configuration.scheme)
+	{
+	case ColorConfiguration.INVISIBLE:
+	    // No explicit coloring needed.
+	    // startRendering() will take care of setting things up.
+	    break;
+
+	case ColorConfiguration.TRANSPARENT:
+	    {
+		TransparencyAttributes attributes =
+		    m_viewParameters.getTransparencyAttributes();
+
+		m_viewParameters.getNodeAppearance()
+		    .setTransparencyAttributes(attributes);
+		m_viewParameters.getNearNodeAppearance()
+		    .setTransparencyAttributes(attributes);
+		m_viewParameters.getMiddleNodeAppearance()
+		    .setTransparencyAttributes(attributes);
+		m_viewParameters.getFarNodeAppearance()
+		    .setTransparencyAttributes(attributes);
+	    }
+	    break;
+
+	case ColorConfiguration.FIXED_COLOR:
+	    {
+		Appearance nodeAppearance =
+		    m_viewParameters.getNodeAppearance();
+		Appearance nearNodeAppearance =
+		    m_viewParameters.getNearNodeAppearance();
+		Appearance middleNodeAppearance =
+		    m_viewParameters.getMiddleNodeAppearance();
+		Appearance farNodeAppearance =
+		    m_viewParameters.getFarNodeAppearance();
+
+		nodeAppearance.setTransparencyAttributes(null);
+		nearNodeAppearance.setTransparencyAttributes(null);
+		middleNodeAppearance.setTransparencyAttributes(null);
+		farNodeAppearance.setTransparencyAttributes(null);
+
+		ColoringAttributes attributes =
+		    makeColoringAttributes(configuration.fixedColor);
+		nodeAppearance.setColoringAttributes(attributes);
+		nearNodeAppearance.setColoringAttributes(attributes);
+		middleNodeAppearance.setColoringAttributes(attributes);
+		farNodeAppearance.setColoringAttributes(attributes);
+	    }	    
+	    break;
+
+	case ColorConfiguration.HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.LOG_HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.HUE:
+	    break;
+
+	case ColorConfiguration.RGB:
+	    break;
+
+	default: throw new RuntimeException();
+	}
+    }
+
+    private void colorTreeLinks(ColorConfiguration configuration)
+    {
+	switch (configuration.scheme)
+	{
+	case ColorConfiguration.INVISIBLE:
+	    // No explicit coloring needed.
+	    // startRendering() will take care of setting things up.
+	    break;
+
+	case ColorConfiguration.TRANSPARENT:
+	    {
+		TransparencyAttributes attributes =
+		    m_viewParameters.getTransparencyAttributes();
+
+		m_viewParameters.getTreeLinkAppearance()
+		    .setTransparencyAttributes(attributes);
+	    }
+	    break;
+
+	case ColorConfiguration.FIXED_COLOR:
+	    {
+		Appearance appearance =
+		    m_viewParameters.getTreeLinkAppearance();
+		ColoringAttributes attributes =
+		    makeColoringAttributes(configuration.fixedColor);
+		appearance.setColoringAttributes(attributes);
+		appearance.setTransparencyAttributes(null);
+	    }	    
+	    break;
+
+	case ColorConfiguration.HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.LOG_HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.HUE:
+	    break;
+
+	case ColorConfiguration.RGB:
+	    break;
+
+	default: throw new RuntimeException();
+	}
+    }
+
+    private void colorNontreeLinks(ColorConfiguration configuration)
+    {
+	switch (configuration.scheme)
+	{
+	case ColorConfiguration.INVISIBLE:
+	    // No explicit coloring needed.
+	    // startRendering() will take care of setting things up.
+	    break;
+
+	case ColorConfiguration.TRANSPARENT:
+	    {
+		TransparencyAttributes attributes =
+		    m_viewParameters.getTransparencyAttributes();
+
+		m_viewParameters.getNontreeLinkAppearance()
+		    .setTransparencyAttributes(attributes);
+	    }
+	    break;
+
+	case ColorConfiguration.FIXED_COLOR:
+	    {
+		Appearance appearance =
+		    m_viewParameters.getNontreeLinkAppearance();
+		ColoringAttributes attributes =
+		    makeColoringAttributes(configuration.fixedColor);
+		appearance.setColoringAttributes(attributes);
+		appearance.setTransparencyAttributes(null);
+	    }	    
+	    break;
+
+	case ColorConfiguration.HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.LOG_HOT_TO_COLD:
+	    break;
+
+	case ColorConfiguration.HUE:
+	    break;
+
+	case ColorConfiguration.RGB:
+	    break;
+
+	default: throw new RuntimeException();
+	}
+    }
+
+    private ColoringAttributes makeColoringAttributes(int color)
+    {
+	int r = (color >> 16) & 0xFF;
+	int g = (color >> 8) & 0xFF;
+	int b = color & 0xFF;
+	return new ColoringAttributes(r / 255.0f, g / 255.0f, b / 255.0f,
+				      ColoringAttributes.FASTEST);
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
     private void handleStopRenderingRequest()
     {
 	m_frame.getContentPane().remove(m_canvas);
 	m_frame.getContentPane().add(m_splashLabel, BorderLayout.CENTER);
 	m_frame.validate();
 
+	m_displayPosition = m_renderLoop.getDisplayPosition();
 	stopRendering();
 
 	m_startMenuItem.setEnabled(true);
@@ -331,35 +529,31 @@ public class H3Main
 
     ///////////////////////////////////////////////////////////////////////
 
-    private void startRendering()
+    private void startRendering(RenderingConfiguration renderingConfiguration)
     {
-	final boolean ENABLE_ADAPTIVE_DRAWING = true;
-	final boolean PROCESS_NONTREE_LINKS = false;
-	final boolean ENABLE_SCREEN_CAPTURE = false;
-
 	System.out.println("numNodes = " + m_graph.getNumNodes());
 	System.out.println("numTreeLinks = " + m_graph.getNumTreeLinks());
-	System.out.println("numNontreeLinks = " + m_graph.getNumNontreeLinks());
-
-	//dumpOutdegreeHistogram(m_graph);
-
-	H3ViewParameters parameters = new H3ViewParameters(m_canvas);
+	System.out.println("numNontreeLinks = " +m_graph.getNumNontreeLinks());
 
 	H3ScreenCapturer capturer = null;
-	if (ENABLE_SCREEN_CAPTURE)
+	if (renderingConfiguration.supportScreenCapture)
 	{
 	    capturer = new H3ScreenCapturer();
 	}
 
 	CapturingManager manager = new NullCapturingManager();
 
-	if (ENABLE_ADAPTIVE_DRAWING)
+	if (renderingConfiguration.isAdaptive)
 	{
 	    int queueSize = m_graph.getNumNodes() + m_graph.getTotalNumLinks();
 	    H3RenderQueue queue = new H3RenderQueue(queueSize);
 
+	    boolean processNontreeLinks =
+		(renderingConfiguration.nontreeLinkColor.scheme
+		 != ColorConfiguration.INVISIBLE);
+
 	    H3Transformer transformer =
-		new H3Transformer(m_graph, queue, PROCESS_NONTREE_LINKS);
+		new H3Transformer(m_graph, queue, processNontreeLinks);
 
 	    new Thread(transformer).start();
 
@@ -367,23 +561,45 @@ public class H3Main
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-	    H3PointRenderList list = new H3PointRenderList(m_graph, true,
-				             /* nodes */   true, false,
-				        /* tree links */   true, false,
-				    /* non-tree links */  false, false);
-	    list.setNearNodeAppearance(parameters.getNearNodeAppearance());
-	    list.setMiddleNodeAppearance(parameters.getMiddleNodeAppearance());
-	    list.setFarNodeAppearance(parameters.getFarNodeAppearance());
-	    list.setTreeLinkAppearance(parameters.getTreeLinkAppearance());
+	    boolean useNodeSizes =
+		renderingConfiguration.useMultipleNodeSizes;
+	    boolean includeNodes = determineWhetherToIncludeObject
+		(renderingConfiguration.nodeColor);
+	    boolean includeTreeLinks = determineWhetherToIncludeObject
+		(renderingConfiguration.treeLinkColor);
+	    boolean includeNontreeLinks = determineWhetherToIncludeObject
+		(renderingConfiguration.nontreeLinkColor);
+	    boolean includeNodeColor = determineWhetherToIncludeColor
+		(renderingConfiguration.nodeColor);
+	    boolean includeTreeLinkColor = determineWhetherToIncludeColor
+		(renderingConfiguration.treeLinkColor);
+	    boolean includeNontreeLinkColor = determineWhetherToIncludeColor
+		(renderingConfiguration.nontreeLinkColor);
+
+	    H3PointRenderList list = new H3PointRenderList
+		(m_graph, useNodeSizes,
+		 includeNodes, includeNodeColor,
+		 includeTreeLinks, includeTreeLinkColor,
+		 includeNontreeLinks, includeNontreeLinkColor);
+
+	    list.setNearNodeAppearance
+		(m_viewParameters.getNearNodeAppearance());
+	    list.setMiddleNodeAppearance
+		(m_viewParameters.getMiddleNodeAppearance());
+	    list.setFarNodeAppearance
+		(m_viewParameters.getFarNodeAppearance());
+	    list.setTreeLinkAppearance
+		(m_viewParameters.getTreeLinkAppearance());
 
 	    if (true)
 	    {
-		list.setNontreeLinkAppearance(parameters
-					      .getNontreeLinkAppearance());
+		list.setNontreeLinkAppearance
+		    (m_viewParameters.getNontreeLinkAppearance());
 	    }
 	    else
 	    {
-		list.setNontreeLinkAppearance(parameters.getLineAppearance());
+		list.setNontreeLinkAppearance
+		    (m_viewParameters.getLineAppearance());
 	    }
 
 	    H3AdaptiveRenderer renderer = null;
@@ -394,16 +610,15 @@ public class H3Main
 	    }
 	    else
 	    {
-		renderer = new H3CircleRenderer(m_graph, parameters,
-						queue, list);
+		renderer = new H3CircleRenderer
+		    (m_graph, m_viewParameters, queue, list);
 	    }
 
 	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-	    H3AdaptiveRenderLoop adaptive =
-		new H3AdaptiveRenderLoop(m_graph, m_canvas, parameters,
-					 transformer, queue,
-					 renderer, capturer);
+	    H3AdaptiveRenderLoop adaptive = new H3AdaptiveRenderLoop
+		(m_graph, m_canvas, m_viewParameters,
+		 transformer, queue, renderer, capturer);
 
 	    new Thread(adaptive).start();
 	    m_renderLoop = adaptive;
@@ -413,7 +628,7 @@ public class H3Main
 	    adaptive.setMaxTranslationDuration(DURATION);
 	    adaptive.setMaxCompletionDuration(DURATION);
 
-	    if (ENABLE_SCREEN_CAPTURE)
+	    if (renderingConfiguration.supportScreenCapture)
 	    {
 		manager = new AdaptiveCapturingManager(capturer, adaptive);
 	    }
@@ -424,16 +639,20 @@ public class H3Main
 	{
 	    m_graph.transformNodes(H3Transform.I4);
 
-	    H3NonadaptiveRenderLoop nonadaptive =
-		new H3NonadaptiveRenderLoop(m_graph, m_canvas, parameters,
-					    capturer, PROCESS_NONTREE_LINKS);
+	    boolean processNontreeLinks =
+		(renderingConfiguration.nontreeLinkColor.scheme
+		 != ColorConfiguration.INVISIBLE);
+
+	    H3NonadaptiveRenderLoop nonadaptive = new H3NonadaptiveRenderLoop
+		(m_graph, m_canvas, m_viewParameters,
+		 capturer, processNontreeLinks);
 	    new Thread(nonadaptive).start();
 	    m_renderLoop = nonadaptive;
 
-	    if (ENABLE_SCREEN_CAPTURE)
+	    if (renderingConfiguration.supportScreenCapture)
 	    {
-		manager = new NonadaptiveCapturingManager(capturer,
-							  nonadaptive);
+		manager = new NonadaptiveCapturingManager
+		    (capturer, nonadaptive);
 	    }
 
 	    System.out.println("Started H3NonadaptiveRenderLoop.");
@@ -443,7 +662,28 @@ public class H3Main
 	m_eventHandler = new EventHandler
 	    (m_canvas, m_renderLoop, manager, rootNode);
 
+	if (m_displayPosition != null)
+	{
+	    m_renderLoop.setDisplayPosition(m_displayPosition);
+	}
+
 	System.out.println("Rendering started.");
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    private boolean determineWhetherToIncludeColor
+	(ColorConfiguration configuration)
+    {
+	return (configuration.scheme != ColorConfiguration.INVISIBLE
+		&& configuration.scheme != ColorConfiguration.TRANSPARENT
+		&& configuration.scheme != ColorConfiguration.FIXED_COLOR);
+    }
+
+    private boolean determineWhetherToIncludeObject
+	(ColorConfiguration configuration)
+    {
+	return (configuration.scheme != ColorConfiguration.INVISIBLE);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -549,6 +789,8 @@ public class H3Main
 
 	SimpleUniverse univ = new SimpleUniverse(m_canvas);
 	univ.getViewingPlatform().setNominalViewingTransform();
+
+	m_viewParameters = new H3ViewParameters(m_canvas);
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -645,8 +887,12 @@ public class H3Main
 	    });
 
 	m_multipleNodeSizesMenuItem =
-	    new JCheckBoxMenuItem("Multiple Node Sizes");
+	    new JCheckBoxMenuItem("Use Multiple Node Sizes");
 	m_multipleNodeSizesMenuItem.setSelected(true);
+
+	m_screenCaptureMenuItem
+	    = new JCheckBoxMenuItem("Support Screen Capture");
+	m_screenCaptureMenuItem.setSelected(false);
 
 	m_renderingMenu = new JMenu("Rendering");
 	m_renderingMenu.add(m_startMenuItem);
@@ -655,6 +901,7 @@ public class H3Main
 	m_renderingMenu.addSeparator();
 	m_renderingMenu.add(m_adaptiveMenuItem);
 	m_renderingMenu.add(m_multipleNodeSizesMenuItem);
+	m_renderingMenu.add(m_screenCaptureMenuItem);
 
 	// Create "Spanning Tree" menu. ------------------------------------
 
@@ -702,7 +949,9 @@ public class H3Main
     private RenderingConfiguration m_renderingConfiguration;
     private Graph m_backingGraph;  // Will be non-null if a graph is open.
     private H3Graph m_graph;  // ...non-null when a graph is being rendered.
-    private H3Canvas3D m_canvas;
+    private H3DisplayPosition m_displayPosition;
+    private H3Canvas3D m_canvas; // Always non-null; one per program run.
+    private H3ViewParameters m_viewParameters; // Always non-null.
     private H3RenderLoop m_renderLoop; // ...non-null when ... being rendered.
     private EventHandler m_eventHandler; // ...non-null when ...being rendered.
     private MemoryUsage m_memoryUsage = new MemoryUsage();
@@ -724,6 +973,7 @@ public class H3Main
     private JMenuItem m_updateMenuItem;
     private JCheckBoxMenuItem m_adaptiveMenuItem;
     private JCheckBoxMenuItem m_multipleNodeSizesMenuItem;
+    private JCheckBoxMenuItem m_screenCaptureMenuItem;
 
     private JMenu m_spanningTreeMenu;
     private ButtonGroup m_spanningTreeButtonGroup;
@@ -1569,12 +1819,6 @@ public class H3Main
 	// PUBLIC METHODS
 	////////////////////////////////////////////////////////////////////
 
-	public void colorGraph(H3Graph graph, Graph backingGraph,
-			       H3ViewParameters parameters)
-	{
-
-	}
-
 	public void populateAttributeMenus(AttributeCache attributeCache)
 	{
 	    removeColorAttributeMenu();
@@ -1662,7 +1906,7 @@ public class H3Main
 	    else
 	    {
 		retval.scheme = ColorConfiguration.FIXED_COLOR;
-		retval.fixedColorIndex = m_selectedFixedColorIndex;
+		retval.fixedColor = m_fixedColors[m_selectedFixedColorIndex];
 	    }
 
 	    if (m_selectionAttributeMenu.isEnabled())
@@ -2005,7 +2249,7 @@ public class H3Main
 	private JRadioButtonMenuItem[] m_scalarColorAttributeMenus;
 	private JRadioButtonMenuItem[] m_allColorAttributeMenus;
 
-	private int[] m_fixedColors;
+	private int[] m_fixedColors; // packed RGB
 	private JRadioButtonMenuItem[] m_fixedColorMenuItems;
 	private int m_selectedFixedColorIndex;
 
@@ -2036,7 +2280,8 @@ public class H3Main
     {
 	public String spanningTree;
 	public boolean isAdaptive;
-	public boolean hasMultipleNodeSizes;
+	public boolean useMultipleNodeSizes;
+	public boolean supportScreenCapture;
 
 	public ColorConfiguration nodeColor;
 	public ColorConfiguration treeLinkColor;
@@ -2048,8 +2293,10 @@ public class H3Main
 	    System.out.println("RenderingConfiguration:");
 	    System.out.println("\tspanningTree = " + spanningTree);
 	    System.out.println("\tisAdaptive = " + isAdaptive);
-	    System.out.println("\thasMultipleNodeSizes = "
-			       + hasMultipleNodeSizes);
+	    System.out.println("\tuseMultipleNodeSizes = "
+			       + useMultipleNodeSizes);
+	    System.out.println("\tsupportScreenCapture = "
+			       + supportScreenCapture);
 	    System.out.print("(Node) ");
 	    nodeColor.print();
 	    System.out.print("(Tree Link) ");
@@ -2071,15 +2318,51 @@ public class H3Main
 	public static final int RGB = 6;
 
 	public int scheme;
-	public int fixedColorIndex;
+	public int fixedColor;
 	public String colorAttribute;
 	public String selectionAttribute;
+
+	public boolean equalColoring(ColorConfiguration rhs)
+	{
+	    boolean retval = (rhs.scheme == scheme);
+	    if (retval)
+	    {
+		if (scheme == FIXED_COLOR)
+		{
+		    retval = (rhs.fixedColor == fixedColor);
+		}
+		else if (scheme == HOT_TO_COLD || scheme == LOG_HOT_TO_COLD
+			 || scheme == HUE || scheme == RGB)
+		{
+		    retval = (rhs.colorAttribute.equals(colorAttribute));
+		}
+	    }
+
+	    if (retval)
+	    {
+		boolean lhsIsNull = (selectionAttribute == null);
+		boolean rhsIsNull = (rhs.selectionAttribute == null);
+		if (!lhsIsNull || !rhsIsNull)
+		{
+		    if (!lhsIsNull && !rhsIsNull)
+		    {
+			retval = (rhs.selectionAttribute
+				  .equals(selectionAttribute));
+		    }
+		    else
+		    {
+			retval = false;
+		    }
+		}
+	    }
+	    return retval;
+	}
 
 	public void print()
 	{
 	    System.out.println("ColorConfiguration:");
 	    System.out.println("\tscheme = " + getSchemeName());
-	    System.out.println("\tfixedColorIndex = " + fixedColorIndex);
+	    System.out.println("\tfixedColor= " + fixedColor);
 	    System.out.println("\tcolorAttribute = " + colorAttribute);
 	    System.out.println("\tselectionAttribute = " + selectionAttribute);
 	}
