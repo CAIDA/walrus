@@ -55,6 +55,13 @@ See the 'docs' subdirectory for documentation.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+CONTACT INFORMATION
+
+To report bugs, send an email to ______ .  To inquire about Walrus, email
+_____ .
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 QUICK START
 
 Do the following to try out Walrus:
@@ -115,6 +122,18 @@ algorithm can be smoother for small graphs.
 
 See 'guide.txt' in the 'docs' subdirectory for information on additional
 commands and menus not covered here.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ACKNOWLEDGEMENTS
+
+The LibSea graph library distributed with Walrus uses the excellent and
+free ANTLR parser generator (see http://www.antlr.org).  The file
+'antlrall-mod.jar' is ANTLR 2.7.1, slightly modified to improved parsing
+time (specifically, the use of Class.newInstance() to allocate token
+objects was replaced with a compile-time object-allocation expression).
+The modifications reduced parsing time by 1-3 minutes (corresponding to a
+30-50% reduction) on 50-80MB files.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
