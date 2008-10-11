@@ -105,7 +105,7 @@ public class H3Main
 	m_frame.setJMenuBar(createInitialMenuBar());
 	m_colorSchemeMenu.enableDefaultColorScheme();
 
-	m_frame.show();
+	m_frame.setVisible(true);
     }
 
     /////////////////////////////////////////////////////////////////////
