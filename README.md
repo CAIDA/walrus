@@ -141,8 +141,9 @@ REQUIREMENTS
 
 Walrus requires Java3D v1.2.1 (or later) and JDK 1.3.0 (or later).
 
-Java3D:  http://java.sun.com/products/java-media/3D/index.html
-JDK:     http://java.sun.com/j2se/
+Java3D:  <http://java.sun.com/products/java-media/3D/index.html>
+
+JDK:     <http://java.sun.com/j2se/>
 
 A hardware-accelerated graphics card is necessary for adequate performance.
 It is also useful to have a speedy machine with lots of memory (128MB is
@@ -193,7 +194,7 @@ walrus-dev@caida.org.
 Alternatively, you may use the following web page to subscribe, unsubscribe,
 view the archives, and so on:
 
-   http://login.caida.org/mailman/listinfo/walrus-dev
+   <http://login.caida.org/mailman/listinfo/walrus-dev>
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -309,7 +310,7 @@ The following process is for Mac OS X 10.11.6 users:
 
 1. Download the source code from the following link:
 
-     https://www.caida.org/tools/visualization/walrus/#download
+     <https://www.caida.org/tools/visualization/walrus/#download>
 
    It is available as walrus-0.6.3-src.tar.gz or walrus-0.6.3-src.zip. You
    may unpack walrus-0.6.3-src.tar.gz by using the following command:
@@ -326,16 +327,17 @@ The following process is for Mac OS X 10.11.6 users:
 
    Alternatively, you may download the source code from this link:
 
-     https://github.com/CAIDA/walrus2
+     <https://github.com/CAIDA/walrus2>
 
    However, you must install three JAR files (antlrall-mod.jar, libsea.jar,
    mp.jar) from the Walrus release package.
 
-   In this section, the directory containing the source code will be
-   further referred to as the Walrus directory.
+   In this section, the directory
+   containing the source code will be further referred to as the Walrus
+   directory.
 
 2. Ensure that your machine is using Apple's JDK 1.6 which can be
-   downloaded from https://support.apple.com/kb/dl1572. If your default JDK
+   downloaded from <https://support.apple.com/kb/dl1572>. If your default JDK
    is not Apple's JDK 1.6 and that is the only JDK of version 1.6 that you
    have, define the Java home environment variable to Apple's JDK 1.6.
 
@@ -425,7 +427,7 @@ The directory 'samples' contains the following sample graphs.
     [9175 nodes, 15519 links; 2 attributes]
 
      An Internet topology graph generated from data collected by a skitter
-     monitor (http://www.caida.org/tools/measurement/skitter/).
+     monitor (<http://www.caida.org/tools/measurement/skitter/>).
 
  * palmtree.graph
     [3652 nodes, 3651 links; 2 attributes]
@@ -450,7 +452,7 @@ Program.  Support for this effort was provided by NSF grant ANI-9814421,
 DARPA NGI Contract N66001-98-2-8922, Sun Microsystems, and CAIDA members.
 
 CAIDA's LibSea graph library distributed with Walrus uses the excellent and
-free ANTLR parser generator (see http://www.antlr.org).  The file
+free ANTLR parser generator (see <http://www.antlr.org>).  The file
 'antlrall-mod.jar' is ANTLR 2.7.1, slightly modified to improve parsing
 time (specifically, the use of Class.newInstance() to allocate token
 objects was replaced with a compile-time object-allocation expression).
