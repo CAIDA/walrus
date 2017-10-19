@@ -331,9 +331,8 @@ The following process is for Mac OS X 10.11.6 users:
    However, you must install three JAR files (antlrall-mod.jar, libsea.jar,
    mp.jar) from the Walrus release package.
 
-   In this section, the directory
-   containing the source code will be further referred to as the Walrus
-   directory.
+   In this section, the directory containing the source code will be
+   further referred to as the Walrus directory.
 
 2. Ensure that your machine is using Apple's JDK 1.6 which can be
    downloaded from https://support.apple.com/kb/dl1572. If your default JDK
