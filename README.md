@@ -139,7 +139,7 @@ Since 0.1, released Dec 5, 2001:
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 REQUIREMENTS
 
-Walrus requires Java3D v1.2.1 (or later) and JDK 1.3.0 (or later).
+Walrus requires Java3D v1.2.1 (or later) and JDK 1.5.0 (or later).
 
 Java3D:  <http://java.sun.com/products/java-media/3D/index.html>
 
@@ -332,9 +332,8 @@ The following process is for Mac OS X 10.11.6 users:
    However, you must install three JAR files (antlrall-mod.jar, libsea.jar,
    mp.jar) from the Walrus release package.
 
-   In this section, the directory
-   containing the source code will be further referred to as the Walrus
-   directory.
+   In this section, the directory containing the source code will be further
+   referred to as the Walrus directory.
 
 2. Ensure that your machine is using Apple's JDK 1.6 which can be
    downloaded from <https://support.apple.com/kb/dl1572>. If your default JDK

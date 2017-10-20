@@ -483,7 +483,8 @@ public class H3Transformer
 
     private Matrix4d m_transform = new Matrix4d();
 
-    private List m_savedPositions = new ArrayList(); // List<Position>
+    private List<Position> m_savedPositions =
+        new ArrayList<Position>(); // List<Position>
 
     private Matrix4d m_transformTemporary = new Matrix4d(); // scratch
     private Point4d m_nodeCoordinates = new Point4d(); // scratch variable

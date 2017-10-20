@@ -69,7 +69,7 @@ public class H3GraphLoader
     // Returns List<String>.
     public List loadSpanningTreeQualifiers(Graph graph)
     {
-	List retval = new ArrayList();
+	List<String> retval = new ArrayList<String>();
 
 	QualifierIterator iterator =
 	    graph.getQualifiersByType(SPANNING_TREE_QUALIFIER);
@@ -86,7 +86,7 @@ public class H3GraphLoader
     // Returns List<String>.
     public List loadAttributes(Graph graph, AttributeTypeMatcher matcher)
     {
-	List retval = new ArrayList();
+	List<String> retval = new ArrayList<String>();
 
 	AttributeDefinitionIterator iterator = graph.getAttributeDefinitions();
 	while (!iterator.atEnd())
