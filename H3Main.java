@@ -3284,19 +3284,22 @@ public class H3Main
 	{
 	    createFixedColors();
 
-	    Map nodeMenuMap = new HashMap();
+	    Map<String, JMenuItem> nodeMenuMap =
+          new HashMap<String, JMenuItem>();
 	    m_nodeColorMenu = new JMenu("Node Color");
 	    m_nodeColorMenu.setMnemonic(KeyEvent.VK_N);
 	    m_nodeColorSelection = new ColorSelection
 		(m_nodeColorMenu, nodeMenuMap, m_fixedColors);
 
-	    Map treeLinkMenuMap = new HashMap();
+	    Map<String, JMenuItem> treeLinkMenuMap =
+          new HashMap<String, JMenuItem>();
 	    m_treeLinkColorMenu = new JMenu("Tree Link Color");
 	    m_treeLinkColorMenu.setMnemonic(KeyEvent.VK_T);
 	    m_treeLinkColorSelection = new ColorSelection
 		(m_treeLinkColorMenu, treeLinkMenuMap, m_fixedColors);
 
-	    Map nontreeLinkMenuMap = new HashMap();
+	    Map<String, JMenuItem> nontreeLinkMenuMap =
+          new HashMap<String, JMenuItem>();
 	    m_nontreeLinkColorMenu = new JMenu("Nontree Link Color");
 	    m_nontreeLinkColorMenu.setMnemonic(KeyEvent.VK_E);
 	    m_nontreeLinkColorSelection = new ColorSelection
@@ -3401,11 +3404,13 @@ public class H3Main
 	////////////////////////////////////////////////////////////////////
 
 	private void createPredefinedColorSchemes
-	    (Map nodeMenuMap, Map treeLinkMenuMap, Map nontreeLinkMenuMap)
+	    (Map<String, JMenuItem> nodeMenuMap,
+       Map<String, JMenuItem> treeLinkMenuMap,
+       Map<String, JMenuItem> nontreeLinkMenuMap)
 	{
 	    ColorSchemeMaker maker = new ColorSchemeMaker
 		(nodeMenuMap, treeLinkMenuMap, nontreeLinkMenuMap);
-	    m_predefinedColorSchemes = new ArrayList();
+	    m_predefinedColorSchemes = new ArrayList<PredefinedColorScheme>();
 	    m_predefinedColorSchemes.add
 		(maker.make("Yellow-Green-[Grey]",
 			    "Yellow", ColorSchemeMaker.DISABLE_TRANSPARENCY,
@@ -3434,7 +3439,7 @@ public class H3Main
 
 	private void createFixedColors()
 	{
-	    m_fixedColors = new ArrayList();
+	    m_fixedColors = new ArrayList<FixedColor>();
 	    m_fixedColors.add
 		(new FixedColor("Magenta", packRGB(199, 21, 133)));
 	    m_fixedColors.add
@@ -3485,9 +3490,9 @@ public class H3Main
 	private ColorSelection m_nodeColorSelection;
 	private ColorSelection m_treeLinkColorSelection;
 	private ColorSelection m_nontreeLinkColorSelection;
-	private List m_fixedColors; // ArrayList<FixedColor>
+	private List<FixedColor> m_fixedColors; // ArrayList<FixedColor>
 	// ArrayList<PredefinedColorScheme>
-	private List m_predefinedColorSchemes;
+	private List<PredefinedColorScheme> m_predefinedColorSchemes;
 
 	private AttributeCache m_attributeCache;
 
@@ -3572,7 +3577,9 @@ public class H3Main
 	    public static final int DISABLE_TRANSPARENCY = 2;
 
 	    public ColorSchemeMaker
-		(Map nodeMenuMap, Map treeLinkMenuMap, Map nontreeLinkMenuMap)
+		(Map<String, JMenuItem> nodeMenuMap,
+     Map<String, JMenuItem> treeLinkMenuMap,
+     Map<String, JMenuItem> nontreeLinkMenuMap)
 	    {
 		m_nodeMenuMap = nodeMenuMap;
 		m_treeLinkMenuMap = treeLinkMenuMap;
@@ -3634,9 +3641,9 @@ public class H3Main
 		return retval;
 	    }
 
-	    private Map m_nodeMenuMap;
-	    private Map m_treeLinkMenuMap;
-	    private Map m_nontreeLinkMenuMap;
+	    private Map<String, JMenuItem> m_nodeMenuMap;
+	    private Map<String, JMenuItem> m_treeLinkMenuMap;
+	    private Map<String, JMenuItem> m_nontreeLinkMenuMap;
 
 	    private JMenuItem m_nodeTransparencyMenuItem;
 	    private JMenuItem m_treeLinkTransparencyMenuItem;
@@ -3679,7 +3686,7 @@ public class H3Main
 	////////////////////////////////////////////////////////////////////
 
 	// List<FixedColor> fixedColors
-	public ColorSelection(JMenu menu, Map map, List fixedColors)
+	public ColorSelection(JMenu menu, Map<String, JMenuItem> map, List fixedColors)
 	{
 	    // NOTE: In the following, we arbitrarily choose the invisible
 	    //       color to be the default selection.  As a result, all
@@ -4131,7 +4138,8 @@ public class H3Main
 	    return retval;
 	}
 
-	private void putChecked(Map map, String name, Object data)
+	private void putChecked(Map<String, JMenuItem> map, String name,
+      JMenuItem data)
 	{
 	    if (map.put(name, data) != null)
 	    {
