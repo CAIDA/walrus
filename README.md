@@ -219,7 +219,7 @@ You can give Walrus a quick try by doing the following:
       The file walrus-0.6.3.zip was packaged in the common ZIP format.  You
       can unpack it using a program like WinZip (http://www.winzip.com/).
 
-1. From the 'walrus-0.6.3' subdirectory, enter the following at a shell
+2. From the 'walrus-0.6.3' subdirectory, enter the following at a shell
    or command prompt:
 
      * on UNIX systems with Sun's JDK:
@@ -232,28 +232,28 @@ You can give Walrus a quick try by doing the following:
 
          java -cp mp.jar;antlrall-mod.jar;libsea.jar;walrus.jar H3Main
 
-2. Select the menu item File->Open (that is, 'Open' under the 'File' menu),
+3. Select the menu item File->Open (that is, 'Open' under the 'File' menu),
    and load the file 'champagne.graph' in the 'samples' subdirectory.
    The window will be blank while the file loads.  This graph has
    9175 nodes, 9174 tree links, and 6345 nontree links.  This should
    load in a few seconds, but it can take up to several minutes to load
    larger graphs.
 
-3. Select Rendering->Start, once the Walrus logo reappears.
+4. Select Rendering->Start, once the Walrus logo reappears.
 
-4. Click and drag with the left mouse button to rotate the display.
+5. Click and drag with the left mouse button to rotate the display.
    It is normal for parts of the graph to disappear during rotations.
    Walrus uses an adaptive rendering algorithm that tries to maintain
    a given framerate (currently hardcoded) by rendering only as much as
    it can within each time slot.
 
-5. Click on a node (yellow square) with the right mouse button to bring
+6. Click on a node (yellow square) with the right mouse button to bring
    the node to the center.  Parts of the graph may disappear during
    these translations because of adaptive rendering.
 
-6. Select Color Scheme->Predefined->Green-Olive-[Summer Sky].
+7. Select Color Scheme->Predefined->Green-Olive-[Summer Sky].
 
-7. Select Rendering->Update.
+8. Select Rendering->Update.
 
 At this point, you should have a display with nodes in green, tree links
 in olive green, and nontree links in a cobweb-like transparent blue.  Using
@@ -327,7 +327,7 @@ The following process is for Mac OS X 10.11.6 users:
 
    Alternatively, you may download the source code from this link:
 
-     <https://github.com/CAIDA/walrus2>
+     <https://github.com/CAIDA/walrus>
 
    However, you must install three JAR files (antlrall-mod.jar, libsea.jar,
    mp.jar) from the Walrus release package.
@@ -362,11 +362,9 @@ The following process is for Mac OS X 10.11.6 users:
 
          export CLASSPATH=../antlrall-mod.jar:../libsea.jar:../mp.jar:.
 
-4. From the Walrus directory, run the make command to build Walrus. If you
-   do not have jikes installed, you may receive an error message. To build
-   without jikes, specify Makefile.nodep as the desired Makefile.
+4. From the Walrus directory, run this command to build Walrus:
 
-         make -f Makefile.nodep
+         make
 
 5. From the Walrus directory, run Walrus with the -cp option to specify the
    path to all three JAR files and the current directory to search for
@@ -375,10 +373,10 @@ The following process is for Mac OS X 10.11.6 users:
 
          java -cp antlrall-mod.jar:libsea.jar:mp.jar:. H3Main
 
-6. If you wish to build a JAR file to distribute, run the 'make jar'
-   command. To make the JAR file without jikes, enter the command:
+6. If you wish to build a JAR file to distribute, run the following
+   command:
 
-         make jar -f Makefile.nodep
+         make jar
 
    The created JAR file will be called 'walrus.jar'. To run Walrus with
    walrus.jar, follow the instructions in the Quick Start section.
