@@ -1,13 +1,23 @@
 import argparse
 
-def indent(line):
+links = []
+tree_link_attributes = []
+total_links = 0
+
+def indent(line, indents):
   """
-  Indents the given string by two spaces.
+  Indents the given string by a multiple of two spaces.
 
   Args:
     line (str): The string that must be indented.
+    indents (int): The number of times the string should be indented.
   """
-  return "  " + line
+  count = 0
+  indented = ""
+  while count < indents:
+    indented +=  "  "
+    count += 1
+  return indented + line
 
 def comment(message):
   """
@@ -200,7 +210,7 @@ def parseRelationships(file):
   autonomous_systems = []
 
   rel_lines = file.readlines()
-  for i in range (0, len(rel_lines)):
+  for i in range(0, len(rel_lines)):
     if rel_lines[i].find("#") == -1:
       rel = rel_lines[i].strip().split("|")
       asn1 = int(rel[0])
@@ -217,10 +227,63 @@ def parseRelationships(file):
 
       insertRelationship(autonomous_systems, rel_type, asn1, asn2)
 
-  for i in range(0, len(autonomous_systems)):
-    print autonomous_systems[i]
-
   return autonomous_systems
+
+def parseCustomerCones(file, autonomous_systems):
+  """
+  Adds relationships to the given list of Autonomous Systems from parsing
+  the given file.
+
+  Args:
+    file (File): The file containing the customer cones of all members of
+                 the clique.
+    autonomous_systems (List): The list containing all autonomous systems.
+  """
+  cone_lines = file.readlines()
+  for i in range(0, len(cone_lines)):
+    if cone_lines[i].find("#") == -1:
+      cone = cone_lines[i].strip()
+      #print cone
+
+def addLinks(autonomous_systems):
+  """
+  From the relationships provided for each autonomous system, strings
+  representing their links and attributes are added to the respective
+  lists.
+
+  Args:
+    autonomous_systems (List): The list containing all autonomous systems
+                               and their providers and siblings.
+  """
+  global links
+  global tree_link_attributes
+  global total_links
+
+  # each autonomous system is mapped to its index plus one
+  for i in range(0, len(autonomous_systems)):
+    if len(autonomous_systems[i][1]) == 0:
+      links.append( indent( "{ 0; %d }," % (i + 1), 2 ) )
+    for prov in range(0, len(autonomous_systems[i][1])):
+      links.append( indent( "{ %d; %d; }," % (find(autonomous_systems,
+            autonomous_systems[i][1][prov], True, 0,
+            len(autonomous_systems) - 1), i + 1), 2 ) )
+      tree_link_attributes.append( indent ( "{ %d; T; },\n" % (total_links),
+            2 ) )
+      total_links += 1
+    for sib in range(0, len(autonomous_systems[i][2])):
+      links.append( indent( "{ %d; %d; }," % (find(autonomous_systems,
+            autonomous_systems[i][2][sib], True, 0,
+            len(autonomous_systems) - 1), i + 1), 2 ) )
+      total_links += 1
+
+  # format the last link string
+  last_link = links[len(links) - 1]
+  links[len(links) - 1] = last_link[0:(len(last_link) - 1)] + "\n"
+
+  # format the last tree link attribute string
+  last_tla = tree_link_attributes[len(tree_link_attributes) - 1]
+  tree_link_attributes[len(tree_link_attributes) - 1] = \
+    last_tla[0:(len(last_tla) - 1)] + "\n"
 
 def writeMetadataSection(file, c_args):
   """
@@ -230,17 +293,17 @@ def writeMetadataSection(file, c_args):
     file (file object): The .graph file being generated for the graph.
     c_args (argparse.Namespace object): The command line arguments.
   """
-  file.write( indent( comment("metadata") ) );
+  file.write( indent( comment("metadata"), 1 ) );
 
   graph_name = ";\n"
   if c_args.n:
     graph_name = formatCodeString(c_args.n)
-  file.write( indent( graph_name ) );
+  file.write( indent( graph_name, 1 ) );
 
   graph_description = ";\n"
   if c_args.d:
     graph_description = formatCodeString(c_args.d)
-  file.write( indent( graph_description ) )
+  file.write( indent( graph_description, 1 ) )
 
 def writeStructuralDataSection(file, c_args):
   """
@@ -250,12 +313,20 @@ def writeStructuralDataSection(file, c_args):
     file (file object): The .graph file being generated for the graph.
     c_args (argparse.Namespace object): The command line arguments.
   """
-  file.write( indent( comment("structural data") ) )
+  file.write( indent( comment("structural data"), 1 ) )
+  file.write( indent( "[\n", 1 ) )
 
   relationships_file = open(c_args.r, "r")
   clique_file = open(c_args.c, "r")
 
-  parseRelationships(relationships_file)
+  autonomous_systems = parseRelationships(relationships_file)
+  parseCustomerCones(clique_file, autonomous_systems)
+  addLinks(autonomous_systems)
+
+  file.write("\n".join(links))
+  file.write( indent("]\n", 1) )
+  file.write( indent( ";\n", 1 ) )
+  writeEmptyLine(file)
 
 def main():
   """
