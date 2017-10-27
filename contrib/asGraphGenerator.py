@@ -54,6 +54,83 @@ def writeEmptyLine(file):
   """
   file.write("\n")
 
+def writeAttribute(file, name, type, default, nodeValues, linkValues,
+    pathValues, isLast):
+  """
+  Writes an attribute in the correct format for the attribute data section.
+
+  Args:
+    file (File): The .graph file being generated for the graph.
+    name (str): The name of the attribute.
+    type (str): The type of the attribute.
+    default (str): The default value of the attribute if not explicitly
+                   assigned.
+    nodeValues (str): Details values for specific nodes in the graph, or ";" if
+                      no nodes are explicitly assigned a value.
+    linkValues (str): Details values for specific links in the graph, or ";" if
+                      no links are explicitly assigned a value.
+    pathValues (str): Details values for specific paths in the graph, or ";" if
+                      no paths are explicitly assigned a value.
+    isLast (bool): True if this will be the last attribute listed, false
+                   otherwise.
+  """
+  file.write( indent( "{\n", 2 ) )
+  file.write( indent( "%s;\n" % (name), 3 ) )
+  file.write( indent( "%s;\n" % (type), 3 ) )
+  file.write( indent( "%s;\n" % (default), 3 ) )
+  
+  if nodeValues == ";":
+    file.write( indent( "%s\n" % nodeValues, 3 ) )
+  else:
+    file.write( indent( "[\n", 3 ) )
+    file.write( "%s\n" % nodeValues )
+    file.write( indent( "];\n", 3 ) )
+
+  if linkValues == ";":
+    file.write( indent( "%s\n" % linkValues, 3 ) )
+  else:
+    file.write( indent( "[\n", 3 ) )
+    file.write( "%s\n" % linkValues )
+    file.write( indent( "];\n", 3 ) )
+
+  if pathValues == ";":
+    file.write( indent( "%s\n" % pathValues, 3 ) )
+  else:
+    file.write( indent( "[\n", 3 ) )
+    file.write( "%s\n" % pathValues )
+    file.write( indent( "];\n", 3 ) )
+
+  if isLast:
+    file.write( indent( "}\n", 2 ) )
+  else:
+    file.write( indent( "},\n", 2 ) )
+
+def writeQualifier(file, type, name, description, attributes, isLast):
+  """
+  Writes a qualifier in the correct format for the attribute data section.
+
+  Args:
+    file (File): The .graph file being generated for the graph.
+    name (str): The name of the qualifier.
+    type (str): The type of the qualifier.
+    description (str): A description of the qualifier.
+    attributes (str): The attributes of the qualifier.
+    isLast (bool): True if this will be the last attribute listed, false
+                   otherwise.
+  """
+  file.write( indent( "{\n", 2 ) )
+  file.write( indent( "%s;\n" % (type), 3 ) )
+  file.write( indent( "%s;\n" % (name), 3 ) )
+  file.write( indent( "%s;\n" % (description), 3 ) )
+  file.write( indent( "[\n", 3 ) )
+  file.write( "%s\n" % attributes )
+  file.write( indent( "];\n", 3 ) )
+
+  if isLast:
+    file.write( indent( "}\n", 2 ) )
+  else:
+    file.write( indent( "},\n", 2 ) )
+
 def sortedInsert(list, insertion, is_list_of_tuples, low, high):
   """
   Inserts the given value in the list while maintaining ascending order with
@@ -262,13 +339,14 @@ def addLinks(autonomous_systems):
   # each autonomous system is mapped to its index plus one
   for i in range(0, len(autonomous_systems)):
     if len(autonomous_systems[i][1]) == 0:
-      links.append( indent( "{ 0; %d }," % (i + 1), 2 ) )
+      links.append( indent( "{ 0; %d; }," % (i + 1), 2 ) )
+      total_links += 1
     for prov in range(0, len(autonomous_systems[i][1])):
       links.append( indent( "{ %d; %d; }," % (find(autonomous_systems,
             autonomous_systems[i][1][prov], True, 0,
             len(autonomous_systems) - 1), i + 1), 2 ) )
-      tree_link_attributes.append( indent ( "{ %d; T; },\n" % (total_links),
-            2 ) )
+      tree_link_attributes.append( indent ( "{ %d; T; }," % (total_links),
+            4 ) )
       total_links += 1
     for sib in range(0, len(autonomous_systems[i][2])):
       links.append( indent( "{ %d; %d; }," % (find(autonomous_systems,
@@ -283,15 +361,20 @@ def addLinks(autonomous_systems):
   # format the last tree link attribute string
   last_tla = tree_link_attributes[len(tree_link_attributes) - 1]
   tree_link_attributes[len(tree_link_attributes) - 1] = \
-    last_tla[0:(len(last_tla) - 1)] + "\n"
+    last_tla[0:(len(last_tla) - 1)]
 
-def writeMetadataSection(file, c_args):
+def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
+    num_path_links):
   """
   Writes the basic information of the graph to the file.
 
   Args:
     file (file object): The .graph file being generated for the graph.
     c_args (argparse.Namespace object): The command line arguments.
+    num_nodes (int): The amount of nodes in the graph.
+    num_links (int): The amount of links in the graph.
+    num_paths (int): The amount of paths in the graph.
+    num_path_links (int): The amount of path links in the graph.
   """
   file.write( indent( comment("metadata"), 1 ) );
 
@@ -305,33 +388,64 @@ def writeMetadataSection(file, c_args):
     graph_description = formatCodeString(c_args.d)
   file.write( indent( graph_description, 1 ) )
 
-def writeStructuralDataSection(file, c_args):
+  # add one node for the ghost node that acts as the root
+  file.write( indent( "%d;\n" % (num_nodes + 1), 1) )
+  file.write( indent( "%d;\n" % num_links, 1) )
+  file.write( indent( "%d;\n" % num_paths, 1) )
+  file.write( indent( "%d;\n" % num_path_links, 1) )
+
+def writeStructuralDataSection(file):
   """
   Writes the information about the links and paths to the file.
 
   Args:
     file (file object): The .graph file being generated for the graph.
-    c_args (argparse.Namespace object): The command line arguments.
   """
+  global links
+
   file.write( indent( comment("structural data"), 1 ) )
   file.write( indent( "[\n", 1 ) )
-
-  relationships_file = open(c_args.r, "r")
-  clique_file = open(c_args.c, "r")
-
-  autonomous_systems = parseRelationships(relationships_file)
-  parseCustomerCones(clique_file, autonomous_systems)
-  addLinks(autonomous_systems)
-
+ 
   file.write("\n".join(links))
-  file.write( indent("]\n", 1) )
+  file.write( indent("];\n", 1) )
   file.write( indent( ";\n", 1 ) )
-  writeEmptyLine(file)
+  
 
+def writeAttributeDataSection(file):
+  """
+  Writes the information about the attributes of the nodes, links, and paths
+  in the graph and the qualifiers to the file.
+
+  Args:
+    file (File): The .graph file being generated for the graph.
+  """
+  global tree_link_attributes
+
+  file.write( indent( comment("attribute data"), 1 ) )
+  file.write( indent( ";\n", 1 ) )
+  file.write( indent( "[\n", 1 ) )
+
+  writeAttribute( file, "$root", "bool", "|| false ||",
+      indent( "{ 0; T; }", 4 ), ";", ";", False )
+
+  writeAttribute( file, "$tree_link", "bool", "|| false ||", ";",
+      "\n".join(tree_link_attributes), ";", True )
+
+  file.write( indent( "];\n", 1 ) )
+  file.write( indent( "[\n", 1 ) )
+
+  attributes = indent( "{ 0; $root; },\n        { 1; $tree_link; }", 4 )
+  writeQualifier( file, "$spanning_tree", "$main_spanning_tree", "",
+      attributes, True )
+
+  file.write( indent ( "];\n", 1 ) )
+  
 def main():
   """
   Generates the .graph file for the autonomous systems graph.
   """
+  global links
+
   parser = argparse.ArgumentParser()
   parser.add_argument("-g",
       help="Desired name of the .graph file that will be generated",
@@ -346,8 +460,8 @@ def main():
       help="File containing relationships between autonomous systems",
       metavar="relFile", required=True)
   parser.add_argument("-c",
-      help="File containing information about the members of the clique",
-      metavar="cliqueFile", required=True)
+      help="File containing information about the customer cones",
+      metavar="conesFile", required=True)
   args = parser.parse_args()
 
   graph_file_name = "autonomousSystems.graph"
@@ -359,10 +473,34 @@ def main():
   graph_file.write("Graph\n")
   graph_file.write("{\n")
 
-  writeMetadataSection(graph_file, args)
+  # parse files for information about Autonomous Systems
+  relationships_file = open(args.r, "r")
+  cones_file = open(args.c, "r")
+
+  autonomous_systems = parseRelationships(relationships_file)
+  parseCustomerCones(cones_file, autonomous_systems)
+  addLinks(autonomous_systems)
+
+  relationships_file.close()
+  cones_file.close()
+
+  writeMetadataSection(graph_file, args, len(autonomous_systems), len(links), 0,
+      0)
   writeEmptyLine(graph_file)
-  writeStructuralDataSection(graph_file, args)
+  writeStructuralDataSection(graph_file)
+  writeEmptyLine(graph_file)
+  writeAttributeDataSection(graph_file)
+  writeEmptyLine(graph_file)
+
+  graph_file.write( indent( comment( "visualization hints" ), 1 ) )
+  graph_file.write( "  ;\n  ;\n  ;\n  ;\n" )
+  writeEmptyLine(graph_file)
   
+  graph_file.write( indent( comment( "interface hints" ), 1 ) )
+  graph_file.write( "  ;\n  ;\n  ;\n  ;\n  ;\n" )
+
+  graph_file.write("}") 
+
   graph_file.close()
 
 if __name__ == "__main__":
