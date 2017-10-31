@@ -1,5 +1,8 @@
 import argparse
+import copy
+import random
 
+clique = []
 links = []
 tree_link_attributes = []
 total_links = 0
@@ -236,8 +239,8 @@ def insertRelationship(autonomous_systems, rel_type, asn1, asn2):
   # insert the first autonomous system in the list of siblings for the
   # second autonomous system listed if they possess a sibling-sibling
   # relationship
-  if rel_type == 0:
-    insertSibling(autonomous_systems, asn1, asn2)
+  #if rel_type == 0:
+    #insertSibling(autonomous_systems, asn1, asn2)
 
 def insertProvider(autonomous_systems, provider, customer):
   """
@@ -269,14 +272,36 @@ def insertSibling(autonomous_systems, sibling1, sibling2):
   as_siblings = autonomous_systems[as_index][2]
   sortedInsert(as_siblings, sibling1, False, 0, len(as_siblings) - 1)
 
-def parseRelationships(file):
+def parseClique(file_lines):
+  """
+  Searches the given file for the members of the clique.
+
+  Args:
+    file_lines (List): The lines of the file containing information about the
+                       clique.
+  """
+  global clique
+
+  info_lines = file_lines
+  for i in range(0, len(info_lines)):
+    if info_lines[i].find("# c1:") > -1:
+      clique_listing_start_index = info_lines[i].find(":")
+      # shift index over to the start of the first member of the clique
+      clique_listing_start_index += 2
+      clique = info_lines[i][clique_listing_start_index:].strip().split(" ")
+      # turn each element of clique into the type int
+      for j in range(0, len(clique)):
+        clique[j] = int(clique[j])
+      return
+
+def parseRelationships(file_lines):
   """
   Creates a list of all relationships for all Autonomous Systems from
   the given file.
 
   Args:
-    file (File): The file containing the provider-customer, customer-
-                 provider, and sibling-sibling relationships for
+    file_lines (List): The lines of the file containing the provider-customer,
+                 customer-provider, and sibling-sibling relationships for
                  Autonomous Systems.
 
   Returns:
@@ -286,7 +311,7 @@ def parseRelationships(file):
   """
   autonomous_systems = []
 
-  rel_lines = file.readlines()
+  rel_lines = file_lines
   for i in range(0, len(rel_lines)):
     if rel_lines[i].find("#") == -1:
       rel = rel_lines[i].strip().split("|")
@@ -306,53 +331,148 @@ def parseRelationships(file):
 
   return autonomous_systems
 
-def parseCustomerCones(file, autonomous_systems):
+def quicksort(unsorted_list, low, high):
   """
-  Adds relationships to the given list of Autonomous Systems from parsing
-  the given file.
+  Sorts all elements in the given list to be in ascending order.
 
   Args:
-    file (File): The file containing the customer cones of all members of
-                 the clique.
-    autonomous_systems (List): The list containing all autonomous systems.
+    unsorted_list (List): The list needed to be sorted.
+    low (int): The lowest index of the list being sorted.
+    high (int): The highest index of the list being sorted.
   """
-  cone_lines = file.readlines()
-  for i in range(0, len(cone_lines)):
-    if cone_lines[i].find("#") == -1:
-      cone = cone_lines[i].strip()
-      #print cone
+  if low < high:
+    split = partition(unsorted_list, low, high)
+    quicksort(unsorted_list, low, split - 1)
+    quicksort(unsorted_list, split + 1, high)
 
-def addLinks(autonomous_systems):
+def partition(unsorted_list, low, high):
+  """
+  Sorts the list of lists according to a selected pivot, using the first element
+  of a list that is an element of the given unsorted list as a point of
+  comparison.
+
+  Args:
+    unsorted_list (List of Lists): The list of lists needed to be sorted.
+    low (int): The lowest index of the list being sorted.
+    high (int): The highest index of the list being sorted.
+  """
+  random_index = random.randint(low, high)
+  pivot = unsorted_list[random_index][0]
+
+  # swap the element containing the pivot with the last element
+  unsorted_list[random_index], unsorted_list[high] = \
+      unsorted_list[high], unsorted_list[random_index]
+
+  i = low - 1
+  # place all elements of unsorted_list with first elements less than the
+  # pivot before i + 1
+  for j in range(low, high):
+    if unsorted_list[j][0] < pivot:
+      i += 1
+      unsorted_list[i], unsorted_list[j]  = unsorted_list[j], unsorted_list[i]
+
+  # swap the element containing the pivot to the index where the first elements
+  # of all previous elements are less than the pivot
+  unsorted_list[i + 1], unsorted_list[high] = unsorted_list[high], \
+     unsorted_list[i + 1]
+  return i + 1
+
+def topological_sort(autonomous_systems, cone_lines):
+  """
+  Sorts all given Autonomous Systems into a list ordered so that no customer
+  is before its provider.
+
+  Args:
+    autonomous_systems (List): The list containing all autonomous systems and
+                               their providers and siblings.
+    cone_lines (List): The list of lines from the file containing information
+                       about each autonomous system's customer cone.
+
+  Returns:
+    A list of ASNs that are ordered so no exists at a lower index than its
+    provider.
+  """
+  global clique
+
+  sorted = []
+  no_providers = copy.deepcopy(clique)
+  autonomous_system_info = copy.deepcopy(autonomous_systems)
+  customer_cones = copy.deepcopy(cone_lines)
+
+  # filter customer_cone_lines so that it only contains lines related to the
+  # customer cone of an autonomous system
+  k = 0
+  while k < len(customer_cones):
+    if customer_cones[k].find("#") > -1:
+      customer_cones.pop(k)
+    else:
+      customer_cones[k] = customer_cones[k].strip().split(" ")
+      # convert each asn in each customer cone into type int
+      for l in range(0, len(customer_cones[k])):
+        customer_cones[k][l] = int(customer_cones[k][l])
+      k += 1
+
+  # sort the customer cones so the indices match the autonomous system info list
+  quicksort(customer_cones, 0, len(customer_cones) - 1)
+
+  # append autonomous systems to sorted in topological order
+  while len(no_providers) > 0:
+    no_provs_asn = no_providers.pop(0)
+    sorted.append(no_provs_asn)
+    no_provs_index = find(autonomous_system_info, no_provs_asn, True,
+        0, len(autonomous_system_info) - 1)
+    no_provs_cone = customer_cones[no_provs_index]
+    # remove this provider from each of its customer's provider list
+    for i in range(1, len(no_provs_cone)):
+      current_as_index = find(autonomous_system_info, no_provs_cone[i], True,
+          0, len(autonomous_system_info) - 1)
+      providers_list = autonomous_system_info[current_as_index][1]
+      if find(providers_list, no_provs_asn, False, 0,
+          len(providers_list) - 1) > -1:
+        providers_list.remove(no_provs_asn)
+        if len(providers_list) == 0:
+          no_providers.append(autonomous_system_info[current_as_index][0])
+
+  return sorted
+
+
+def addLinks(top_sorted_asns, autonomous_systems):
   """
   From the relationships provided for each autonomous system, strings
   representing their links and attributes are added to the respective
   lists.
 
   Args:
+    top_sorted_asns (List): The list containing all autonomous systems
+                            sorted so that no customer appears before its
+                            provider.
     autonomous_systems (List): The list containing all autonomous systems
-                               and their providers and siblings.
+                               and information about their providers and
+                               siblings for each one.
   """
   global links
   global tree_link_attributes
   global total_links
 
   # each autonomous system is mapped to its index plus one
-  for i in range(0, len(autonomous_systems)):
-    if len(autonomous_systems[i][1]) == 0:
+  for i in range(len(top_sorted_asns) - 1, -1, -1):
+    if top_sorted_asns[i] in clique:
       links.append( indent( "{ 0; %d; }," % (i + 1), 2 ) )
+      tree_link_attributes.append( indent( "{ %d; T; }," % (total_links), 4 ) )
       total_links += 1
-    for prov in range(0, len(autonomous_systems[i][1])):
-      links.append( indent( "{ %d; %d; }," % (find(autonomous_systems,
-            autonomous_systems[i][1][prov], True, 0,
-            len(autonomous_systems) - 1), i + 1), 2 ) )
-      tree_link_attributes.append( indent ( "{ %d; T; }," % (total_links),
-            4 ) )
-      total_links += 1
-    for sib in range(0, len(autonomous_systems[i][2])):
-      links.append( indent( "{ %d; %d; }," % (find(autonomous_systems,
-            autonomous_systems[i][2][sib], True, 0,
-            len(autonomous_systems) - 1), i + 1), 2 ) )
-      total_links += 1
+    else:
+      as_index = find(autonomous_systems, top_sorted_asns[i], True, 0,
+          len(autonomous_systems) - 1)
+      provider_list = autonomous_systems[as_index][1]
+      # find the first provider with greatest depth to link together
+      for j in range(i - 1, -1, -1):
+        if find(provider_list, top_sorted_asns[j], False, 0,
+            len(provider_list) - 1) > -1:
+          links.append( indent( "{ %d; %d; }," % (j + 1, i + 1), 2 ) )
+          tree_link_attributes.append( indent( "{ %d; T; }," % (total_links),
+                4 ) )
+          total_links += 1
+          break
 
   # format the last link string
   last_link = links[len(links) - 1]
@@ -473,18 +593,23 @@ def main():
   graph_file.write("Graph\n")
   graph_file.write("{\n")
 
-  # parse files for information about Autonomous Systems
   relationships_file = open(args.r, "r")
-  cones_file = open(args.c, "r")
+  info_lines = relationships_file.readlines()
 
-  autonomous_systems = parseRelationships(relationships_file)
-  parseCustomerCones(cones_file, autonomous_systems)
-  addLinks(autonomous_systems)
+  # parse relationships file for information about Autonomous Systems
+  parseClique(info_lines)
+  autonomous_systems = parseRelationships(info_lines)
+
+  cones_file = open(args.c, "r")
+  cone_lines = cones_file.readlines()
+
+  top_sorted_asns = topological_sort(autonomous_systems, cone_lines)
+  addLinks(top_sorted_asns, autonomous_systems)
 
   relationships_file.close()
   cones_file.close()
 
-  writeMetadataSection(graph_file, args, len(autonomous_systems), len(links), 0,
+  writeMetadataSection(graph_file, args, len(top_sorted_asns), len(links), 0,
       0)
   writeEmptyLine(graph_file)
   writeStructuralDataSection(graph_file)
