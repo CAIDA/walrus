@@ -5,6 +5,7 @@ import random
 clique = []
 links = []
 tree_link_attributes = []
+node_asn_attributes = []
 total_links = 0
 
 def indent(line, indents):
@@ -453,13 +454,16 @@ def addLinks(top_sorted_asns, autonomous_systems):
   global links
   global tree_link_attributes
   global total_links
+  global node_asn_attributes
 
-  # each autonomous system is mapped to its index plus one
+  # each autonomous system is mapped to a node number equal to its index plus
+  # one
   for i in range(len(top_sorted_asns) - 1, -1, -1):
     if top_sorted_asns[i] in clique:
       links.append( indent( "{ 0; %d; }," % (i + 1), 2 ) )
       tree_link_attributes.append( indent( "{ %d; T; }," % (total_links), 4 ) )
       total_links += 1
+
     else:
       as_index = find(autonomous_systems, top_sorted_asns[i], True, 0,
           len(autonomous_systems) - 1)
@@ -474,6 +478,10 @@ def addLinks(top_sorted_asns, autonomous_systems):
           total_links += 1
           break
 
+    # provide node label for autonomous system number represented
+    node_asn_attributes.append( indent( "{ %d; %d; }," % (i + 1,
+        top_sorted_asns[i]), 4 ) )
+
   # format the last link string
   last_link = links[len(links) - 1]
   links[len(links) - 1] = last_link[0:(len(last_link) - 1)] + "\n"
@@ -481,7 +489,12 @@ def addLinks(top_sorted_asns, autonomous_systems):
   # format the last tree link attribute string
   last_tla = tree_link_attributes[len(tree_link_attributes) - 1]
   tree_link_attributes[len(tree_link_attributes) - 1] = \
-    last_tla[0:(len(last_tla) - 1)]
+      last_tla[0:(len(last_tla) - 1)]
+
+  # format the last node asn attribute string
+  last_node_asn = node_asn_attributes[len(node_asn_attributes) - 1]
+  node_asn_attributes[len(node_asn_attributes) - 1] = \
+      last_node_asn[0:(len(last_node_asn) - 1)]
 
 def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
@@ -540,6 +553,7 @@ def writeAttributeDataSection(file):
     file (File): The .graph file being generated for the graph.
   """
   global tree_link_attributes
+  global node_asn_attributes
 
   file.write( indent( comment("attribute data"), 1 ) )
   file.write( indent( ";\n", 1 ) )
@@ -549,7 +563,10 @@ def writeAttributeDataSection(file):
       indent( "{ 0; T; }", 4 ), ";", ";", False )
 
   writeAttribute( file, "$tree_link", "bool", "|| false ||", ";",
-      "\n".join(tree_link_attributes), ";", True )
+      "\n".join(tree_link_attributes), ";", False )
+
+  writeAttribute( file, "$asn", "int", "|| 0 ||",
+      "\n".join(node_asn_attributes), ";", ";", True )
 
   file.write( indent( "];\n", 1 ) )
   file.write( indent( "[\n", 1 ) )
