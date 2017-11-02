@@ -6,6 +6,8 @@ clique = []
 links = []
 tree_link_attributes = []
 node_asn_attributes = []
+specified_labels = []
+label_attributes = []
 total_links = 0
 
 def indent(line, indents):
@@ -273,6 +275,21 @@ def insertSibling(autonomous_systems, sibling1, sibling2):
   as_siblings = autonomous_systems[as_index][2]
   sortedInsert(as_siblings, sibling1, False, 0, len(as_siblings) - 1)
 
+def parseLabels(file_lines):
+  """
+  Parses the desired labels for certain autonomous systems from the file.
+
+  Args:
+    file_lines (List): The lines of the file containing labels for specific
+                       autonomous system numbers.
+  """
+  global specified_labels
+
+  for i in range(0, len(file_lines)):
+    label = file_lines[i].strip().split("|")
+    label[0] = int(label[0])
+    specified_labels.append(label)
+
 def parseClique(file_lines):
   """
   Searches the given file for the members of the clique.
@@ -437,7 +454,7 @@ def topological_sort(autonomous_systems, cone_lines):
   return sorted
 
 
-def addLinks(top_sorted_asns, autonomous_systems):
+def addLinksAndAttributes(top_sorted_asns, autonomous_systems):
   """
   From the relationships provided for each autonomous system, strings
   representing their links and attributes are added to the respective
@@ -455,6 +472,8 @@ def addLinks(top_sorted_asns, autonomous_systems):
   global tree_link_attributes
   global total_links
   global node_asn_attributes
+  global specified_labels
+  global label_attributes
 
   # each autonomous system is mapped to a node number equal to its index plus
   # one
@@ -482,6 +501,12 @@ def addLinks(top_sorted_asns, autonomous_systems):
     node_asn_attributes.append( indent( "{ %d; %d; }," % (i + 1,
         top_sorted_asns[i]), 4 ) )
 
+    # add specified labels as attributes for certain nodes
+    for j in range(0, len(specified_labels)):
+      if top_sorted_asns[i] == specified_labels[j][0]:
+        label_attributes.append( indent( "{ %d; \"%s\"; }," % (i + 1,
+            specified_labels[j][1]), 4 ) )
+
   # format the last link string
   last_link = links[len(links) - 1]
   links[len(links) - 1] = last_link[0:(len(last_link) - 1)] + "\n"
@@ -495,6 +520,11 @@ def addLinks(top_sorted_asns, autonomous_systems):
   last_node_asn = node_asn_attributes[len(node_asn_attributes) - 1]
   node_asn_attributes[len(node_asn_attributes) - 1] = \
       last_node_asn[0:(len(last_node_asn) - 1)]
+
+  # format the last label attribute string
+  last_label = label_attributes[len(label_attributes) - 1]
+  label_attributes[len(label_attributes) - 1] = \
+      last_label[0:(len(last_label) - 1)]
 
 def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
@@ -554,6 +584,7 @@ def writeAttributeDataSection(file):
   """
   global tree_link_attributes
   global node_asn_attributes
+  global label_attributes
 
   file.write( indent( comment("attribute data"), 1 ) )
   file.write( indent( ";\n", 1 ) )
@@ -566,7 +597,10 @@ def writeAttributeDataSection(file):
       "\n".join(tree_link_attributes), ";", False )
 
   writeAttribute( file, "$asn", "int", "|| 0 ||",
-      "\n".join(node_asn_attributes), ";", ";", True )
+      "\n".join(node_asn_attributes), ";", ";", False )
+
+  writeAttribute( file, "$label", "string", "|| \"\" ||",
+      "\n".join(label_attributes), ";", ";", True )
 
   file.write( indent( "];\n", 1 ) )
   file.write( indent( "[\n", 1 ) )
@@ -599,6 +633,9 @@ def main():
   parser.add_argument("-c",
       help="File containing information about the customer cones",
       metavar="conesFile", required=True)
+  parser.add_argument("-l",
+      help="File containing desired labels for certain autonomous systems",
+      metavar="asLabelFile")
   args = parser.parse_args()
 
   graph_file_name = "autonomousSystems.graph"
@@ -609,6 +646,12 @@ def main():
   graph_file = open(graph_file_name, "w")
   graph_file.write("Graph\n")
   graph_file.write("{\n")
+
+  if args.l:
+    labels_file = open(args.l, "r")
+    label_lines = labels_file.readlines()
+    parseLabels(label_lines)
+    labels_file.close()
 
   relationships_file = open(args.r, "r")
   info_lines = relationships_file.readlines()
@@ -621,7 +664,7 @@ def main():
   cone_lines = cones_file.readlines()
 
   top_sorted_asns = topological_sort(autonomous_systems, cone_lines)
-  addLinks(top_sorted_asns, autonomous_systems)
+  addLinksAndAttributes(top_sorted_asns, autonomous_systems)
 
   relationships_file.close()
   cones_file.close()
