@@ -38,19 +38,6 @@ def comment(message):
   """
   return "### " + message + " ###\n"
 
-def format_code_string(phrase):
-  """
-  Creates a string enclosed in double quotes and ends it with a semi-colon.
-
-  Args:
-    phrase (str): The string that needs to be surrounded by ".
-
-  Returns:
-    The phrase enclosed in double quotes ending with a semi-colon and then
-    a newline character.
-  """
-  return "\"" + phrase + "\";\n"
-
 def write_empty_line(file):
   """
   Writes an empty line to the given file.
@@ -555,12 +542,12 @@ def write_metadata_section(file, c_args, num_nodes, num_links, num_paths,
 
   graph_name = ";\n"
   if c_args.n:
-    graph_name = format_code_string(c_args.n)
+    graph_name = "\"" + c_args.n + "\";\n"
   file.write( indent( graph_name, 1 ) );
 
   graph_description = ";\n"
   if c_args.d:
-    graph_description = format_code_string(c_args.d)
+    graph_description = "\"" + c_args.d + "\";\n"
   file.write( indent( graph_description, 1 ) )
 
   # add one node for the ghost node that acts as the root
