@@ -38,7 +38,7 @@ def comment(message):
   """
   return "### " + message + " ###\n"
 
-def formatCodeString(phrase):
+def format_code_string(phrase):
   """
   Creates a string enclosed in double quotes and ends it with a semi-colon.
 
@@ -51,7 +51,7 @@ def formatCodeString(phrase):
   """
   return "\"" + phrase + "\";\n"
 
-def writeEmptyLine(file):
+def write_empty_line(file):
   """
   Writes an empty line to the given file.
 
@@ -60,7 +60,7 @@ def writeEmptyLine(file):
   """
   file.write("\n")
 
-def writeAttribute(file, name, type, default, nodeValues, linkValues,
+def write_attribute(file, name, type, default, nodeValues, linkValues,
     pathValues, isLast):
   """
   Writes an attribute in the correct format for the attribute data section.
@@ -111,7 +111,7 @@ def writeAttribute(file, name, type, default, nodeValues, linkValues,
   else:
     file.write( indent( "},\n", 2 ) )
 
-def writeQualifier(file, type, name, description, attributes, isLast):
+def write_qualifier(file, type, name, description, attributes, isLast):
   """
   Writes a qualifier in the correct format for the attribute data section.
 
@@ -137,7 +137,7 @@ def writeQualifier(file, type, name, description, attributes, isLast):
   else:
     file.write( indent( "},\n", 2 ) )
 
-def sortedInsert(list, insertion, is_list_of_tuples, low, high):
+def sorted_insert(list, insertion, is_list_of_tuples, low, high):
   """
   Inserts the given value in the list while maintaining ascending order with
   ASNs.
@@ -173,11 +173,11 @@ def sortedInsert(list, insertion, is_list_of_tuples, low, high):
       prev_elem_value_comparison < insert_value:
     return list.insert(search, insertion)
   elif value_comparison > insert_value:
-    return sortedInsert(list, insertion, is_list_of_tuples, low, search - 1)
+    return sorted_insert(list, insertion, is_list_of_tuples, low, search - 1)
   elif value_comparison < insert_value and search == (len(list) - 1):
     return list.append(insertion)
   else:
-    return sortedInsert(list, insertion, is_list_of_tuples, search + 1, high)
+    return sorted_insert(list, insertion, is_list_of_tuples, search + 1, high)
 
 def find(list, asn, is_list_of_tuples, low, high):
   """
@@ -211,7 +211,7 @@ def find(list, asn, is_list_of_tuples, low, high):
   else:
     return -1
 
-def insertRelationship(autonomous_systems, rel_type, asn1, asn2):
+def insert_relationship(autonomous_systems, rel_type, asn1, asn2):
   """
   Inserts an ASN into an Autonomous System's list of providers or list of
   siblings.
@@ -231,21 +231,21 @@ def insertRelationship(autonomous_systems, rel_type, asn1, asn2):
   # second autonomous system if they possess a provider-customer
   # relationship
   if rel_type == -1:
-    insertProvider(autonomous_systems, asn1, asn2)
+    insert_provider(autonomous_systems, asn1, asn2)
 
   # insert the second autonomous system in the list of providers for the
   # first autonomous system if they possess a customer-provider
   # relationship
   if rel_type == 1:
-    insertProvider(autonomous_systems, asn2, asn1)
+    insert_provider(autonomous_systems, asn2, asn1)
 
   # insert the first autonomous system in the list of siblings for the
   # second autonomous system listed if they possess a sibling-sibling
   # relationship
   #if rel_type == 0:
-    #insertSibling(autonomous_systems, asn1, asn2)
+    #insert_sibling(autonomous_systems, asn1, asn2)
 
-def insertProvider(autonomous_systems, provider, customer):
+def insert_provider(autonomous_systems, provider, customer):
   """
   Inserts an ASN into an Autonomous System's list of providers.
 
@@ -257,9 +257,9 @@ def insertProvider(autonomous_systems, provider, customer):
   as_index = find(autonomous_systems, customer, True, 0,
       len(autonomous_systems) - 1)
   as_providers = autonomous_systems[as_index][1]
-  sortedInsert(as_providers, provider, False, 0, len(as_providers) - 1)
+  sorted_insert(as_providers, provider, False, 0, len(as_providers) - 1)
 
-def insertSibling(autonomous_systems, sibling1, sibling2):
+def insert_sibling(autonomous_systems, sibling1, sibling2):
   """
   Inserts an ASN into an Autonomous System's list of siblings.
 
@@ -273,9 +273,9 @@ def insertSibling(autonomous_systems, sibling1, sibling2):
   as_index = find(autonomous_systems, sibling2, True, 0,
         len(autonomous_systems) - 1)
   as_siblings = autonomous_systems[as_index][2]
-  sortedInsert(as_siblings, sibling1, False, 0, len(as_siblings) - 1)
+  sorted_insert(as_siblings, sibling1, False, 0, len(as_siblings) - 1)
 
-def parseLabels(file_lines):
+def parse_labels(file_lines):
   """
   Parses the desired labels for certain autonomous systems from the file.
 
@@ -301,7 +301,7 @@ def parseLabels(file_lines):
 
   return label_name
 
-def parseClique(file_lines):
+def parse_clique(file_lines):
   """
   Searches the given file for the members of the clique.
 
@@ -323,7 +323,7 @@ def parseClique(file_lines):
         clique[j] = int(clique[j])
       return
 
-def parseRelationships(file_lines):
+def parse_relationships(file_lines):
   """
   Creates a list of all relationships for all Autonomous Systems from
   the given file.
@@ -349,14 +349,14 @@ def parseRelationships(file_lines):
       rel_type = int(rel[2])
 
       rel_tuple = (asn1, [], [])
-      sortedInsert(autonomous_systems, rel_tuple, True, 0,
+      sorted_insert(autonomous_systems, rel_tuple, True, 0,
           len(autonomous_systems) - 1)
 
       rel_tuple = (asn2, [], [])
-      sortedInsert(autonomous_systems, rel_tuple, True, 0,
+      sorted_insert(autonomous_systems, rel_tuple, True, 0,
           len(autonomous_systems) - 1)
 
-      insertRelationship(autonomous_systems, rel_type, asn1, asn2)
+      insert_relationship(autonomous_systems, rel_type, asn1, asn2)
 
   return autonomous_systems
 
@@ -465,7 +465,7 @@ def topological_sort(autonomous_systems, cone_lines):
   return sorted
 
 
-def addLinksAndAttributes(top_sorted_asns, autonomous_systems):
+def add_links_and_attributes(top_sorted_asns, autonomous_systems):
   """
   From the relationships provided for each autonomous system, strings
   representing their links and attributes are added to the respective
@@ -538,7 +538,7 @@ def addLinksAndAttributes(top_sorted_asns, autonomous_systems):
     label_attributes[len(label_attributes) - 1] = \
         last_label[0:(len(last_label) - 1)]
 
-def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
+def write_metadata_section(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
   """
   Writes the basic information of the graph to the file.
@@ -555,12 +555,12 @@ def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
 
   graph_name = ";\n"
   if c_args.n:
-    graph_name = formatCodeString(c_args.n)
+    graph_name = format_code_string(c_args.n)
   file.write( indent( graph_name, 1 ) );
 
   graph_description = ";\n"
   if c_args.d:
-    graph_description = formatCodeString(c_args.d)
+    graph_description = format_code_string(c_args.d)
   file.write( indent( graph_description, 1 ) )
 
   # add one node for the ghost node that acts as the root
@@ -569,7 +569,7 @@ def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
   file.write( indent( "%d;\n" % num_paths, 1) )
   file.write( indent( "%d;\n" % num_path_links, 1) )
 
-def writeStructuralDataSection(file):
+def write_structural_data_section(file):
   """
   Writes the information about the links and paths to the file.
 
@@ -586,7 +586,7 @@ def writeStructuralDataSection(file):
   file.write( indent( ";\n", 1 ) )
   
 
-def writeAttributeDataSection(file, label_name):
+def write_attribute_data_section(file, label_name):
   """
   Writes the information about the attributes of the nodes, links, and paths
   in the graph and the qualifiers to the file.
@@ -603,28 +603,28 @@ def writeAttributeDataSection(file, label_name):
   file.write( indent( ";\n", 1 ) )
   file.write( indent( "[\n", 1 ) )
 
-  writeAttribute( file, "$root", "bool", "|| false ||",
+  write_attribute( file, "$root", "bool", "|| false ||",
       indent( "{ 0; T; }", 4 ), ";", ";", False )
 
-  writeAttribute( file, "$tree_link", "bool", "|| false ||", ";",
+  write_attribute( file, "$tree_link", "bool", "|| false ||", ";",
       "\n".join(tree_link_attributes), ";", False )
 
   # check if any labels were specified
   if len(label_attributes) > 0:
-    writeAttribute( file, "$asn", "int", "|| 0 ||",
+    write_attribute( file, "$asn", "int", "|| 0 ||",
         "\n".join(node_asn_attributes), ";", ";", False )
 
-    writeAttribute( file, "$" + label_name, "string", "|| \"\" ||",
+    write_attribute( file, "$" + label_name, "string", "|| \"\" ||",
         "\n".join(label_attributes), ";", ";", True )
   else:
-    writeAttribute( file, "$asn", "int", "|| 0 ||",
+    write_attribute( file, "$asn", "int", "|| 0 ||",
         "\n".join(node_asn_attributes), ";", ";", True )
 
   file.write( indent( "];\n", 1 ) )
   file.write( indent( "[\n", 1 ) )
 
   attributes = indent( "{ 0; $root; },\n        { 1; $tree_link; }", 4 )
-  writeQualifier( file, "$spanning_tree", "$main_spanning_tree", "",
+  write_qualifier( file, "$spanning_tree", "$main_spanning_tree", "",
       attributes, True )
 
   file.write( indent ( "];\n", 1 ) )
@@ -670,7 +670,7 @@ def main():
   if args.l:
     labels_file = open(args.l, "r")
     label_lines = labels_file.readlines()
-    label_name = parseLabels(label_lines)
+    label_name = parse_labels(label_lines)
     if label_name == "":
       label_name = "label"
     labels_file.close()
@@ -679,29 +679,29 @@ def main():
   info_lines = relationships_file.readlines()
 
   # parse relationships file for information about Autonomous Systems
-  parseClique(info_lines)
-  autonomous_systems = parseRelationships(info_lines)
+  parse_clique(info_lines)
+  autonomous_systems = parse_relationships(info_lines)
 
   cones_file = open(args.c, "r")
   cone_lines = cones_file.readlines()
 
   top_sorted_asns = topological_sort(autonomous_systems, cone_lines)
-  addLinksAndAttributes(top_sorted_asns, autonomous_systems)
+  add_links_and_attributes(top_sorted_asns, autonomous_systems)
 
   relationships_file.close()
   cones_file.close()
 
-  writeMetadataSection(graph_file, args, len(top_sorted_asns), len(links), 0,
+  write_metadata_section(graph_file, args, len(top_sorted_asns), len(links), 0,
       0)
-  writeEmptyLine(graph_file)
-  writeStructuralDataSection(graph_file)
-  writeEmptyLine(graph_file)
-  writeAttributeDataSection(graph_file, label_name)
-  writeEmptyLine(graph_file)
+  write_empty_line(graph_file)
+  write_structural_data_section(graph_file)
+  write_empty_line(graph_file)
+  write_attribute_data_section(graph_file, label_name)
+  write_empty_line(graph_file)
 
   graph_file.write( indent( comment( "visualization hints" ), 1 ) )
   graph_file.write( "  ;\n  ;\n  ;\n  ;\n" )
-  writeEmptyLine(graph_file)
+  write_empty_line(graph_file)
   
   graph_file.write( indent( comment( "interface hints" ), 1 ) )
   graph_file.write( "  ;\n  ;\n  ;\n  ;\n  ;\n" )
