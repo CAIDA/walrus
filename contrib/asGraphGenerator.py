@@ -267,19 +267,27 @@ def parse_labels(file_lines):
     in the files and the strings representing the labels.
   """
   label_name = ""
+  selector_name = ""
   specified_labels = []
 
   for i in range(0, len(file_lines)):
     if file_lines[i].find("# name:") > -1:
-      desired_name_start_index = file_lines[i].find(":")
-      desired_name_start_index += 2
-      label_name = file_lines[i][desired_name_start_index:].strip()
+      desired_names_start_index = file_lines[i].find(":")
+      desired_names_start_index += 2
+      name_info = file_lines[i][desired_names_start_index:].strip().split(" ")
+      label_name = name_info[0]
+      selector_name = name_info[1]
     elif file_lines[i].find("#") == -1:
       label = file_lines[i].strip().split("|")
       label[0] = int(label[0])
       specified_labels.append(label)
 
-  return (label_name, specified_labels)
+  if label_name == "":
+    label_name = "label"
+  if selector_name == "":
+    selector_name = "selector"
+
+  return (label_name, selector_name, specified_labels)
 
 def parse_clique(file_lines):
   """
@@ -488,6 +496,7 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
   tree_link_attributes = []
   node_asn_attributes = []
   label_attributes = []
+  selector_attributes = []
 
   # each autonomous system is mapped to a node number equal to its index plus
   # one
@@ -518,6 +527,7 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
       if top_sorted_asns[i] == specified_labels[j][0]:
         label_attributes.append( indent( "{ %d; \"%s\"; }," % (i + 1,
             specified_labels[j][1]), 4 ) )
+        selector_attributes.append( indent( "{ %d; T; }," % (i + 1), 4) )
 
   # remove commas from the last values in the lists
   links[len(links) - 1] = format_last_value(links[len(links) - 1])
@@ -525,11 +535,14 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
       format_last_value(tree_link_attributes[len(tree_link_attributes) - 1])
   node_asn_attributes[len(node_asn_attributes) - 1] = \
       format_last_value(node_asn_attributes[len(node_asn_attributes) - 1])
-  if len(label_attributes) > 0:
+  if len(label_attributes) > 0 and len(selector_attributes) > 0:
     label_attributes[len(label_attributes) - 1] = \
         format_last_value(label_attributes[len(label_attributes) - 1])
+    selector_attributes[len(selector_attributes) - 1] = \
+        format_last_value(selector_attributes[len(selector_attributes) - 1])
 
-  return (links, tree_link_attributes, node_asn_attributes, label_attributes)
+  return (links, tree_link_attributes, node_asn_attributes, label_attributes,
+      selector_attributes)
 
 def write_metadata_section(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
@@ -579,23 +592,31 @@ def write_structural_data_section(file, links):
   file.write( indent( ";\n", 1 ) )
   
 
-def write_attribute_data_section(file, label_name, tree_link_attributes,
-    node_asn_attributes, label_attributes):
+def write_attribute_data_section(file, tree_link_attributes,
+    node_asn_attributes, label_name, label_attributes, selector_name,
+    selector_attributes):
   """
   Writes the information about the attributes of the nodes, links, and paths
   in the graph and the qualifiers to the file.
 
   Args:
     file (File): The .graph file being generated for the graph.
-    label_name (str): The desired name of the specified labels.
     tree_link_attributes (List): The list containing all strings specifying
                                  the values for the tree_link attribute.
     node_asn_attributes (List): The list containing all strings specifying
                                 the ASN for each node.
+    label_name (str): The desired name of the specified labels.
     label_attributes (List): The list containing all strings specifying the
                              values for the attribute specified by the given
                              labels file or an empty list if no labels file
                              was given.
+    selector_name (str): The desired name of the attribute that will serve as
+                         as color selector for the labeled nodes specified
+                         from the labels file.
+    selector_attributes (List): The list containing all strings specifying
+                                which nodes were labeled by the specified
+                                label in the labels file or an empty list if
+                                no labels file was given.
   """
   file.write( indent( comment("attribute data"), 1 ) )
   file.write( indent( ";\n", 1 ) )
@@ -608,12 +629,15 @@ def write_attribute_data_section(file, label_name, tree_link_attributes,
       "\n".join(tree_link_attributes), ";", False )
 
   # check if any labels were specified
-  if len(label_attributes) > 0:
+  if len(label_attributes) > 0 and len(selector_attributes) > 0:
     write_attribute( file, "$asn", "int", "|| 0 ||",
         "\n".join(node_asn_attributes), ";", ";", False )
 
     write_attribute( file, "$" + label_name, "string", "|| \"\" ||",
-        "\n".join(label_attributes), ";", ";", True )
+        "\n".join(label_attributes), ";", ";", False )
+
+    write_attribute( file, "$" + selector_name, "bool", "|| false ||",
+        "\n".join(selector_attributes), ";", ";", True )
   else:
     write_attribute( file, "$asn", "int", "|| 0 ||",
         "\n".join(node_asn_attributes), ";", ";", True )
@@ -662,6 +686,7 @@ def main():
   graph_file.write("{\n")
 
   label_name = ""
+  selector_name = ""
   specified_labels = []
 
   if args.l:
@@ -669,9 +694,8 @@ def main():
     label_lines = labels_file.readlines()
     label_info = parse_labels(label_lines)
     label_name = label_info[0]
-    if label_name == "":
-      label_name = "label"
-    specified_labels = label_info[1]
+    selector_name = label_info[1]
+    specified_labels = label_info[2]
     labels_file.close()
 
   relationships_file = open(args.r, "r")
@@ -692,6 +716,7 @@ def main():
   tree_link_attributes = links_and_attrs[1]
   node_asn_attributes = links_and_attrs[2]
   label_attributes = links_and_attrs[3]
+  selector_attributes = links_and_attrs[4]
 
   relationships_file.close()
   cones_file.close()
@@ -701,8 +726,9 @@ def main():
   write_empty_line(graph_file)
   write_structural_data_section(graph_file, links)
   write_empty_line(graph_file)
-  write_attribute_data_section(graph_file, label_name, tree_link_attributes,
-      node_asn_attributes, label_attributes)
+  write_attribute_data_section(graph_file, tree_link_attributes,
+      node_asn_attributes, label_name, label_attributes, selector_name,
+      selector_attributes)
   write_empty_line(graph_file)
 
   graph_file.write( indent( comment( "visualization hints" ), 1 ) )
