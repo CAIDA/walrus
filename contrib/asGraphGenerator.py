@@ -451,6 +451,18 @@ def topological_sort(autonomous_systems, cone_lines):
 
   return sorted
 
+def format_last_value(val):
+  """
+  Formats the last graph value in a comma separated list.
+
+  Args:
+    val (str): The last value that needs to have its last character (the comma
+               removed.
+
+  Returns:
+    The formmatted string without the comma.
+  """
+  return val[0:(len(val) - 1)]
 
 def add_links_and_attributes(top_sorted_asns, autonomous_systems):
   """
@@ -505,25 +517,15 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems):
         label_attributes.append( indent( "{ %d; \"%s\"; }," % (i + 1,
             specified_labels[j][1]), 4 ) )
 
-  # format the last link string
-  last_link = links[len(links) - 1]
-  links[len(links) - 1] = last_link[0:(len(last_link) - 1)] + "\n"
-
-  # format the last tree link attribute string
-  last_tla = tree_link_attributes[len(tree_link_attributes) - 1]
+  # remove commas from the last values in the lists
+  links[len(links) - 1] = format_last_value(links[len(links) - 1])
   tree_link_attributes[len(tree_link_attributes) - 1] = \
-      last_tla[0:(len(last_tla) - 1)]
-
-  # format the last node asn attribute string
-  last_node_asn = node_asn_attributes[len(node_asn_attributes) - 1]
+      format_last_value(tree_link_attributes[len(tree_link_attributes) - 1])
   node_asn_attributes[len(node_asn_attributes) - 1] = \
-      last_node_asn[0:(len(last_node_asn) - 1)]
-
-  # format the last label attribute string
+      format_last_value(node_asn_attributes[len(node_asn_attributes) - 1])
   if len(label_attributes) > 0:
-    last_label = label_attributes[len(label_attributes) - 1]
     label_attributes[len(label_attributes) - 1] = \
-        last_label[0:(len(last_label) - 1)]
+        format_last_value(label_attributes[len(label_attributes) - 1])
 
 def write_metadata_section(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
@@ -569,6 +571,7 @@ def write_structural_data_section(file):
   file.write( indent( "[\n", 1 ) )
  
   file.write("\n".join(links))
+  write_empty_line(file)
   file.write( indent("];\n", 1) )
   file.write( indent( ";\n", 1 ) )
   
