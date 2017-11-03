@@ -2,14 +2,6 @@ import argparse
 import copy
 import random
 
-clique = []
-links = []
-tree_link_attributes = []
-node_asn_attributes = []
-specified_labels = []
-label_attributes = []
-total_links = 0
-
 def indent(line, indents):
   """
   Indents the given string by a multiple of two spaces.
@@ -271,10 +263,11 @@ def parse_labels(file_lines):
                        autonomous system numbers.
 
   Returns:
-    The desired attribute name for the labels if specified in the files.
+    A tuple containing the desired attribute name for the labels if specified
+    in the files and the strings representing the labels.
   """
-  global specified_labels
   label_name = ""
+  specified_labels = []
 
   for i in range(0, len(file_lines)):
     if file_lines[i].find("# name:") > -1:
@@ -286,7 +279,7 @@ def parse_labels(file_lines):
       label[0] = int(label[0])
       specified_labels.append(label)
 
-  return label_name
+  return (label_name, specified_labels)
 
 def parse_clique(file_lines):
   """
@@ -295,10 +288,13 @@ def parse_clique(file_lines):
   Args:
     file_lines (List): The lines of the file containing information about the
                        clique.
+  Returns:
+     A list of the members in the clique or an empty list if there were no
+     members found.
   """
-  global clique
-
+  clique = []
   info_lines = file_lines
+
   for i in range(0, len(info_lines)):
     if info_lines[i].find("# c1:") > -1:
       clique_listing_start_index = info_lines[i].find(":")
@@ -308,7 +304,9 @@ def parse_clique(file_lines):
       # turn each element of clique into the type int
       for j in range(0, len(clique)):
         clique[j] = int(clique[j])
-      return
+      break
+
+  return clique
 
 def parse_relationships(file_lines):
   """
@@ -393,7 +391,7 @@ def partition(unsorted_list, low, high):
      unsorted_list[i + 1]
   return i + 1
 
-def topological_sort(autonomous_systems, cone_lines):
+def topological_sort(autonomous_systems, cone_lines, clique):
   """
   Sorts all given Autonomous Systems into a list ordered so that no customer
   is before its provider.
@@ -403,13 +401,12 @@ def topological_sort(autonomous_systems, cone_lines):
                                their providers and siblings.
     cone_lines (List): The list of lines from the file containing information
                        about each autonomous system's customer cone.
+    clique (List): The list of all the members of the clique.
 
   Returns:
     A list of ASNs that are ordered so no exists at a lower index than its
     provider.
   """
-  global clique
-
   sorted = []
   no_providers = copy.deepcopy(clique)
   autonomous_system_info = copy.deepcopy(autonomous_systems)
@@ -464,7 +461,8 @@ def format_last_value(val):
   """
   return val[0:(len(val) - 1)]
 
-def add_links_and_attributes(top_sorted_asns, autonomous_systems):
+def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
+  specified_labels):
   """
   From the relationships provided for each autonomous system, strings
   representing their links and attributes are added to the respective
@@ -477,21 +475,26 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems):
     autonomous_systems (List): The list containing all autonomous systems
                                and information about their providers and
                                siblings for each one.
+    clique (List): The list containing all the members of the clique.
+    specified_labels (List): The list containing all labels specified by the
+                             user in the given labels file or an empty list
+                             if no labels file was given.
+
+  Returns:
+    A tuple containing lists of strings representing the links or attributes
+    for the graph.
   """
-  global links
-  global tree_link_attributes
-  global total_links
-  global node_asn_attributes
-  global specified_labels
-  global label_attributes
+  links = []
+  tree_link_attributes = []
+  node_asn_attributes = []
+  label_attributes = []
 
   # each autonomous system is mapped to a node number equal to its index plus
   # one
   for i in range(len(top_sorted_asns) - 1, -1, -1):
     if top_sorted_asns[i] in clique:
+      tree_link_attributes.append( indent( "{ %d; T; }," % (len(links)), 4 ) )
       links.append( indent( "{ 0; %d; }," % (i + 1), 2 ) )
-      tree_link_attributes.append( indent( "{ %d; T; }," % (total_links), 4 ) )
-      total_links += 1
 
     else:
       as_index = find(autonomous_systems, top_sorted_asns[i], True, 0,
@@ -501,10 +504,9 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems):
       for j in range(i - 1, -1, -1):
         if find(provider_list, top_sorted_asns[j], False, 0,
             len(provider_list) - 1) > -1:
-          links.append( indent( "{ %d; %d; }," % (j + 1, i + 1), 2 ) )
-          tree_link_attributes.append( indent( "{ %d; T; }," % (total_links),
+          tree_link_attributes.append( indent( "{ %d; T; }," % (len(links)),
                 4 ) )
-          total_links += 1
+          links.append( indent( "{ %d; %d; }," % (j + 1, i + 1), 2 ) )
           break
 
     # provide node label for autonomous system number represented
@@ -526,6 +528,8 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems):
   if len(label_attributes) > 0:
     label_attributes[len(label_attributes) - 1] = \
         format_last_value(label_attributes[len(label_attributes) - 1])
+
+  return (links, tree_link_attributes, node_asn_attributes, label_attributes)
 
 def write_metadata_section(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
@@ -558,15 +562,14 @@ def write_metadata_section(file, c_args, num_nodes, num_links, num_paths,
   file.write( indent( "%d;\n" % num_paths, 1) )
   file.write( indent( "%d;\n" % num_path_links, 1) )
 
-def write_structural_data_section(file):
+def write_structural_data_section(file, links):
   """
   Writes the information about the links and paths to the file.
 
   Args:
     file (file object): The .graph file being generated for the graph.
+    links (List): The list of strings representing the links for the graphs.
   """
-  global links
-
   file.write( indent( comment("structural data"), 1 ) )
   file.write( indent( "[\n", 1 ) )
  
@@ -576,19 +579,24 @@ def write_structural_data_section(file):
   file.write( indent( ";\n", 1 ) )
   
 
-def write_attribute_data_section(file, label_name):
+def write_attribute_data_section(file, label_name, tree_link_attributes,
+    node_asn_attributes, label_attributes):
   """
   Writes the information about the attributes of the nodes, links, and paths
   in the graph and the qualifiers to the file.
 
   Args:
     file (File): The .graph file being generated for the graph.
-    label_name (str): The desired name of the specified labels
+    label_name (str): The desired name of the specified labels.
+    tree_link_attributes (List): The list containing all strings specifying
+                                 the values for the tree_link attribute.
+    node_asn_attributes (List): The list containing all strings specifying
+                                the ASN for each node.
+    label_attributes (List): The list containing all strings specifying the
+                             values for the attribute specified by the given
+                             labels file or an empty list if no labels file
+                             was given.
   """
-  global tree_link_attributes
-  global node_asn_attributes
-  global label_attributes
-
   file.write( indent( comment("attribute data"), 1 ) )
   file.write( indent( ";\n", 1 ) )
   file.write( indent( "[\n", 1 ) )
@@ -623,8 +631,6 @@ def main():
   """
   Generates the .graph file for the autonomous systems graph.
   """
-  global links
-
   parser = argparse.ArgumentParser()
   parser.add_argument("-g",
       help="Desired name of the .graph file that will be generated",
@@ -656,27 +662,36 @@ def main():
   graph_file.write("{\n")
 
   label_name = ""
+  specified_labels = []
 
   if args.l:
     labels_file = open(args.l, "r")
     label_lines = labels_file.readlines()
-    label_name = parse_labels(label_lines)
+    label_info = parse_labels(label_lines)
+    label_name = label_info[0]
     if label_name == "":
       label_name = "label"
+    specified_labels = label_info[1]
     labels_file.close()
 
   relationships_file = open(args.r, "r")
   info_lines = relationships_file.readlines()
 
   # parse relationships file for information about Autonomous Systems
-  parse_clique(info_lines)
+  clique = parse_clique(info_lines)
   autonomous_systems = parse_relationships(info_lines)
 
   cones_file = open(args.c, "r")
   cone_lines = cones_file.readlines()
 
-  top_sorted_asns = topological_sort(autonomous_systems, cone_lines)
-  add_links_and_attributes(top_sorted_asns, autonomous_systems)
+  top_sorted_asns = topological_sort(autonomous_systems, cone_lines, clique)
+  links_and_attrs = \
+      add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
+      specified_labels)
+  links = links_and_attrs[0]
+  tree_link_attributes = links_and_attrs[1]
+  node_asn_attributes = links_and_attrs[2]
+  label_attributes = links_and_attrs[3]
 
   relationships_file.close()
   cones_file.close()
@@ -684,9 +699,10 @@ def main():
   write_metadata_section(graph_file, args, len(top_sorted_asns), len(links), 0,
       0)
   write_empty_line(graph_file)
-  write_structural_data_section(graph_file)
+  write_structural_data_section(graph_file, links)
   write_empty_line(graph_file)
-  write_attribute_data_section(graph_file, label_name)
+  write_attribute_data_section(graph_file, label_name, tree_link_attributes,
+      node_asn_attributes, label_attributes)
   write_empty_line(graph_file)
 
   graph_file.write( indent( comment( "visualization hints" ), 1 ) )
