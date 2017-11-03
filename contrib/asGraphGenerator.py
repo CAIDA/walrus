@@ -282,13 +282,24 @@ def parseLabels(file_lines):
   Args:
     file_lines (List): The lines of the file containing labels for specific
                        autonomous system numbers.
+
+  Returns:
+    The desired attribute name for the labels if specified in the files.
   """
   global specified_labels
+  label_name = ""
 
   for i in range(0, len(file_lines)):
-    label = file_lines[i].strip().split("|")
-    label[0] = int(label[0])
-    specified_labels.append(label)
+    if file_lines[i].find("# name:") > -1:
+      desired_name_start_index = file_lines[i].find(":")
+      desired_name_start_index += 2
+      label_name = file_lines[i][desired_name_start_index:].strip()
+    elif file_lines[i].find("#") == -1:
+      label = file_lines[i].strip().split("|")
+      label[0] = int(label[0])
+      specified_labels.append(label)
+
+  return label_name
 
 def parseClique(file_lines):
   """
@@ -522,9 +533,10 @@ def addLinksAndAttributes(top_sorted_asns, autonomous_systems):
       last_node_asn[0:(len(last_node_asn) - 1)]
 
   # format the last label attribute string
-  last_label = label_attributes[len(label_attributes) - 1]
-  label_attributes[len(label_attributes) - 1] = \
-      last_label[0:(len(last_label) - 1)]
+  if len(label_attributes) > 0:
+    last_label = label_attributes[len(label_attributes) - 1]
+    label_attributes[len(label_attributes) - 1] = \
+        last_label[0:(len(last_label) - 1)]
 
 def writeMetadataSection(file, c_args, num_nodes, num_links, num_paths,
     num_path_links):
@@ -574,13 +586,14 @@ def writeStructuralDataSection(file):
   file.write( indent( ";\n", 1 ) )
   
 
-def writeAttributeDataSection(file):
+def writeAttributeDataSection(file, label_name):
   """
   Writes the information about the attributes of the nodes, links, and paths
   in the graph and the qualifiers to the file.
 
   Args:
     file (File): The .graph file being generated for the graph.
+    label_name (str): The desired name of the specified labels
   """
   global tree_link_attributes
   global node_asn_attributes
@@ -596,11 +609,16 @@ def writeAttributeDataSection(file):
   writeAttribute( file, "$tree_link", "bool", "|| false ||", ";",
       "\n".join(tree_link_attributes), ";", False )
 
-  writeAttribute( file, "$asn", "int", "|| 0 ||",
-      "\n".join(node_asn_attributes), ";", ";", False )
+  # check if any labels were specified
+  if len(label_attributes) > 0:
+    writeAttribute( file, "$asn", "int", "|| 0 ||",
+        "\n".join(node_asn_attributes), ";", ";", False )
 
-  writeAttribute( file, "$label", "string", "|| \"\" ||",
-      "\n".join(label_attributes), ";", ";", True )
+    writeAttribute( file, "$" + label_name, "string", "|| \"\" ||",
+        "\n".join(label_attributes), ";", ";", True )
+  else:
+    writeAttribute( file, "$asn", "int", "|| 0 ||",
+        "\n".join(node_asn_attributes), ";", ";", True )
 
   file.write( indent( "];\n", 1 ) )
   file.write( indent( "[\n", 1 ) )
@@ -647,10 +665,14 @@ def main():
   graph_file.write("Graph\n")
   graph_file.write("{\n")
 
+  label_name = ""
+
   if args.l:
     labels_file = open(args.l, "r")
     label_lines = labels_file.readlines()
-    parseLabels(label_lines)
+    label_name = parseLabels(label_lines)
+    if label_name == "":
+      label_name = "label"
     labels_file.close()
 
   relationships_file = open(args.r, "r")
@@ -674,7 +696,7 @@ def main():
   writeEmptyLine(graph_file)
   writeStructuralDataSection(graph_file)
   writeEmptyLine(graph_file)
-  writeAttributeDataSection(graph_file)
+  writeAttributeDataSection(graph_file, label_name)
   writeEmptyLine(graph_file)
 
   graph_file.write( indent( comment( "visualization hints" ), 1 ) )
