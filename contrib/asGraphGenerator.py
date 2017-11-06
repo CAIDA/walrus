@@ -221,8 +221,8 @@ def insert_relationship(autonomous_systems, rel_type, asn1, asn2):
   # insert the first autonomous system in the list of siblings for the
   # second autonomous system listed if they possess a sibling-sibling
   # relationship
-  #if rel_type == 0:
-    #insert_sibling(autonomous_systems, asn1, asn2)
+  if rel_type == 0:
+    insert_sibling(autonomous_systems, asn1, asn2)
 
 def insert_provider(autonomous_systems, provider, customer):
   """
@@ -413,12 +413,16 @@ def topological_sort(autonomous_systems, cone_lines, clique):
 
   Returns:
     A list of ASNs that are ordered so no exists at a lower index than its
-    provider.
+    provider, a list of indices of ASNs that are of the start of each depth
+    level, and the parsed customer cones.
   """
   sorted = []
   no_providers = copy.deepcopy(clique)
+  no_providers2 = []
+  has_another_depth = True
   autonomous_system_info = copy.deepcopy(autonomous_systems)
   customer_cones = copy.deepcopy(cone_lines)
+  depth_level_separators = []
 
   # filter customer_cone_lines so that it only contains lines related to the
   # customer cone of an autonomous system
@@ -436,25 +440,34 @@ def topological_sort(autonomous_systems, cone_lines, clique):
   # sort the customer cones so the indices match the autonomous system info list
   quicksort(customer_cones, 0, len(customer_cones) - 1)
 
-  # append autonomous systems to sorted in topological order
-  while len(no_providers) > 0:
-    no_provs_asn = no_providers.pop(0)
-    sorted.append(no_provs_asn)
-    no_provs_index = find(autonomous_system_info, no_provs_asn, True,
-        0, len(autonomous_system_info) - 1)
-    no_provs_cone = customer_cones[no_provs_index]
-    # remove this provider from each of its customer's provider list
-    for i in range(1, len(no_provs_cone)):
-      current_as_index = find(autonomous_system_info, no_provs_cone[i], True,
-          0, len(autonomous_system_info) - 1)
-      providers_list = autonomous_system_info[current_as_index][1]
-      if find(providers_list, no_provs_asn, False, 0,
-          len(providers_list) - 1) > -1:
-        providers_list.remove(no_provs_asn)
-        if len(providers_list) == 0:
-          no_providers.append(autonomous_system_info[current_as_index][0])
+  while has_another_depth:
+    has_another_depth = False
+    # appends the index of the first ASN of the depth level in the sorted list
+    depth_level_separators.append(len(sorted))
 
-  return sorted
+    # append autonomous systems to sorted in topological order
+    while len(no_providers) > 0:
+      no_provs_asn = no_providers.pop(0)
+      sorted.append(no_provs_asn)
+      no_provs_index = find(autonomous_system_info, no_provs_asn, True,
+          0, len(autonomous_system_info) - 1)
+      no_provs_cone = customer_cones[no_provs_index]
+      # remove this provider from each of its customer's provider list
+      for i in range(1, len(no_provs_cone)):
+        current_as_index = find(autonomous_system_info, no_provs_cone[i], True,
+            0, len(autonomous_system_info) - 1)
+        providers_list = autonomous_system_info[current_as_index][1]
+        if find(providers_list, no_provs_asn, False, 0,
+            len(providers_list) - 1) > -1:
+          providers_list.remove(no_provs_asn)
+          if len(providers_list) == 0:
+            no_providers2.append(autonomous_system_info[current_as_index][0])
+    if len(no_providers2) > 0:
+      has_another_depth = True
+      no_providers = copy.deepcopy(no_providers2)
+      no_providers2 = []
+
+  return (sorted, depth_level_separators, customer_cones)
 
 def format_last_value(val):
   """
@@ -469,8 +482,27 @@ def format_last_value(val):
   """
   return val[0:(len(val) - 1)]
 
-def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
-  specified_labels):
+def determine_depth(index, depth_level_separators):
+  """
+  Determines the depth of the ASN at the given index in the directed graph
+  being generated.
+
+  Args:
+    index (int): The index of the ASN in the topologically sorted list of
+                 ASNs.
+    depth_level_separators (List): The list containing the indices of the last
+                                   ASNs of each depth level for top_sorted_asns
+
+  Returns:
+    The depth that the ASN would have in the directed graph being generated.
+  """
+  for i in range(1, len(depth_level_separators)):
+    if index < depth_level_separators[i]:
+      return i
+  return len(depth_level_separators)
+
+def add_links_and_attributes(top_sorted_asns, depth_level_separators,
+    autonomous_systems, clique, customer_cones, specified_labels):
   """
   From the relationships provided for each autonomous system, strings
   representing their links and attributes are added to the respective
@@ -480,10 +512,14 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
     top_sorted_asns (List): The list containing all autonomous systems
                             sorted so that no customer appears before its
                             provider.
+    depth_level_separators (List): The list containing the indices of the last
+                                   ASNs of each depth level for top_sorted_asns
     autonomous_systems (List): The list containing all autonomous systems
                                and information about their providers and
                                siblings for each one.
     clique (List): The list containing all the members of the clique.
+    customer_cones (List): The list containing the customer cone of each
+                           autonomous system.
     specified_labels (List): The list containing all labels specified by the
                              user in the given labels file or an empty list
                              if no labels file was given.
@@ -509,14 +545,23 @@ def add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
       as_index = find(autonomous_systems, top_sorted_asns[i], True, 0,
           len(autonomous_systems) - 1)
       provider_list = autonomous_systems[as_index][1]
-      # find the first provider with greatest depth to link together
-      for j in range(i - 1, -1, -1):
+      depth = determine_depth(i, depth_level_separators)
+      top_prov_index = -1
+      greatest_cone_size = -1
+      # look for providers that are one depth level above
+      for j in range(depth_level_separators[depth - 2],
+          depth_level_separators[depth - 1], 1):
+        # find the provider with the greatest customer cone
         if find(provider_list, top_sorted_asns[j], False, 0,
             len(provider_list) - 1) > -1:
-          tree_link_attributes.append( indent( "{ %d; T; }," % (len(links)),
-                4 ) )
-          links.append( indent( "{ %d; %d; }," % (j + 1, i + 1), 2 ) )
-          break
+          curr_prov_index = find(autonomous_systems, top_sorted_asns[j], True,
+              0, len(autonomous_systems) - 1)
+          if customer_cones[curr_prov_index] > greatest_cone_size:
+            top_prov_index = j
+            greatest_cone_size = customer_cones[curr_prov_index]
+      tree_link_attributes.append( indent( "{ %d; T; }," % (len(links)),
+          4 ) )
+      links.append( indent( "{ %d; %d; }," % (top_prov_index + 1, i + 1), 2 ) )
 
     # provide node label for autonomous system number represented
     node_asn_attributes.append( indent( "{ %d; %d; }," % (i + 1,
@@ -708,10 +753,14 @@ def main():
   cones_file = open(args.c, "r")
   cone_lines = cones_file.readlines()
 
-  top_sorted_asns = topological_sort(autonomous_systems, cone_lines, clique)
+  top_sorted_info = topological_sort(autonomous_systems, cone_lines, clique)
+  top_sorted_asns = top_sorted_info[0]
+  depth_level_separators = top_sorted_info[1]
+  customer_cones = top_sorted_info[2]
+
   links_and_attrs = \
-      add_links_and_attributes(top_sorted_asns, autonomous_systems, clique,
-      specified_labels)
+      add_links_and_attributes(top_sorted_asns, depth_level_separators,
+          autonomous_systems, clique, customer_cones, specified_labels)
   links = links_and_attrs[0]
   tree_link_attributes = links_and_attrs[1]
   node_asn_attributes = links_and_attrs[2]
