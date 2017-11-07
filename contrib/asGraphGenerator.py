@@ -316,6 +316,38 @@ def parse_clique(file_lines):
 
   return clique
 
+def parse_cones(file_lines):
+  """
+  Creates a list of customer cones for all autonomous systems from the given
+  file lines.
+
+  Args:
+    file_lines (List): The lines of the file containing information about the
+                       customer cones of the autonomous systems.
+
+  Returns:
+    A list of lists of ints where the initial number denotes which autonomous
+    system the customer cone is for and the following numbers are a part of
+    that autonomous system's customer cone.
+  """
+  # filter customer_cone_lines so that it only contains lines related to the
+  # customer cone of an autonomous system
+  i = 0
+  while i < len(file_lines):
+    if file_lines[i].find("#") > -1:
+      file_lines.pop(i)
+    else:
+      file_lines[i] = file_lines[i].strip().split(" ")
+      # convert each asn in each customer cone into type int
+      for j in range(0, len(file_lines[i])):
+        file_lines[i][j] = int(file_lines[i][j])
+      i += 1
+
+  # sort the customer cones so the indices match the autonomous system info list
+  quicksort(file_lines, 0, len(file_lines) - 1)
+
+  return file_lines
+
 def parse_relationships(file_lines):
   """
   Creates a list of all relationships for all Autonomous Systems from
@@ -399,7 +431,7 @@ def partition(unsorted_list, low, high):
      unsorted_list[i + 1]
   return i + 1
 
-def topological_sort(autonomous_systems, cone_lines, clique):
+def topological_sort(autonomous_systems, customer_cones, clique):
   """
   Sorts all given Autonomous Systems into a list ordered so that no customer
   is before its provider.
@@ -407,8 +439,8 @@ def topological_sort(autonomous_systems, cone_lines, clique):
   Args:
     autonomous_systems (List): The list containing all autonomous systems and
                                their providers and siblings.
-    cone_lines (List): The list of lines from the file containing information
-                       about each autonomous system's customer cone.
+    customer_cones (List): The list containing the customer cone of each
+                           autonomous system.
     clique (List): The list of all the members of the clique.
 
   Returns:
@@ -421,24 +453,7 @@ def topological_sort(autonomous_systems, cone_lines, clique):
   no_providers2 = []
   has_another_depth = True
   autonomous_system_info = copy.deepcopy(autonomous_systems)
-  customer_cones = copy.deepcopy(cone_lines)
   depth_level_separators = []
-
-  # filter customer_cone_lines so that it only contains lines related to the
-  # customer cone of an autonomous system
-  k = 0
-  while k < len(customer_cones):
-    if customer_cones[k].find("#") > -1:
-      customer_cones.pop(k)
-    else:
-      customer_cones[k] = customer_cones[k].strip().split(" ")
-      # convert each asn in each customer cone into type int
-      for l in range(0, len(customer_cones[k])):
-        customer_cones[k][l] = int(customer_cones[k][l])
-      k += 1
-
-  # sort the customer cones so the indices match the autonomous system info list
-  quicksort(customer_cones, 0, len(customer_cones) - 1)
 
   while has_another_depth:
     has_another_depth = False
@@ -467,7 +482,7 @@ def topological_sort(autonomous_systems, cone_lines, clique):
       no_providers = copy.deepcopy(no_providers2)
       no_providers2 = []
 
-  return (sorted, depth_level_separators, customer_cones)
+  return (sorted, depth_level_separators)
 
 def format_last_value(val):
   """
@@ -752,11 +767,11 @@ def main():
 
   cones_file = open(args.c, "r")
   cone_lines = cones_file.readlines()
+  customer_cones = parse_cones(cone_lines)
 
-  top_sorted_info = topological_sort(autonomous_systems, cone_lines, clique)
+  top_sorted_info = topological_sort(autonomous_systems, customer_cones, clique)
   top_sorted_asns = top_sorted_info[0]
   depth_level_separators = top_sorted_info[1]
-  customer_cones = top_sorted_info[2]
 
   links_and_attrs = \
       add_links_and_attributes(top_sorted_asns, depth_level_separators,
