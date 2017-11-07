@@ -192,8 +192,8 @@ def find(list, asn, is_list_of_tuples, low, high):
 
 def insert_relationship(autonomous_systems, rel_type, asn1, asn2):
   """
-  Inserts an ASN into an Autonomous System's list of providers or list of
-  siblings.
+  Inserts an ASN into an Autonomous System's list of providers, customers, or
+  siblings depending on the relationship.
 
   Args:
     autonomous_systems (List): The list containing all autonomous systems.
@@ -206,27 +206,20 @@ def insert_relationship(autonomous_systems, rel_type, asn1, asn2):
     asn2 (int): The Autonomous System Number of the second autonomous system
                 in the relationship.
   """
-  # insert the first autonomous system in the list of providers for the
-  # second autonomous system if they possess a provider-customer
-  # relationship
   if rel_type == -1:
     insert_provider(autonomous_systems, asn1, asn2)
+    insert_customer(autonomous_systems, asn1, asn2)
 
-  # insert the second autonomous system in the list of providers for the
-  # first autonomous system if they possess a customer-provider
-  # relationship
-  if rel_type == 1:
+  elif rel_type == 1:
     insert_provider(autonomous_systems, asn2, asn1)
+    insert_customer(autonomous_systems, asn2, asn1)
 
-  # insert the first autonomous system in the list of siblings for the
-  # second autonomous system listed if they possess a sibling-sibling
-  # relationship
-  if rel_type == 0:
+  elif rel_type == 0:
     insert_sibling(autonomous_systems, asn1, asn2)
 
 def insert_provider(autonomous_systems, provider, customer):
   """
-  Inserts an ASN into an Autonomous System's list of providers.
+  Inserts an ASN into an autonomous system's list of providers.
 
   Args:
     autonomous_systems (List): The list containing all autonomous systems.
@@ -238,20 +231,34 @@ def insert_provider(autonomous_systems, provider, customer):
   as_providers = autonomous_systems[as_index][1]
   sorted_insert(as_providers, provider, False, 0, len(as_providers) - 1)
 
-def insert_sibling(autonomous_systems, sibling1, sibling2):
+def insert_customer(autonomous_systems, provider, customer):
   """
-  Inserts an ASN into an Autonomous System's list of siblings.
+  Inserts an ASN into an autonomous system's list of customers.
 
   Args:
     autonomous_systems (List): The list containing all autonomous systems.
-    sibling1 (int): The ASN of an Autonomous System in a sibling-sibling
+    provider (int): The ASN of the provider.
+    customer (int): The ASN of the customer.
+  """
+  as_index = find(autonomous_systems, provider, True, 0,
+      len(autonomous_systems) - 1)
+  as_customers = autonomous_systems[as_index][2]
+  sorted_insert(as_customers, customer, False, 0, len(as_customers) - 1)
+
+def insert_sibling(autonomous_systems, sibling1, sibling2):
+  """
+  Inserts an ASN into an autonomous system's list of siblings.
+
+  Args:
+    autonomous_systems (List): The list containing all autonomous systems.
+    sibling1 (int): The ASN of an autonomous system in a sibling-sibling
                     relationship.
-    sibling2 (int): The ASN of an Autonomous System in a sibling-sibling
+    sibling2 (int): The ASN of an autonomous system in a sibling-sibling
                     relationship, assumed to be different from sibling1.
   """
   as_index = find(autonomous_systems, sibling2, True, 0,
         len(autonomous_systems) - 1)
-  as_siblings = autonomous_systems[as_index][2]
+  as_siblings = autonomous_systems[as_index][3]
   sorted_insert(as_siblings, sibling1, False, 0, len(as_siblings) - 1)
 
 def parse_labels(file_lines):
@@ -350,18 +357,19 @@ def parse_cones(file_lines):
 
 def parse_relationships(file_lines):
   """
-  Creates a list of all relationships for all Autonomous Systems from
+  Creates a list of all relationships for all autonomous systems from
   the given file.
 
   Args:
     file_lines (List): The lines of the file containing the provider-customer,
                  customer-provider, and sibling-sibling relationships for
-                 Autonomous Systems.
+                 autonomous systems.
 
   Returns:
     A list of tuples where each tuple contains three elements: the ASN
-    of an Autonomous System, a list of that Autonomous System's providers,
-    and a list of that Autonomous System's siblings.
+    of an autonomous system, a list of that autonomous system's providers,
+    a list of that autonomous system's customers, and a list of that
+    autonomous system's siblings.
   """
   autonomous_systems = []
 
@@ -373,11 +381,11 @@ def parse_relationships(file_lines):
       asn2 = int(rel[1])
       rel_type = int(rel[2])
 
-      rel_tuple = (asn1, [], [])
+      rel_tuple = (asn1, [], [], [])
       sorted_insert(autonomous_systems, rel_tuple, True, 0,
           len(autonomous_systems) - 1)
 
-      rel_tuple = (asn2, [], [])
+      rel_tuple = (asn2, [], [], [])
       sorted_insert(autonomous_systems, rel_tuple, True, 0,
           len(autonomous_systems) - 1)
 
@@ -552,6 +560,7 @@ def add_links_and_attributes(top_sorted_asns, depth_level_separators,
   # each autonomous system is mapped to a node number equal to its index plus
   # one
   for i in range(len(top_sorted_asns) - 1, -1, -1):
+
     if top_sorted_asns[i] in clique:
       tree_link_attributes.append( indent( "{ %d; T; }," % (len(links)), 4 ) )
       links.append( indent( "{ 0; %d; }," % (i + 1), 2 ) )
