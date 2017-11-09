@@ -439,7 +439,7 @@ def partition(unsorted_list, low, high):
      unsorted_list[i + 1]
   return i + 1
 
-def topological_sort(autonomous_systems, customer_cones, clique):
+def topological_sort(autonomous_systems, clique):
   """
   Sorts all given Autonomous Systems into a list ordered so that no customer
   is before its provider.
@@ -447,8 +447,6 @@ def topological_sort(autonomous_systems, customer_cones, clique):
   Args:
     autonomous_systems (List): The list containing all autonomous systems and
                                their providers, customers, and peers.
-    customer_cones (List): The list containing the customer cone of each
-                           autonomous system.
     clique (List): The list of all the members of the clique.
 
   Returns:
@@ -474,17 +472,15 @@ def topological_sort(autonomous_systems, customer_cones, clique):
       sorted.append(no_provs_asn)
       no_provs_index = find(autonomous_system_info, no_provs_asn, True,
           0, len(autonomous_system_info) - 1)
-      no_provs_cone = customer_cones[no_provs_index]
+      no_provs_cust_list = autonomous_system_info[no_provs_index][2]
       # remove this provider from each of its customer's provider list
-      for i in range(1, len(no_provs_cone)):
-        current_as_index = find(autonomous_system_info, no_provs_cone[i], True,
-            0, len(autonomous_system_info) - 1)
+      for i in range(0, len(no_provs_cust_list)):
+        current_as_index = find(autonomous_system_info, no_provs_cust_list[i],
+            True, 0, len(autonomous_system_info) - 1)
         providers_list = autonomous_system_info[current_as_index][1]
-        if find(providers_list, no_provs_asn, False, 0,
-            len(providers_list) - 1) > -1:
-          providers_list.remove(no_provs_asn)
-          if len(providers_list) == 0:
-            no_providers2.append(autonomous_system_info[current_as_index][0])
+        providers_list.remove(no_provs_asn)
+        if len(providers_list) == 0:
+          no_providers2.append(autonomous_system_info[current_as_index][0])
     if len(no_providers2) > 0:
       has_another_depth = True
       no_providers = copy.deepcopy(no_providers2)
@@ -777,7 +773,7 @@ def main():
   cone_lines = cones_file.readlines()
   customer_cones = parse_cones(cone_lines)
 
-  top_sorted_info = topological_sort(autonomous_systems, customer_cones, clique)
+  top_sorted_info = topological_sort(autonomous_systems, clique)
   top_sorted_asns = top_sorted_info[0]
   depth_level_separators = top_sorted_info[1]
 
