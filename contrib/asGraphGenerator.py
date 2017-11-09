@@ -193,13 +193,13 @@ def find(list, asn, is_list_of_tuples, low, high):
 def insert_relationship(autonomous_systems, rel_type, asn1, asn2):
   """
   Inserts an ASN into an Autonomous System's list of providers, customers, or
-  siblings depending on the relationship.
+  peers depending on the relationship.
 
   Args:
     autonomous_systems (List): The list containing all autonomous systems.
     rel_type (int): -1 if there is a provider-customer relationship between
                     the first AS and the second AS, 1 if there is a customer-
-                    provider relationship, 0 if there is a sibling-sibling
+                    provider relationship, 0 if there is a peer-peer
                     relationship.
     asn1 (int): The Autonomous System Number of the first autonomous system
                 in the relationship.
@@ -215,7 +215,7 @@ def insert_relationship(autonomous_systems, rel_type, asn1, asn2):
     insert_customer(autonomous_systems, asn2, asn1)
 
   elif rel_type == 0:
-    insert_sibling(autonomous_systems, asn1, asn2)
+    insert_peer(autonomous_systems, asn1, asn2)
 
 def insert_provider(autonomous_systems, provider, customer):
   """
@@ -245,21 +245,21 @@ def insert_customer(autonomous_systems, provider, customer):
   as_customers = autonomous_systems[as_index][2]
   sorted_insert(as_customers, customer, False, 0, len(as_customers) - 1)
 
-def insert_sibling(autonomous_systems, sibling1, sibling2):
+def insert_peer(autonomous_systems, peer1, peer2):
   """
-  Inserts an ASN into an autonomous system's list of siblings.
+  Inserts an ASN into each autonomous systems' list of peers.
 
   Args:
     autonomous_systems (List): The list containing all autonomous systems.
-    sibling1 (int): The ASN of an autonomous system in a sibling-sibling
+    peer1 (int): The ASN of an autonomous system in a peer-peer
                     relationship.
-    sibling2 (int): The ASN of an autonomous system in a sibling-sibling
-                    relationship, assumed to be different from sibling1.
+    peer2 (int): The ASN of an autonomous system in a peer-peer
+                    relationship, assumed to be different from peer1.
   """
-  as_index = find(autonomous_systems, sibling2, True, 0,
+  as_index = find(autonomous_systems, peer2, True, 0,
         len(autonomous_systems) - 1)
-  as_siblings = autonomous_systems[as_index][3]
-  sorted_insert(as_siblings, sibling1, False, 0, len(as_siblings) - 1)
+  as_peers = autonomous_systems[as_index][3]
+  sorted_insert(as_peers, peer1, False, 0, len(as_peers) - 1)
 
 def parse_labels(file_lines):
   """
@@ -362,14 +362,14 @@ def parse_relationships(file_lines):
 
   Args:
     file_lines (List): The lines of the file containing the provider-customer,
-                 customer-provider, and sibling-sibling relationships for
-                 autonomous systems.
+                       customer-provider, and peer-peer relationships for
+                       autonomous systems.
 
   Returns:
     A list of tuples where each tuple contains three elements: the ASN
     of an autonomous system, a list of that autonomous system's providers,
     a list of that autonomous system's customers, and a list of that
-    autonomous system's siblings.
+    autonomous system's peers.
   """
   autonomous_systems = []
 
@@ -446,7 +446,7 @@ def topological_sort(autonomous_systems, customer_cones, clique):
 
   Args:
     autonomous_systems (List): The list containing all autonomous systems and
-                               their providers and siblings.
+                               their providers, customers, and peers.
     customer_cones (List): The list containing the customer cone of each
                            autonomous system.
     clique (List): The list of all the members of the clique.
@@ -538,8 +538,8 @@ def add_links_and_attributes(top_sorted_asns, depth_level_separators,
     depth_level_separators (List): The list containing the indices of the last
                                    ASNs of each depth level for top_sorted_asns
     autonomous_systems (List): The list containing all autonomous systems
-                               and information about their providers and
-                               siblings for each one.
+                               and information about their providers, customers,
+                               and peers for each one.
     clique (List): The list containing all the members of the clique.
     customer_cones (List): The list containing the customer cone of each
                            autonomous system.
@@ -560,7 +560,6 @@ def add_links_and_attributes(top_sorted_asns, depth_level_separators,
   # each autonomous system is mapped to a node number equal to its index plus
   # one
   for i in range(len(top_sorted_asns) - 1, -1, -1):
-
     if top_sorted_asns[i] in clique:
       tree_link_attributes.append( indent( "{ %d; T; }," % (len(links)), 4 ) )
       links.append( indent( "{ 0; %d; }," % (i + 1), 2 ) )
@@ -572,6 +571,7 @@ def add_links_and_attributes(top_sorted_asns, depth_level_separators,
       depth = determine_depth(i, depth_level_separators)
       top_prov_index = -1
       greatest_cone_size = -1
+
       # look for providers that are one depth level above
       for j in range(depth_level_separators[depth - 2],
           depth_level_separators[depth - 1], 1):
@@ -659,7 +659,6 @@ def write_structural_data_section(file, links):
   write_empty_line(file)
   file.write( indent("];\n", 1) )
   file.write( indent( ";\n", 1 ) )
-  
 
 def write_attribute_data_section(file, tree_link_attributes,
     node_asn_attributes, label_name, label_attributes, selector_name,
